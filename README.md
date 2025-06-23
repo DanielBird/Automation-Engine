@@ -5,10 +5,12 @@ This project is currently a work in progress.
 # To get started using the template
 
 4 monobehaviour scripts are required in the scene: 
-- Map                  - maintains a "base" grid, recording cell occupancy  
-- Node Map             - mainatins a "Node" grid , recoridng cell occupancy of by Nodes 
-- Placement Manager    - coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations
-- Placement Visuals    - manages visual aspects of game object placement 
+
+|----------|----------|
+| Map    | maintains a "base" grid, recording cell occupancy |
+| Node Map    | mainatins a "Node" grid , recoridng cell occupancy of by Nodes | 
+| Placement Manager    | coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations |
+| Placement Visuals    | manages visual aspects of game object placement | 
 
 The Placement Manager class requires a scriptable object - PlacementSettings - that holds data about placement e.g. prefabs, input action references, the grid cell size.   
 
