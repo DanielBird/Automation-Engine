@@ -18,11 +18,11 @@ The Placement Manager class requires a scriptable object - PlacementSettings - t
 
 # Dependencies
 
-Unity Input System
+- Unity Input System
 
-For zero garbage allocation async operations, this project uses UniTask from Cysharp.
-For zero garbage allocation LINQ operations, this project uses ZLinq from Cysharp. 
-See https://github.com/Cysharp
+- For zero garbage allocation async operations, this project uses UniTask from Cysharp.
+- For zero garbage allocation LINQ operations, this project uses ZLinq from Cysharp. 
+- See https://github.com/Cysharp
 
-Easing Functions by cjddmut.
-See https://gist.github.com/cjddmut
+- Easing Functions by cjddmut.
+- See https://gist.github.com/cjddmut
