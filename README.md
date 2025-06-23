@@ -6,6 +6,7 @@ This project is currently a work in progress.
 
 4 monobehaviour scripts are required in the scene: 
 
+| Monobehavior            | Function  
 |----------|----------|
 | Map    | maintains a "base" grid, recording cell occupancy |
 | Node Map    | mainatins a "Node" grid , recoridng cell occupancy of by Nodes | 
