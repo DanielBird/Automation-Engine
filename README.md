@@ -2,6 +2,10 @@
 
 This project is currently a work in progress. 
 
+![Demo](Media/BeltTest.gif)
+
+
+
 # To get started using the template
 
 4 monobehaviour scripts are required in the scene: 
