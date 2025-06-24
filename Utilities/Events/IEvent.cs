@@ -1,4 +1,4 @@
-﻿namespace Events
+﻿namespace Utilities.Events
 {
     public interface IEvent
     {

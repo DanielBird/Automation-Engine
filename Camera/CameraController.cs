@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Utilities;
+using InputSettings = ScriptableObjects.InputSettings;
 
 namespace Camera
 {

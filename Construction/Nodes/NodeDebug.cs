@@ -1,10 +1,10 @@
 ﻿using Construction.Events;
 using Construction.Placement;
 using Construction.Utilities;
+using Events;
 using Sirenix.OdinInspector;
 using UnityEditor;
 using UnityEngine;
-using Utilities.Event_Bus;
 
 namespace Construction.Nodes
 {

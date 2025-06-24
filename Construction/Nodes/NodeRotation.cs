@@ -31,14 +31,27 @@ namespace Construction.Nodes
 
         public void Rotate(Direction direction)
         {
+            Debug.Log("Rotate");
             _node.SetDirection(direction);
             Vector3 currentRotation = _node.transform.localRotation.eulerAngles;
             Vector3 targetRotation = DirectionUtils.RotationFromDirection(direction);
             if(VectorUtils.ApproximatelyEqual(currentRotation,targetRotation)) return;
-
+            
+            Quaternion start = GetStartingRotation(currentRotation, targetRotation);
+            Quaternion end = Quaternion.Euler(targetRotation);
+            
             DisposeToken();
             _cts = new CancellationTokenSource(); 
-            RunRotation(currentRotation, targetRotation, _cts).Forget();
+            NewRunRotation(start, end, _cts).Forget();
+        }
+
+        private Quaternion GetStartingRotation(Vector3 start, Vector3 end)
+        {
+            return Quaternion.RotateTowards(
+                Quaternion.Euler(end),    // current orientation
+                Quaternion.Euler(start),  // target orientation
+                90f        // max degrees to move
+            );
         }
 
         public void RotateInstant(Direction direction)
@@ -71,6 +84,27 @@ namespace Construction.Nodes
             }
             
             _node.transform.localRotation = Quaternion.Euler(end);
+        }
+        
+        private async UniTaskVoid NewRunRotation(Quaternion start,  Quaternion end, CancellationTokenSource ctx)
+        {
+         
+            // take the shortest path
+            if (Quaternion.Dot(start, end) < 0f)
+                end = new Quaternion(-end.x, -end.y, -end.z, -end.w);
+            
+            float t = 0;
+
+            while (t < _rotationTime)
+            {
+                float ease = _ease(0, 1, t / _rotationTime); 
+                _node.transform.localRotation = Quaternion.Slerp(start, end, ease);
+                
+                t += Time.deltaTime;
+                await UniTask.Yield(ctx.Token);
+            }
+            
+            _node.transform.localRotation = end;
         }
     }
 }

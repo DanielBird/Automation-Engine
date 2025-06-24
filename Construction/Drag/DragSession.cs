@@ -134,7 +134,7 @@ namespace Construction.Drag
         {
             foreach (KeyValuePair<Vector3Int,TempNode> pair in spawned)
             {
-                pair.Value.Node.Rotate(_settings.useLShapedPaths ? _cellSelection.DirectionFromHit(pair.Key, _state.CurrentDirection) : _state.CurrentDirection, false);
+                pair.Value.Node.RotateInstant(_settings.useLShapedPaths ? _cellSelection.DirectionFromHit(pair.Key, _state.CurrentDirection) : _state.CurrentDirection, false);
             }
         }
 
@@ -155,16 +155,13 @@ namespace Construction.Drag
 
         private void SetCorner(GameObject initialObject, Dictionary<Vector3Int, TempNode> spawned)
         {
-            if(_cellSelection.Corner == Corner.None) return;
             if(_cellSelection.CornerCell == _cornerCell && _cellSelection.Corner == _corner) return;
-            _corner = _cellSelection.Corner;
             
-            // Reset the old corner cell
-            if (!_oldHits.Contains(_cornerCell) && spawned.TryGetValue(_cornerCell, out TempNode value))
-            {
-                RemovePrefab(spawned, value.Prefab, _cornerCell);
-                PlacePrefab(initialObject, _settings.standardBeltPrefab, spawned, _cornerCell);
-            }
+            ResetOldCorners(initialObject, spawned);
+            
+            if(_cellSelection.Corner == Corner.None) return;
+            
+            _corner = _cellSelection.Corner;
             
             // Set the new corner cell
             _cornerCell = _cellSelection.CornerCell;
@@ -174,7 +171,17 @@ namespace Construction.Drag
             GameObject newPrefab = _cellSelection.Corner == Corner.Right ? _settings.rightBeltPrefab : _settings.leftBeltPrefab;
             PlacePrefab(initialObject, newPrefab, spawned, _cornerCell);
         }
-        
+
+        private void ResetOldCorners(GameObject initialObject, Dictionary<Vector3Int, TempNode> spawned)
+        {
+            // Reset the old corner cell
+            if (!_oldHits.Contains(_cornerCell) && spawned.TryGetValue(_cornerCell, out TempNode value))
+            {
+                RemovePrefab(spawned, value.Prefab, _cornerCell);
+                PlacePrefab(initialObject, _settings.standardBeltPrefab, spawned, _cornerCell);
+            }
+        }
+
         private void UpdateFloorDecalPosition()
         {
             if (!TryGetFloorPosition(out Vector3 position)) return;

@@ -1,12 +1,16 @@
-﻿using System.Threading;
+﻿using System;
+using System.Runtime.CompilerServices;
+using System.Threading;
 using Construction.Drag;
 using Construction.Maps;
 using Construction.Nodes;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
+using Events;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Utilities;
+using Utilities.Events.Types;
 using Grid = Construction.Utilities.Grid;
 
 namespace Construction.Placement
@@ -52,8 +56,11 @@ namespace Construction.Placement
         private Coroutine _drag;
         private DragManager _dragManager;
 
-        private CancellationTokenSource _disableCancellation = new CancellationTokenSource(); 
+        private CancellationTokenSource _disableCancellation = new CancellationTokenSource();
         
+        // EVENTS
+        private EventBinding<UiButtonClick> onButtonClick; 
+
         private void Awake()
         {
             _map = GetComponent(typeof(IMap)) as IMap;
@@ -92,8 +99,10 @@ namespace Construction.Placement
             settings.cancel.action.performed += CancelPlacement; 
             
             floorDecal.SetActive(false);
+            
+            RegisterEvents();
         }
-
+        
         private void OnDisable()
         {
             settings.place.action.performed -= ConfirmPlacement;
@@ -103,14 +112,33 @@ namespace Construction.Placement
             _disableCancellation.Cancel();
             _disableCancellation.Dispose();
             _dragManager.Disable();
+            
+            UnRegisterEvents();
+        }
+
+        private void RegisterEvents()
+        {
+            onButtonClick = new EventBinding<UiButtonClick>(RequestPlacement);
+            EventBus<UiButtonClick>.Register(onButtonClick);
+        }
+
+        private void UnRegisterEvents()
+        {
+            EventBus<UiButtonClick>.Deregister(onButtonClick);
+        }
+
+        private void RequestPlacement(UiButtonClick e)
+        {
+            Debug.Log("Request Placement"); 
+            
+            if (e.ButtonType == UiButtonType.Belt)
+            {
+                SpawnOccupant();
+            }
         }
 
         private void Update()
         {
-            //TESTING ONLY
-            if (Input.GetKeyDown(KeyCode.Space)) SpawnOccupant();
-            // END TEST
-                
             if (!state.IsRunning) return;
             
             if(!TryGetGridPosition(out Vector3Int gridPos)) return;
@@ -232,5 +260,7 @@ namespace Construction.Placement
         }
         
         private void SetFloorDecalPos(Vector3 pos) => floorDecal.transform.position = pos;
+        
+
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using InputSettings = ScriptableObjects.InputSettings;
 
 namespace Construction.Placement
 {
