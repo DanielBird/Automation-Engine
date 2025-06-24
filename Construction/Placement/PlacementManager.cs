@@ -7,10 +7,10 @@ using Construction.Nodes;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
 using Events;
+using Events.Types;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Utilities;
-using Utilities.Events.Types;
 using Grid = Construction.Utilities.Grid;
 
 namespace Construction.Placement
@@ -129,8 +129,6 @@ namespace Construction.Placement
 
         private void RequestPlacement(UiButtonClick e)
         {
-            Debug.Log("Request Placement"); 
-            
             if (e.ButtonType == UiButtonType.Belt)
             {
                 SpawnOccupant();

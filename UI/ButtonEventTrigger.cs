@@ -1,6 +1,6 @@
-﻿using UnityEngine;
-using Utilities.Events;
-using Utilities.Events.Types;
+﻿using Events;
+using Events.Types;
+using UnityEngine;
 
 namespace UI
 {
@@ -10,7 +10,6 @@ namespace UI
         
         public void TriggerEvent()
         {
-            Debug.Log("Raise Ui Event");
             EventBus<UiButtonClick>.Raise(new UiButtonClick(buttonType));
         }
     }

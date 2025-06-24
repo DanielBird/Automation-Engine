@@ -1,8 +1,8 @@
-﻿namespace Utilities.Events.Types
+﻿namespace Events.Types
 {
     public enum UiButtonType {None, Belt, Producer }
     
-    public class UiButtonClick: IEvent, global::Events.IEvent
+    public class UiButtonClick: IEvent
     {
         public UiButtonType ButtonType { get; private set; }
         
