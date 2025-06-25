@@ -8,7 +8,7 @@ This project is currently a work in progress.
 
 # To get started using the template
 
-4 monobehaviour scripts are required in the scene: 
+5 monobehaviour scripts are required in the scene: 
 
 | Monobehavior            | Function  
 |----------|----------|
@@ -16,6 +16,7 @@ This project is currently a work in progress.
 | Node Map    | mainatins a "Node" grid , recoridng cell occupancy of by Nodes | 
 | Placement Manager    | coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations |
 | Placement Visuals    | manages visual aspects of game object placement | 
+| Belt Manager    | coordinates the belt graph, triggering widget movement | 
 
 The Placement Manager class requires a scriptable object - PlacementSettings - that holds data about placement e.g. prefabs, input action references, the grid cell size.   
 
