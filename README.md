@@ -23,7 +23,11 @@ The Placement Manager class requires a scriptable object - PlacementSettings - t
 # Key Components 
 
 Nodes 
+
+
 ├── Belts
+
+
 │   ├── Producers
 
 Widgets
