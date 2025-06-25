@@ -8,12 +8,19 @@ This project is currently a work in progress.
 
 # To get started using the template
 
+There are 3 core components
+
+- **Node**
+  - *Belt*
+    - Producer  
+
+
 5 monobehaviour scripts are required in the scene: 
 
 | Monobehavior            | Function  
 |----------|----------|
 | Map    | maintains a "base" grid, recording cell occupancy |
-| Node Map    | mainatins a "Node" grid , recoridng cell occupancy of by Nodes | 
+| Node Map    | mainatins a "Node" grid , recoridng cell occupancy by Nodes | 
 | Placement Manager    | coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations |
 | Placement Visuals    | manages visual aspects of game object placement | 
 | Belt Manager    | coordinates the belt graph, triggering widget movement | 
