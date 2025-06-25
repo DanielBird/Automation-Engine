@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using Construction.Drag;
 using Construction.Maps;
 using Construction.Nodes;
+using Construction.Placement.Factory;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
 using Events;
@@ -39,6 +41,8 @@ namespace Construction.Placement
         private INodeMap _nodeMap;
         public NeighbourManager neighbourManager; 
         private PlacementCoordinator _placementCoordinator;
+        
+        private Dictionary<UiButtonType, IPlaceableFactory> _factory;
         
         [Header("Settings")]
         [SerializeField] private PlacementSettings settings;
@@ -93,10 +97,12 @@ namespace Construction.Placement
                 visuals,
                 floorDecal
             );
-            
-            settings.place.action.performed += ConfirmPlacement;
-            settings.rotate.action.performed += Rotate;
-            settings.cancel.action.performed += CancelPlacement; 
+
+            _factory = new Dictionary<UiButtonType, IPlaceableFactory>
+            {
+                { UiButtonType.Belt, new BeltFactory(this, settings)},
+                { UiButtonType.Producer, new ProducerFactory(this, settings)}
+            };
             
             floorDecal.SetActive(false);
             
@@ -105,10 +111,6 @@ namespace Construction.Placement
         
         private void OnDisable()
         {
-            settings.place.action.performed -= ConfirmPlacement;
-            settings.rotate.action.performed -= Rotate;
-            settings.cancel.action.performed -= CancelPlacement; 
-            
             _disableCancellation.Cancel();
             _disableCancellation.Dispose();
             _dragManager.Disable();
@@ -117,21 +119,30 @@ namespace Construction.Placement
         }
 
         private void RegisterEvents()
-        {
+        {            
+            settings.place.action.performed += ConfirmPlacement;
+            settings.rotate.action.performed += Rotate;
+            settings.cancel.action.performed += CancelPlacement; 
+            
             onButtonClick = new EventBinding<UiButtonClick>(RequestPlacement);
             EventBus<UiButtonClick>.Register(onButtonClick);
         }
 
         private void UnRegisterEvents()
         {
+            settings.place.action.performed -= ConfirmPlacement;
+            settings.rotate.action.performed -= Rotate;
+            settings.cancel.action.performed -= CancelPlacement; 
+            
             EventBus<UiButtonClick>.Deregister(onButtonClick);
         }
 
         private void RequestPlacement(UiButtonClick e)
         {
-            if (e.ButtonType == UiButtonType.Belt)
+            if (_factory.TryGetValue(e.ButtonType, out var factory))
             {
-                SpawnOccupant();
+                if(!factory.Create(out GameObject prefab, out Vector3Int gridPos)) return;
+                SpawnOccupant(gridPos, prefab);
             }
         }
 
@@ -165,16 +176,11 @@ namespace Construction.Placement
             t.position = Vector3.Lerp(t.position, targetPos, settings.moveSpeed * Time.deltaTime);
         }
         
-        public void SpawnOccupant()
+        private void SpawnOccupant(Vector3Int gridPos, GameObject occupant)
         {
-            if(!TryGetGridPosition(out Vector3Int gridPos)) return;
-            
             Vector2Int empty = _map.NearestVacantCell(new Vector2Int(gridPos.x, gridPos.z));
             gridPos = new Vector3Int(empty.x, 0, empty.y);
-            
-            GameObject occupant  = SimplePool.Spawn(settings.standardBeltPrefab, gridPos, Quaternion.identity, transform);
-            occupant.name = settings.standardBeltPrefab.name + "_" + gridPos.x + "_" + gridPos.z; 
-            
+
             state.SetGameObject(occupant);
 
             if (state.PlaceableFound)
@@ -214,7 +220,7 @@ namespace Construction.Placement
             }
         }
         
-        private bool TryGetGridPosition(out Vector3Int gridPosition)
+        public bool TryGetGridPosition(out Vector3Int gridPosition)
         {
             gridPosition = new Vector3Int(); 
             if (!TryGetPosition(out Vector3 position)) return false;
@@ -258,7 +264,5 @@ namespace Construction.Placement
         }
         
         private void SetFloorDecalPos(Vector3 pos) => floorDecal.transform.position = pos;
-        
-
     }
 }

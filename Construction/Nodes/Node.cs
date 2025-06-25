@@ -5,6 +5,7 @@ using Construction.Interfaces;
 using Construction.Maps;
 using Construction.Placement;
 using Construction.Visuals;
+using Construction.Widgets;
 using Events;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -41,15 +42,20 @@ namespace Construction.Nodes
         
         private EasingFunctions.Function _ease; 
         public EasingFunctions.Ease rotationEasing = EasingFunctions.Ease.EaseOutSine;
-        [ShowInInspector] public Vector3Int Position { get; set; }
-        [ShowInInspector] public Direction Direction { get; private set; }
-        [ShowInInspector] public List<Node> TargetNodes { get; private set; } 
-        [ShowInInspector] public NodeVisuals Visuals { get; private set; }
-        [ShowInInspector] public bool Initialised { get; private set; }    
-        public INodeMap NodeMap { get; private set; }
+        [field: SerializeField] public Vector3Int Position { get; set; }
+
+        [ShowInInspector]
+        public Direction Direction
+        {
+            get => _direction;
+            set => _direction = value;
+        }
+        [field: SerializeField] public List<Node> TargetNodes { get; private set; } 
+        [field: SerializeField] public NodeVisuals Visuals { get; private set; }
+        [field: SerializeField] public bool Initialised { get; private set; }    
+        public INodeMap NodeMap { get; protected set; }
         private NodeRotation _nodeRotation;
         private NodeConnections _nodeConnections;
-        
         
         private void Awake()
         {
@@ -63,23 +69,29 @@ namespace Construction.Nodes
             _nodeRotation = new NodeRotation(this, rotationTime, _ease);
             _nodeConnections = new NodeConnections(this);
         }
+        
         public virtual void Place(Vector3Int position, INodeMap map)
         {
             NodeMap = map; 
             Position = position;
         }
         
-        public void Initialise(INodeMap map, NodeType nodeType, Direction direction, bool updateRotation = true)
+        public virtual void Initialise(NodeConfiguration config)
         {
-            NodeMap = map; 
+            NodeMap = config.NodeMap; 
             NodeMap.RegisterNode(this);
-            _nodeConnections.UpdateMap(map);
+            _nodeConnections.UpdateMap(NodeMap);
             
-            Direction = direction; 
-            if(updateRotation) RotateInstant(direction, false);
-            NodeType = nodeType;
+            if (config.UpdateRotation)
+            {
+                Direction = config.Direction;
+                RotateInstant(config.Direction, false);
+            }
+            NodeType = config.NodeType;
             UpdateTargetNode();
             Initialised = true;
+            
+            EventBus<NodePlaced>.Raise(new NodePlaced(this));
         }
 
         public virtual void FailedPlacement()
@@ -110,6 +122,15 @@ namespace Construction.Nodes
             if(updateTarget) UpdateTargetNode();
         }
         
+        public Vector2Int GetSize() => Direction switch
+        {
+            Direction.North => new Vector2Int(Width, Height),
+            Direction.East => new Vector2Int(Height, Width),
+            Direction.South => new Vector2Int(Width, Height),
+            Direction.West => new Vector2Int(Height, Width),
+            _ => new Vector2Int(Width, Height),
+        };
+
         public void UpdateTargetNode()
         {
             // DURING A DRAG
@@ -122,16 +143,18 @@ namespace Construction.Nodes
             if (TryGetBackwardNode(out Node backwardNode))
                 backwardNode.SetTargetNode(this);
         }
-        
-        public Vector2Int GetSize() => Direction switch
+
+        public bool HasForwardNode(out Node forwardNode)
         {
-            Direction.North => new Vector2Int(Width, Height),
-            Direction.East => new Vector2Int(Height, Width),
-            Direction.South => new Vector2Int(Width, Height),
-            Direction.West => new Vector2Int(Height, Width),
-            _ => new Vector2Int(Width, Height),
-        };
-        
+            if (TryGetForwardNode(out forwardNode))
+            {
+                SetTargetNode(forwardNode);
+                return true; 
+            }
+            forwardNode = null;
+            return false;
+        }
+
         public void SetTargetNode(Node node)
         {
             if (TargetNodes.Count == 0) TargetNodes.Add(node);
@@ -152,6 +175,6 @@ namespace Construction.Nodes
         public Direction InputDirection() => _nodeConnections.InputDirection(); 
 
         // The direction of the cell that should be checked for a connecting input node
-        public Direction InputPosition() => _nodeConnections.InputPosition(); 
+        public Direction InputPosition() => _nodeConnections.InputPosition();
     }
 }

@@ -39,7 +39,8 @@ namespace Construction.Placement
             // If all Nodes are Draggable, then no placeable that gets here will be a Node
             if (placeable is Node node)
             {
-                node.Initialise(_nodeMap, NodeType.Straight, Direction.North, false);
+                NodeConfiguration config = NodeConfiguration.Create(_nodeMap, NodeType.Straight, Direction.North, false); 
+                node.Initialise(config);
                 node.Visuals.HideArrows();
             }
 

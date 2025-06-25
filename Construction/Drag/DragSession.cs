@@ -22,7 +22,7 @@ namespace Construction.Drag
         private readonly GameObject _floorDecal;
         private readonly PlacementState _state;
 
-        private CellSelection _cellSelection; 
+        private CellSelection _cellSelection = new(); 
         private List<Vector3Int> _selectedCells = new();
         private List<Vector3Int> _newHits = new();
         private List<Vector3Int> _oldHits = new();

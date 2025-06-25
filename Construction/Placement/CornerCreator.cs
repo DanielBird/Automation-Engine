@@ -103,7 +103,9 @@ namespace Construction.Placement
             if (occupant is Node node)
             {
                 Direction d = target != Target.Forward ? newDirection : oldDirection;
-                node.Initialise(_nodeMap, nodeType, d);
+                
+                NodeConfiguration config = NodeConfiguration.Create(_nodeMap, nodeType, d); 
+                node.Initialise(config);
                 node.Visuals.HideArrows();
             }
         }

@@ -104,7 +104,9 @@ namespace Construction.Drag
             {
                 node.Place(position, _nodeMap);
                 node.Visuals.HideArrows();
-                node.Initialise(_nodeMap, NodeType.Straight, node.Direction, false);
+
+                NodeConfiguration config = NodeConfiguration.Create(_nodeMap, NodeType.Straight, node.Direction, false); 
+                node.Initialise(config);
 
                 if (!manageNeighbours) return;
                 if (_neighbourManager.UpdateToCorner(node, position, dragPos))

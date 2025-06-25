@@ -31,7 +31,6 @@ namespace Construction.Nodes
 
         public void Rotate(Direction direction)
         {
-            Debug.Log("Rotate");
             _node.SetDirection(direction);
             Vector3 currentRotation = _node.transform.localRotation.eulerAngles;
             Vector3 targetRotation = DirectionUtils.RotationFromDirection(direction);
@@ -63,8 +62,12 @@ namespace Construction.Nodes
 
         private void DisposeToken()
         {
-            _cts?.Cancel();
-            _cts?.Dispose();
+            if (_cts != null)
+            {
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
+            }
         }
         
         private async UniTaskVoid RunRotation(Vector3 start,  Vector3 end, CancellationTokenSource ctx)
@@ -88,8 +91,6 @@ namespace Construction.Nodes
         
         private async UniTaskVoid NewRunRotation(Quaternion start,  Quaternion end, CancellationTokenSource ctx)
         {
-         
-            // take the shortest path
             if (Quaternion.Dot(start, end) < 0f)
                 end = new Quaternion(-end.x, -end.y, -end.z, -end.w);
             

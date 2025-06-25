@@ -29,5 +29,6 @@ namespace Construction.Placement
         public GameObject standardBeltPrefab;
         public GameObject leftBeltPrefab;
         public GameObject rightBeltPrefab;
+        public GameObject producerPrefab;
     }
 } 
