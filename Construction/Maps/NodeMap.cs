@@ -97,13 +97,14 @@ namespace Construction.Maps
 
         public bool GetNeighbourAt(Vector2Int position, out Node node)
         {
-            node = null; 
-            
-            if (!InBounds(position.x, position.y)) return false;
-            if (_nodeGrid[position.x, position.y] == null) return false;
-            
-            node = _nodeGrid[position.x, position.y];
-            return true; 
+            if (InBounds(position.x, position.y) && _nodeGrid[position.x, position.y] is {} foundNode)
+            {
+                node = foundNode;
+                return true;
+            }
+    
+            node = null;
+            return false;
         }
         
         private bool InBounds(int x, int z)

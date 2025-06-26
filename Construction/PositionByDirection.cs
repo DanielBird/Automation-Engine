@@ -7,32 +7,23 @@ namespace Construction
 {
     public static class PositionByDirection
     {
-        public static Vector2Int Get(int x, int z, Direction direction)
+        public static Vector2Int Get(int x, int z, Direction direction) => direction switch
         {
-            return direction switch
-            {
-                Direction.North => new Vector2Int(x, z + 1),
-                Direction.East => new Vector2Int(x + 1, z),
-                Direction.South => new Vector2Int(x, z - 1),
-                Direction.West => new Vector2Int(x - 1, z),
-                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-            };
-        }
+            Direction.North => new Vector2Int(x, z + 1),
+            Direction.East => new Vector2Int(x + 1, z),
+            Direction.South => new Vector2Int(x, z - 1),
+            Direction.West => new Vector2Int(x - 1, z),
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
         
-        public static Vector3Int Get(Vector3Int basePosition, Direction direction)
+        public static Vector3Int Get(Vector3Int basePosition, Direction direction) => direction switch
         {
-            int x = basePosition.x;
-            int z = basePosition.z;
-            
-            return direction switch
-            {
-                Direction.North => new Vector3Int(x, 0, z + 1),
-                Direction.East => new Vector3Int(x + 1, 0, z),
-                Direction.South => new Vector3Int(x, 0, z - 1),
-                Direction.West => new Vector3Int(x - 1, 0, z),
-                _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
-            };
-        }
+            Direction.North => new Vector3Int(basePosition.x, 0, basePosition.z + 1),
+            Direction.East  => new Vector3Int(basePosition.x + 1, 0, basePosition.z),
+            Direction.South => new Vector3Int(basePosition.x, 0, basePosition.z - 1),
+            Direction.West  => new Vector3Int(basePosition.x - 1, 0, basePosition.z),
+            _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
+        };
         
         public static Vector2Int GetForwardPosition(Vector3Int basePosition, Direction currentDirection)
         {
