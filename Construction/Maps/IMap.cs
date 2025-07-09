@@ -17,7 +17,5 @@ namespace Construction.Maps
         public bool VacantCell(int x, int z);
 
         public Vector2Int NearestVacantCell(Vector2Int start);
-
-        public IEnumerable<Vector2Int> GetNeighbours(Vector2Int start);
     }
 }

@@ -19,11 +19,23 @@ namespace Construction.Maps
         
         [ShowInInspector] private CellStatus[,] _grid;
 
+        private int[,] _mark;
+        private int _generation; 
+        private Queue<Vector2Int> _queue;
+        
+        private static readonly Vector2Int[] Directions = {
+            new Vector2Int(-1,  0),  // left
+            new Vector2Int( 1,  0),  // right
+            new Vector2Int( 0, -1),  // down
+            new Vector2Int( 0,  1)   // up
+        };
+
         private void Awake()
         {
             MapWidth = mapWidth;
             MapHeight = mapHeight;
             _grid = new CellStatus[MapWidth, MapHeight];
+            _mark = new int[MapWidth, MapHeight];
         }
         
         public bool RegisterOccupant(int x, int z, int width, int height)
@@ -79,44 +91,37 @@ namespace Construction.Maps
         {
             if (VacantCell(start.x, start.y)) return start;
 
-            bool[,] visited = new bool[MapWidth, MapHeight];
-
-            Queue<Vector2Int> queue = new Queue<Vector2Int>(); 
+            _generation++; 
+            _mark[start.x, start.y] = _generation;
             
-            queue.Enqueue(start);
-            visited[start.x, start.y] = true;
+            _queue.Clear();
+            _queue.Enqueue(start);
 
-            while (queue.Count > 0)
+            while (_queue.Count > 0)
             {
-                Vector2Int current = queue.Dequeue();
+                Vector2Int current = _queue.Dequeue();
 
-                foreach (Vector2Int v in GetNeighbours(current))
+                for (int i = 0; i < Directions.Length; i++)
                 {
-                    int nx = v.x;
-                    int ny = v.y;
-                    if (!visited[nx, ny])
-                    {
-                        visited[nx, ny] = true;
-                        if (_grid[nx, ny] == CellStatus.Empty)
-                            return v; 
+                    int nx = current.x + Directions[i].x;
+                    int ny = current.y + Directions[i].y;
+                    if (nx < 0 || nx >= MapWidth || ny < 0 || ny >= MapHeight)
+                        continue;
+
+                    if (_mark[nx, ny] == _generation) 
+                        continue;
+                    
+                    _mark[nx, ny] = _generation;
                         
-                        queue.Enqueue(v);
-                    }
+                    if (_grid[nx, ny] == CellStatus.Empty)
+                        return new Vector2Int(nx, ny);
+
+                    _queue.Enqueue(new Vector2Int(nx, ny));
                 }
             }
-
+            
+            // No vacant cell found
             return new Vector2Int(-1, -1); 
-        }
-
-        public IEnumerable<Vector2Int> GetNeighbours(Vector2Int start)
-        {
-            int x = start.x;
-            int y = start.y;
-
-            if (x > 0) yield return new Vector2Int(x - 1, y);
-            if (x < mapWidth - 1) yield return new Vector2Int(x + 1, y);
-            if (y > 0) yield return new Vector2Int(x, y - 1);
-            if (y < mapHeight - 1) yield return new Vector2Int(x, y + 1); 
         }
 
         private bool InBounds(int x, int z)
