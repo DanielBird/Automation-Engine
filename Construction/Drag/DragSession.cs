@@ -54,15 +54,20 @@ namespace Construction.Drag
             _disableCancellation.Dispose();
         }
         
+        /// <summary>
+        /// Handles the drag operation for placing objects in the grid
+        /// Currently does not support placement of rectangular game objects
+        /// </summary>
         public async UniTask RunDrag(GameObject initialObject, Node startingNode, Vector3Int start, Dictionary<Vector3Int, TempNode> spawned)
         {
-            Direction direction = _state.CurrentDirection; 
+            Direction direction = _state.CurrentDirection;
+            int stepSize = startingNode.Width; 
 
             await UniTask.WaitForSeconds(_settings.inputSettings.blockDirectionInputDuration, cancellationToken: _disableCancellation.Token);
 
             while (_settings.place.action.IsPressed())
             {
-                _cellSelection = SelectCells(start);
+                _cellSelection = SelectCells(start, stepSize);
                 _selectedCells = _cellSelection.GetCells(_settings); 
 
                 if (_state.CurrentDirection != direction)
@@ -88,9 +93,9 @@ namespace Construction.Drag
             _cellSelection.Clear();
         }
 
-        private CellSelection SelectCells(Vector3Int start)
+        private CellSelection SelectCells(Vector3Int start, int stepSize)
         {
-            CellSelection selection = Utilities.Grid.SelectCells(start, _mainCamera, _settings.floorLayer, _cellHits, _map, _settings);
+            CellSelection selection = Utilities.Grid.SelectCells(start, _mainCamera, _settings.floorLayer, _cellHits, _map, _settings, stepSize);
             _state.CurrentAxis = selection.Axis;
             _state.CurrentDirection = selection.Direction;
             return selection;

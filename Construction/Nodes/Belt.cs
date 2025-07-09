@@ -36,7 +36,6 @@ namespace Construction.Nodes
             }
             
             Occupant = widget;
-            Debug.Log("Recieve " + widget.name);
         }
 
         public bool ReadyToShip(out Belt target, out Widget widget)

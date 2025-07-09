@@ -68,7 +68,6 @@ namespace Construction.Widgets
             }
             
             if (_moveCoroutine != null) StopCoroutine(_moveCoroutine);
-            Debug.Log($"Target is {next.widgetTarget} on {next.name}");
             _moveCoroutine = _movementStrategies[moveType].Move(next.widgetTarget, standardMoveSpeed, current.Direction);
         }
         

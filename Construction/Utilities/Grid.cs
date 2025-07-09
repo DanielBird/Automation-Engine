@@ -19,7 +19,7 @@ namespace Construction.Utilities
             return new Vector3Int(gridX, 0, gridZ);
         }
 
-        public static CellSelection SelectCells(Vector3Int start, UnityEngine.Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings)
+        public static CellSelection SelectCells(Vector3Int start, UnityEngine.Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, int stepSize = 1)
         {
             CellSelection selection = new CellSelection();
             
@@ -29,9 +29,9 @@ namespace Construction.Utilities
             DetermineSelectionAxis(start, initialGridPosition, selection);
             
             if(settings.useLShapedPaths) 
-                SelectCellsAsLShapedPath(start, initialGridPosition, selection, map);
+                SelectCellsAsLShapedPath(start, initialGridPosition, selection, map, stepSize);
             else
-                SelectCellsInRange(start, initialGridPosition, selection, map);
+                SelectCellsInRange(start, initialGridPosition, selection, map, stepSize);
 
             return selection;
         }
@@ -81,7 +81,7 @@ namespace Construction.Utilities
             selection.SetAxis(deltaX <= deltaZ ? Axis.XAxis : Axis.ZAxis);
         }
         
-        private static void SelectCellsInRange(Vector3Int start, Vector3Int end, CellSelection selection, IMap map)
+        private static void SelectCellsInRange(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, int stepSize)
         {
             int min, max, fixedCoord;
             bool ascending;
@@ -105,32 +105,22 @@ namespace Construction.Utilities
             }
     
             selection.SetDirection(direction);
-            AddCellsInRange(fixedCoord, ascending ? min : max, ascending ? max : min, ascending, selection, map);
+            AddCellsInRange(fixedCoord, ascending ? min : max, ascending ? max : min, ascending, selection, map, stepSize);
         }
 
-        private static void AddCellsInRange(int fixedCoord, int start, int end, bool ascending, CellSelection selection, IMap map)
+        private static void AddCellsInRange(int fixedCoord, int start, int end, bool ascending, CellSelection selection, IMap map, int stepSize)
         {
-            if (ascending)
+            if(stepSize == 0) stepSize = 1;
+            
+            for (int i = start; ascending ? i <= end : i >= end; i += (ascending ? stepSize : -stepSize))
             {
-                for (int i = start; i <= end; i++)
-                {
-                    if (!IsValidCell(fixedCoord, i, selection.Axis, map)) return;
-
-                    Vector3Int position = CreateCellPosition(fixedCoord, i, selection.Axis);
-                    selection.AddCell(position);
-                }
-            }
-            else
-            {
-                for (int i = start; i >= end; i--)
-                {
-                    if (!IsValidCell(fixedCoord, i, selection.Axis, map)) return;
-                    selection.AddCell(CreateCellPosition(fixedCoord, i, selection.Axis));
-                }
+                if (!IsValidCell(fixedCoord, i, selection.Axis, map)) return;
+                Vector3Int position = CreateCellPosition(fixedCoord, i, selection.Axis);
+                selection.AddCell(position);
             }
         }
         
-        private static void SelectCellsAsLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, Direction defaultDirection = Direction.North, bool horizontalFirst = true)
+        private static void SelectCellsAsLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, int stepSize, Direction defaultDirection = Direction.North, bool horizontalFirst = true)
         {
             if (start == end)
             {
@@ -140,11 +130,11 @@ namespace Construction.Utilities
 
             if (IsStraightLine(start, end))
             {
-                AddStraightLine(start, end, selection, map);
+                AddStraightLine(start, end, selection, map, stepSize);
                 return;
             }
             
-            AddLShapedPath(start, end, selection, map, horizontalFirst);
+            AddLShapedPath(start, end, selection, map, horizontalFirst, stepSize);
         }
 
         private static bool IsStraightLine(Vector3Int a, Vector3Int b)
@@ -152,55 +142,80 @@ namespace Construction.Utilities
             return a.x == b.x || a.z == b.z;
         }
         
-        private static void AddStraightLine(Vector3Int start, Vector3Int end, CellSelection selection, IMap map)
+        private static void AddStraightLine(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, int stepSize)
         {
             if (start.x == end.x)
-                AddLineAlongAxis(start, end, Axis.ZAxis, selection, map);
+                AddLineAlongAxis(start, end, Axis.ZAxis, selection, map, stepSize);
             else
-                AddLineAlongAxis(start, end, Axis.XAxis, selection, map);
+                AddLineAlongAxis(start, end, Axis.XAxis, selection, map, stepSize);
             
             selection.Corner = Corner.None; 
         }
         
-        private static void AddLineAlongAxis(Vector3Int from, Vector3Int to, Axis axis, CellSelection selection, IMap map)
+        private static void AddLineAlongAxis(Vector3Int from, Vector3Int to, Axis axis, CellSelection selection, IMap map, int stepSize)
         {
             bool ascending = axis == Axis.XAxis ? from.x < to.x : from.z < to.z;
-            int step = ascending ? 1 : -1;
+            
+            if(stepSize == 0) stepSize = 1;
+            int step = ascending ? stepSize : -stepSize;
+            
             Direction direction = GetDirectionFromAxis(ascending, axis);
 
             if (axis == Axis.XAxis)
             {
-                for (int x = from.x; x != to.x; x += step)
+                for (int x = from.x; ascending ? x < to.x : x > to.x; x += step)
                     AddCell(new Vector3Int(x, 0, from.z), direction, selection, map);
             }
             else
             {
-                for (int z = from.z; z != to.z; z += step)
+                for (int z = from.z; ascending ? z < to.z : z > to.z; z += step)
                     AddCell(new Vector3Int(from.x, 0, z), direction, selection, map);
             }
 
             AddCell(to, direction, selection, map);
         }
-
-        private static void AddLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, bool horizontalFirst)
+        
+        private static void AddLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, bool horizontalFirst, int stepSize)
         {
             Vector3Int corner;
+            Vector3Int adjustedEnd = SnapToStepGrid(start, end, stepSize);
 
             if (horizontalFirst)
             {
-                AddLineAlongAxis(start, new Vector3Int(end.x, 0, start.z), Axis.XAxis, selection, map);
-                AddLineAlongAxis(new Vector3Int(end.x, 0, start.z), end, Axis.ZAxis, selection, map);
-                corner = new Vector3Int(end.x, 0, start.z);
+                Vector3Int horizontalEnd = new (adjustedEnd.x, 0, start.z);
+                AddLineAlongAxis(start, horizontalEnd, Axis.XAxis, selection, map, stepSize);
+                AddLineAlongAxis(horizontalEnd, adjustedEnd, Axis.ZAxis, selection, map, stepSize);
+                corner = horizontalEnd;
             }
             else
             {
-                AddLineAlongAxis(start, new Vector3Int(start.x, 0, end.z), Axis.ZAxis, selection, map);
-                AddLineAlongAxis(new Vector3Int(start.x, 0, end.z), end, Axis.XAxis, selection, map);
-                corner = new Vector3Int(start.x, 0, end.z);
+                Vector3Int verticalEnd = new (start.x, 0, adjustedEnd.z);
+                AddLineAlongAxis(start, verticalEnd, Axis.ZAxis, selection, map, stepSize);
+                AddLineAlongAxis(verticalEnd, adjustedEnd, Axis.XAxis, selection, map, stepSize);
+                corner = verticalEnd;
             }
 
-            selection.Corner = IsLeftTurn(start, corner, end) ? Corner.Left : Corner.Right; 
+            selection.Corner = IsLeftTurn(start, corner, adjustedEnd) ? Corner.Left : Corner.Right; 
             selection.CornerCell = corner;
+        }
+        
+        private static Vector3Int SnapToStepGrid(Vector3Int start, Vector3Int end, int stepSize)
+        {
+            if (stepSize <= 1) return end;
+    
+            // Calculate the number of steps from start to end for each axis
+            int deltaX = end.x - start.x;
+            int deltaZ = end.z - start.z;
+    
+            // Snap to the nearest step-aligned position
+            int stepsX = Mathf.RoundToInt((float)deltaX / stepSize);
+            int stepsZ = Mathf.RoundToInt((float)deltaZ / stepSize);
+    
+            return new Vector3Int(
+                start.x + stepsX * stepSize,
+                end.y,
+                start.z + stepsZ * stepSize
+            );
         }
         
         private static bool IsLeftTurn(Vector3Int start, Vector3Int corner, Vector3Int end)
@@ -209,10 +224,10 @@ namespace Construction.Utilities
             Vector3Int firstLeg = corner - start;
             Vector3Int secondLeg = end - corner;
     
-            // Calculate cross product in 2D (ignoring y-axis)
+            // Calculate cross-product in 2D (ignoring y-axis)
             int crossProduct = (firstLeg.x * secondLeg.z) - (firstLeg.z * secondLeg.x);
     
-            // If cross product is positive, it's a left turn, else right turn
+            // If cross-product is positive, it's a left turn, else right turn
             return crossProduct > 0;
         }
         
@@ -249,5 +264,6 @@ namespace Construction.Utilities
                 ? new Vector3Int(fixedCoord, 0, variableCoord)
                 : new Vector3Int(variableCoord, 0, fixedCoord);
         }
+        
     }
 }
