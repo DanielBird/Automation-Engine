@@ -21,14 +21,14 @@ namespace Construction.Nodes
         public bool TryGetForwardNode(out Node forwardNode)
         {
             forwardNode = null; 
-            Vector2Int forwardPosition = PositionByDirection.GetForwardPosition(_node.Position, _node.Direction);
+            Vector2Int forwardPosition = PositionByDirection.GetForwardPosition(_node.Position, _node.Direction, _node.Width);
             return _nodeMapSet && _nodeMap.GetNeighbourAt(forwardPosition, out forwardNode);
         }
         
         public bool TryGetBackwardNode(out Node backwardNode)
         {
             backwardNode = null;
-            Vector2Int backwardPosition = PositionByDirection.GetForwardPosition(_node.Position, InputPosition());
+            Vector2Int backwardPosition = PositionByDirection.GetForwardPosition(_node.Position, InputPosition(), _node.Width);
             if (_nodeMap == null) return false;
             return _nodeMap.GetNeighbourAt(backwardPosition, out backwardNode);
         }
@@ -36,7 +36,7 @@ namespace Construction.Nodes
         public bool HasNeighbour(Direction direction)
         {
             Vector3Int pos = _node.Position; 
-            Vector2Int position = PositionByDirection.Get(pos.x, pos.z, direction);
+            Vector2Int position = PositionByDirection.Get(pos.x, pos.z, direction, _node.Width);
             return _nodeMapSet && _nodeMap.GetNeighbourAt(position, out _);
         }
         
