@@ -4,6 +4,7 @@ using System.Linq;
 using Construction.Maps;
 using Construction.Placement;
 using Construction.Visuals;
+using GameState;
 using UnityEngine;
 
 namespace Construction.Drag
@@ -11,11 +12,12 @@ namespace Construction.Drag
     public class DragManagerBuilder
     {
         private PlacementSettings _settings;
+        private InputSettings _inputSettings;
         private IMap _map;
         private PlacementVisuals _visuals;
         private INodeMap _nodeMap;
         private NeighbourManager _neighbourManager;
-        private UnityEngine.Camera _mainCamera;
+        private Camera _mainCamera;
         private GameObject _floorDecal;
         private PlacementState _state;
 
@@ -23,6 +25,12 @@ namespace Construction.Drag
         public DragManagerBuilder WithSettings(PlacementSettings settings)
         {
             _settings = settings;
+            return this;
+        }
+
+        public DragManagerBuilder WithInputSettings(InputSettings inputSettings)
+        {
+            _inputSettings = inputSettings;
             return this;
         }
         
@@ -72,6 +80,7 @@ namespace Construction.Drag
         {
             var missingComponents = new List<string>();
             if (_settings == null) missingComponents.Add("PlacementSettings");
+            if (_inputSettings == null) missingComponents.Add("InputSettings");
             if (_map == null) missingComponents.Add("IMap");
             if (_visuals == null) missingComponents.Add("PlacementVisuals");
             if (_nodeMap == null) missingComponents.Add("NodeMap");
@@ -89,7 +98,7 @@ namespace Construction.Drag
         public DragManager Build()
         {
             ValidateRequiredComponents();
-            return new DragManager(_settings, _map, _visuals, _nodeMap, _neighbourManager, _mainCamera, _floorDecal, _state);
+            return new DragManager(_settings, _inputSettings, _map, _visuals, _nodeMap, _neighbourManager, _mainCamera, _floorDecal, _state);
         }
     }
 }

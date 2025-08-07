@@ -10,8 +10,8 @@ namespace Construction.Placement
     public class PlacementCoordinator
     {
         private readonly List<IPlacementStrategy> _strategies;
-        private readonly GameObject _floorDecal;
         private PlacementState _state;
+        private PlacementVisuals _visuals; 
 
         public PlacementCoordinator(
             DragManager dragManager,
@@ -19,8 +19,7 @@ namespace Construction.Placement
             INodeMap nodeMap,
             NeighbourManager neighbourManager,
             PlacementState state,
-            PlacementVisuals visuals,
-            GameObject floorDecal)
+            PlacementVisuals visuals)
         {
             _strategies = new List<IPlacementStrategy>
             {
@@ -29,18 +28,18 @@ namespace Construction.Placement
             };
 
             _state = state; 
-            _floorDecal = floorDecal;
+            _visuals = visuals;
         }
 
-        public void HandlePlacement(IPlaceable placeable, Vector3Int position)
+        public void HandlePlacement(IPlaceable placeable, Vector3Int gridCoordinate)
         {
             foreach (IPlacementStrategy strategy in _strategies)
             {
                 if (!strategy.CanHandle(placeable)) continue;
                 
                 _state.IsRunning = false;
-                strategy.HandlePlacement(placeable, position);
-                _floorDecal.SetActive(false);
+                strategy.HandlePlacement(placeable, gridCoordinate);
+                _visuals.DeactivateFloorDecal();
                 return;
             }
         }
@@ -52,7 +51,7 @@ namespace Construction.Placement
                 if (!strategy.CanHandle(placeable)) continue;
                 
                 strategy.CancelPlacement(placeable);
-                _floorDecal.SetActive(false);
+                _visuals.DeactivateFloorDecal();
                 return;
             }
         }

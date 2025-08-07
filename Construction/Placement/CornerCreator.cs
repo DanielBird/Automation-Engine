@@ -28,34 +28,33 @@ namespace Construction.Placement
             // Consolidate ReplaceWithCorner and ReplaceNeighbourWithCorner into one method?
         }
         
-        public void ReplaceWithCorner(Node nodeToReplace, Node otherNode, Target target, DragPos dragPosition)
+        public void ReplaceWithCorner(Node toReplace, Node otherNode, Target target, DragPos dragPosition)
         {
-            _nodeMap.DeregisterNode(nodeToReplace);
+            _nodeMap.DeregisterNode(toReplace);
             
-            Vector3Int position = nodeToReplace.Position;
-             
-            Node oldNode = dragPosition == DragPos.Start ? otherNode : nodeToReplace;
-            Node newNode = dragPosition == DragPos.Start ? nodeToReplace : otherNode; 
+            Node oldNode = dragPosition == DragPos.Start ? otherNode : toReplace;
+            Node newNode = dragPosition == DragPos.Start ? toReplace : otherNode; 
             
             Direction oldDirection = oldNode.Direction;
             Direction newDirection = newNode.Direction;
             
-            SimplePool.Despawn(nodeToReplace.gameObject);
+            SimplePool.Despawn(toReplace.gameObject);
             
             GameObject prefab = GetCornerPrefab(oldDirection, newDirection, out NodeType nodeType);
-            SpawnCorner(oldDirection, newDirection, target, prefab, position, nodeType);
+            
+            // The Node to replace with a corner has not yet had its Node.WorldPosition set. So use transform pos instead
+            Vector3 cornerPosition = toReplace.transform.position;
+            SpawnCorner(oldDirection, newDirection, target, prefab, toReplace.GridCoord, cornerPosition, nodeType);
         }
 
-        public void ReplaceNeighbourWithCorner(Node nodeToReplace, Node otherNode, Target target)
+        public void ReplaceNeighbourWithCorner(Node toReplace, Node otherNode, Target target)
         {
-            _nodeMap.DeregisterNode(nodeToReplace);
-            
-            Vector3Int position = nodeToReplace.Position;
-            
-            Direction oldDirection = nodeToReplace.Direction;
+            _nodeMap.DeregisterNode(toReplace);
+
+            Direction oldDirection = toReplace.Direction;
             Direction newDirection = otherNode.Direction; 
             
-            SimplePool.Despawn(nodeToReplace.gameObject);
+            SimplePool.Despawn(toReplace.gameObject);
 
             NodeType nodeType; 
             
@@ -63,7 +62,7 @@ namespace Construction.Placement
                 ? GetCornerPrefab(oldDirection, newDirection, out nodeType)
                 : GetCornerPrefab(newDirection, oldDirection, out nodeType);
             
-            SpawnCorner(oldDirection, newDirection, target, prefab, position, nodeType);
+            SpawnCorner(oldDirection, newDirection, target, prefab, toReplace.GridCoord, toReplace.GridCoord, nodeType);
         }
         
         private GameObject GetCornerPrefab(Direction oldDirection, Direction newDirection, out NodeType nodeType)
@@ -88,7 +87,7 @@ namespace Construction.Placement
             return _settings.standardBeltPrefab; 
         }
         
-        private void SpawnCorner(Direction oldDirection, Direction newDirection, Target target, GameObject prefab, Vector3Int position, NodeType nodeType)
+        private void SpawnCorner(Direction oldDirection, Direction newDirection, Target target, GameObject prefab, Vector3Int gridCoord, Vector3 position, NodeType nodeType)
         {
             GameObject cornerNode = SimplePool.Spawn(prefab, position, Quaternion.identity, _transform);
             cornerNode.name = "Corner Belt_" + position.x + "_" + position.z;
@@ -99,7 +98,7 @@ namespace Construction.Placement
                 return;
             }
             
-            occupant.Place(position, _nodeMap);
+            occupant.Place(gridCoord, _nodeMap);
             if (occupant is Node node)
             {
                 Direction d = target != Target.Forward ? newDirection : oldDirection;

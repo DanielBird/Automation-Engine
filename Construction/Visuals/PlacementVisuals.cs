@@ -1,5 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System;
+using System.Collections;
 using UnityEngine;
 using Utilities;
 
@@ -7,8 +7,10 @@ namespace Construction.Visuals
 {
     public class PlacementVisuals : MonoBehaviour
     {
+        public GameObject floorDecal;
+        
+        [Space]
         public float placementTime = 0.5f;
-        public float removeTime = 0.1f; 
         public Vector3 startingScale = new Vector3(0, 0, 0);
         public Vector3 endScale = new Vector3(1, 1, 1); 
         
@@ -19,9 +21,10 @@ namespace Construction.Visuals
         public EasingFunctions.Ease scaleDownEasingFunction = EasingFunctions.Ease.EaseOutSine;
 
         [Space] public Material floorMaterial;
-        private static readonly int UseGrid = Shader.PropertyToID("_useGrid");
-
-        private Dictionary<GameObject, Coroutine> _despawnRoutines = new Dictionary<GameObject, Coroutine>();  
+        public float lerpAlphaTime = 1f; 
+        
+        private static readonly int GridAlpha = Shader.PropertyToID("_gridAlpha");
+        private Coroutine _alphaRoutine; 
 
         private void Awake()
         {
@@ -34,7 +37,13 @@ namespace Construction.Visuals
                 return;
             }
             
-            floorMaterial.SetInt(UseGrid, 0);
+            floorMaterial.SetFloat(GridAlpha, 0);
+            floorDecal.SetActive(false);
+        }
+
+        private void OnDisable()
+        {
+            StopAllCoroutines();
         }
 
         public void Place(GameObject go)
@@ -60,12 +69,37 @@ namespace Construction.Visuals
 
         public void Show()
         {
-            floorMaterial.SetInt(UseGrid, 1); 
+            if(_alphaRoutine != null) StopCoroutine(_alphaRoutine);
+           _alphaRoutine = StartCoroutine(LerpGridAlpha(1, lerpAlphaTime/3)); 
+            floorDecal.SetActive(true);
         }
         
         public void Hide()
         {
-            floorMaterial.SetInt(UseGrid, 0); 
-        } 
+            if(_alphaRoutine != null) StopCoroutine(_alphaRoutine);
+            _alphaRoutine = StartCoroutine(LerpGridAlpha(0, lerpAlphaTime)); 
+            floorDecal.SetActive(false);
+        }
+
+        private IEnumerator LerpGridAlpha(float end, float lerpTime)
+        {
+            float start = floorMaterial.GetFloat(GridAlpha);
+            
+            float t = 0;
+            while (t < lerpTime)
+            {
+                float alpha = Mathf.Lerp(start, end, t / lerpTime);
+                floorMaterial.SetFloat(GridAlpha, alpha);
+                
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            
+            floorMaterial.SetFloat(GridAlpha, end);
+        }
+        
+        public void SetFloorDecalPos(Vector3Int pos) => floorDecal.transform.position = pos;
+        
+        public void DeactivateFloorDecal() => floorDecal.SetActive(false);
     }
 }

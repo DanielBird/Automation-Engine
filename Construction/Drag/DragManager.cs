@@ -5,8 +5,11 @@ using Construction.Nodes;
 using Construction.Placement;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
+using GameState;
 using UnityEngine;
 using Utilities;
+using ZLinq;
+using Grid = Construction.Utilities.Grid;
 
 namespace Construction.Drag
 {
@@ -18,17 +21,19 @@ namespace Construction.Drag
         private readonly NeighbourManager _neighbourManager;
         private readonly GameObject _floorDecal;
         private readonly PlacementState _state;
+        private readonly PlacementSettings _settings;
 
-        private readonly Dictionary<Vector3Int, TempNode> _spawned = new();
+        private readonly Dictionary<GridWorldCoordPair, TempNode> _spawned = new();
         private readonly DragSession _dragSession;
 
         public DragManager(
             PlacementSettings settings,
+            InputSettings inputSettings,
             IMap map,
             PlacementVisuals visuals,
             INodeMap nodeMap,
             NeighbourManager neighbourManager,
-            UnityEngine.Camera mainCamera,
+            Camera mainCamera,
             GameObject floorDecal,
             PlacementState state)
         {
@@ -38,9 +43,11 @@ namespace Construction.Drag
             _neighbourManager = neighbourManager;
             _floorDecal = floorDecal;
             _state = state;
+            _settings = settings;
             
             _dragSession = new DragSessionBuilder()
                 .WithSettings(settings)
+                .WithInputSettings(inputSettings)
                 .WithMap(_map)
                 .WithVisuals(_visuals)
                 .WithCamera(mainCamera)
@@ -54,62 +61,80 @@ namespace Construction.Drag
             _dragSession.Disable();
         }
         
-        public async UniTaskVoid HandleDrag(GameObject initialObject, Node startingNode, Vector3Int start)
+        public async UniTaskVoid HandleDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord)
         {
-            InitialiseDrag(initialObject, startingNode, start);
-            await _dragSession.RunDrag(initialObject, startingNode, start, _spawned); 
-            FinaliseDrag(start);
+            InitialiseDrag(initialObject, startingNode, startingGridCoord, out GridWorldCoordPair startingPair);
+            await _dragSession.RunDrag(initialObject, startingNode, startingGridCoord, _spawned); 
+            FinaliseDrag(startingPair);
         }
         
-        private void InitialiseDrag(GameObject initialObject, Node startingNode, Vector3Int start)
+        private void InitialiseDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord, out GridWorldCoordPair startingPair)
         {
             _spawned.Clear();
-            _spawned.Add(start, new TempNode(initialObject, startingNode));
-            _state.CurrentAxis = Axis.XAxis;
+            
+            startingPair = GetStartingPair(startingGridCoord); 
+            _spawned.Add(startingPair, new TempNode(initialObject, startingNode));
+            
+            _state.SetAxis(Axis.XAxis);
+        }
+
+        private GridWorldCoordPair GetStartingPair(Vector3Int startingGridCoord)
+        {
+            Vector3Int startWorldPos = Grid.GridToWorldPosition(startingGridCoord, _settings.gridOrigin, _settings.tileSize); 
+            return new GridWorldCoordPair(startingGridCoord, startWorldPos);
         }
         
-        private void FinaliseDrag(Vector3Int start)
+        private void FinaliseDrag(GridWorldCoordPair startingPair)
         {
             // Register the start node of the drag
-            if (_spawned.TryGetValue(start, out TempNode value))
+            if (_spawned.TryGetValue(startingPair, out TempNode value))
             {
-                RegisterDraggedOccupant(start, value.Node, DragPos.Start, true);
+                RegisterDraggedOccupant(startingPair.GridCoord, value.Node, DragPos.Start, true);
             }
             
-            List<Vector3Int> cellPositions = _spawned.Keys.ToList();
-            Vector3Int end = VectorUtils.FurthestFrom(cellPositions, start); 
-            cellPositions.Remove(start);
-            cellPositions.Remove(end);
+            List<GridWorldCoordPair> allPairs = _spawned.Keys.ToList();
+            List<Vector3Int> gridPositions = allPairs
+                                                .AsValueEnumerable()
+                                                .Select(pair => pair.GridCoord)
+                                                .ToList();
+            
+            Vector3Int endGridCoord = VectorUtils.FurthestFrom(gridPositions, startingPair.GridCoord);
+            GridWorldCoordPair endPair = allPairs.First(pair => pair.GridCoord == endGridCoord);
+            
+            // Get middle pairs (exclude start and end)
+            List<GridWorldCoordPair> middlePairs = allPairs
+                .Where(pair => pair != startingPair && pair != endPair)
+                .ToList();
 
             // Register the middle nodes of the drag
-            foreach (var vector in cellPositions)
+            foreach (var pair in middlePairs)
             {
-                RegisterDraggedOccupant(vector, _spawned[vector].Node, DragPos.Middle);
+                RegisterDraggedOccupant(pair.GridCoord, _spawned[pair].Node, DragPos.Middle);
             }
             
             // Register the end node of the drag -  must come last
-            if (_spawned.TryGetValue(end, out TempNode endValue))
+            if (_spawned.TryGetValue(endPair, out TempNode endValue))
             {
-                RegisterDraggedOccupant(end, endValue.Node, DragPos.End, true);
+                RegisterDraggedOccupant(endPair.GridCoord, endValue.Node, DragPos.End, true);
             }
             
             CleanupDrag();
         }
 
-        private void RegisterDraggedOccupant(Vector3Int position, Node node, DragPos dragPos , bool manageNeighbours = false)
+        private void RegisterDraggedOccupant(Vector3Int gridCoord, Node node, DragPos dragPos , bool manageNeighbours = false)
         {
             Vector2Int size = node.GetSize();
-            if (!_map.RegisterOccupant(position.x, position.z, size.x, size.y)) node.FailedPlacement();
+            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y)) node.FailedPlacement();
             else
             {
-                node.Place(position, _nodeMap);
+                node.Place(gridCoord, _nodeMap);
                 node.Visuals.HideArrows();
 
                 NodeConfiguration config = NodeConfiguration.Create(_nodeMap, NodeType.Straight, node.Direction, false); 
                 node.Initialise(config);
 
                 if (!manageNeighbours) return;
-                if (_neighbourManager.UpdateToCorner(node, position, dragPos))
+                if (_neighbourManager.UpdateToCorner(node, gridCoord, dragPos))
                     _nodeMap.DeregisterNode(node);
             }
         }

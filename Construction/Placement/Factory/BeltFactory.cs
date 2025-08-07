@@ -14,16 +14,15 @@ namespace Construction.Placement.Factory
             PlacementSettings = settings;
         }
         
-        public bool Create(out GameObject prefab, out Vector3Int gridPos)
+        public bool Create(out GameObject prefab, out Vector3Int alignedPosition)
         {
             prefab = null; 
-            gridPos = Vector3Int.zero;
+            alignedPosition = Vector3Int.zero;
             
-            if(!PlacementManager.TryGetGridPosition(out Vector3Int gridPosition)) return false;
+            if(!PlacementManager.TryGetGridAlignedPosition(out alignedPosition)) return false;
             
-            gridPos = gridPosition;
-            prefab  = SimplePool.Spawn(PlacementSettings.standardBeltPrefab, gridPos, Quaternion.identity, PlacementManager.transform);
-            prefab.name = PlacementSettings.standardBeltPrefab.name + "_" + gridPos.x + "_" + gridPos.z; 
+            prefab  = SimplePool.Spawn(PlacementSettings.standardBeltPrefab, alignedPosition, Quaternion.identity, PlacementManager.transform);
+            prefab.name = PlacementSettings.standardBeltPrefab.name + "_" + alignedPosition.x + "_" + alignedPosition.z; 
             
             return true;
         }

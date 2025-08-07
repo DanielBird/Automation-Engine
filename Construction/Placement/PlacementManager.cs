@@ -1,18 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Threading;
 using Construction.Drag;
-using Construction.Maps;
 using Construction.Nodes;
 using Construction.Placement.Factory;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
-using Events;
-using Events.Types;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Utilities;
+using Utilities.Events;
+using Utilities.Events.Types;
 using Grid = Construction.Utilities.Grid;
 
 namespace Construction.Placement
@@ -31,71 +29,56 @@ namespace Construction.Placement
         YAxis,
         ZAxis,
     }
-
-    [RequireComponent(typeof(IMap))]
+    
     [RequireComponent(typeof(PlacementVisuals))]
-    [RequireComponent(typeof(INodeMap))]
-    public class PlacementManager : MonoBehaviour
+    public class PlacementManager : ConstructionManager
     {
-        private IMap _map;
-        private INodeMap _nodeMap;
-        public NeighbourManager neighbourManager; 
+        public NeighbourManager NeighbourManager; 
         private PlacementCoordinator _placementCoordinator;
         
         private Dictionary<UiButtonType, IPlaceableFactory> _factory;
-        
-        [Header("Settings")]
-        [SerializeField] private PlacementSettings settings;
 
         [Header("State")] 
         [SerializeField] private PlacementState state = new();
-
-        [Header("Visuals")] 
-        public PlacementVisuals visuals;
-        public GameObject floorDecal; 
-
-        [Header("Camera")]
-        public UnityEngine.Camera mainCamera;
-
+        
         private Coroutine _drag;
         private DragManager _dragManager;
 
         private CancellationTokenSource _disableCancellation = new CancellationTokenSource();
+        private CancellationTokenSource _waitTokenSource = new CancellationTokenSource();
         
         // EVENTS
-        private EventBinding<UiButtonClick> onButtonClick; 
+        private EventBinding<UiButtonClick> _onButtonClick; 
 
-        private void Awake()
+        protected override void Awake()
         {
-            _map = GetComponent(typeof(IMap)) as IMap;
-            _nodeMap = GetComponent<INodeMap>();
-            if (visuals == null) visuals = GetComponent<PlacementVisuals>();
+            base.Awake();
             
-            neighbourManager = new NeighbourManager(
-                _map, 
-                _nodeMap, 
+            NeighbourManager = new NeighbourManager(
+                Map, 
+                NodeMap, 
                 settings, 
                 transform);
             
             _dragManager = new DragManagerBuilder()
                 .WithSettings(settings)
-                .WithMap(_map)
+                .WithInputSettings(inputSettings)
+                .WithMap(Map)
                 .WithVisuals(visuals)
-                .WithNodeMap(_nodeMap)
-                .WithNeighbourManager(neighbourManager)
+                .WithNodeMap(NodeMap)
+                .WithNeighbourManager(NeighbourManager)
                 .WithCamera(mainCamera)
-                .WithFloorDecal(floorDecal)
+                .WithFloorDecal(visuals.floorDecal)
                 .WithState(state)
                 .Build();
             
             _placementCoordinator = new PlacementCoordinator(
                 _dragManager,
-                _map,
-                _nodeMap,
-                neighbourManager,
+                Map,
+                NodeMap,
+                NeighbourManager,
                 state,
-                visuals,
-                floorDecal
+                visuals
             );
 
             _factory = new Dictionary<UiButtonType, IPlaceableFactory>
@@ -104,15 +87,13 @@ namespace Construction.Placement
                 { UiButtonType.Producer, new ProducerFactory(this, settings)}
             };
             
-            floorDecal.SetActive(false);
-            
             RegisterEvents();
         }
         
         private void OnDisable()
         {
-            _disableCancellation.Cancel();
-            _disableCancellation.Dispose();
+            ClearTokenSource(ref _disableCancellation);
+            ClearTokenSource(ref _waitTokenSource);
             _dragManager.Disable();
             
             UnRegisterEvents();
@@ -124,8 +105,8 @@ namespace Construction.Placement
             settings.rotate.action.performed += Rotate;
             settings.cancel.action.performed += CancelPlacement; 
             
-            onButtonClick = new EventBinding<UiButtonClick>(RequestPlacement);
-            EventBus<UiButtonClick>.Register(onButtonClick);
+            _onButtonClick = new EventBinding<UiButtonClick>(RequestPlacement);
+            EventBus<UiButtonClick>.Register(_onButtonClick);
         }
 
         private void UnRegisterEvents()
@@ -134,33 +115,47 @@ namespace Construction.Placement
             settings.rotate.action.performed -= Rotate;
             settings.cancel.action.performed -= CancelPlacement; 
             
-            EventBus<UiButtonClick>.Deregister(onButtonClick);
+            EventBus<UiButtonClick>.Deregister(_onButtonClick);
         }
 
         private void RequestPlacement(UiButtonClick e)
         {
-            if (_factory.TryGetValue(e.ButtonType, out var factory))
+            if (_factory.TryGetValue(e.ButtonType, out IPlaceableFactory factory))
             {
-                if(!factory.Create(out GameObject prefab, out Vector3Int gridPos)) return;
-                SpawnOccupant(gridPos, prefab);
+                ClearTokenSource(ref _waitTokenSource);
+                _waitTokenSource = new CancellationTokenSource();
+                WaitToStartPlacement(factory, _waitTokenSource.Token).Forget();
             }
         }
+        
+        private async UniTaskVoid WaitToStartPlacement(IPlaceableFactory factory, CancellationToken token)
+        {
+            while (!TryGetGridAlignedPosition(out Vector3Int pos))
+            {
+                await UniTask.WaitForSeconds(0.1f, cancellationToken: token); 
+            }
+
+            if (factory.Create(out GameObject prefab, out Vector3Int alignedPosition))
+            {
+                SpawnOccupant(alignedPosition, prefab);
+            }
+        } 
 
         private void Update()
         {
             if (!state.IsRunning) return;
             
-            if(!TryGetGridPosition(out Vector3Int gridPos)) return;
-            state.TargetPosition = gridPos;
+            if(!TryGetGridCoordinate(out Vector3Int gridCoord)) return;
+            state.TargetGridCoordinate = gridCoord;
+            state.WorldAlignedPosition = WorldAlignedPosition(gridCoord);
             
-            if(!_map.VacantCell(state.TargetPosition.x, state.TargetPosition.z)) return;
-            if (DistanceAboveThreshold(state.CurrentObject, state.TargetPosition)) return;
+            if(!Map.VacantCell(state.TargetGridCoordinate.x, state.TargetGridCoordinate.z)) return;
+            if (DistanceAboveThreshold(state.CurrentObject, state.TargetGridCoordinate)) return;
             
-            LerpPosition(state.CurrentObject, state.TargetPosition);
+            LerpPosition(state.CurrentObject, state.WorldAlignedPosition);
             
             visuals.Place(state.CurrentObject);
-
-            SetFloorDecalPos(state.TargetPosition); 
+            visuals.SetFloorDecalPos(state.WorldAlignedPosition); 
         }
 
         private bool DistanceAboveThreshold(GameObject obj, Vector3 targetPos, float threshold = 0.001f)
@@ -170,16 +165,16 @@ namespace Construction.Placement
             return false;
         }
 
-        private void LerpPosition(GameObject obj, Vector3 targetPos)
+        private void LerpPosition(GameObject obj, Vector3Int targetPos)
         {
             Transform t = obj.transform; 
             t.position = Vector3.Lerp(t.position, targetPos, settings.moveSpeed * Time.deltaTime);
         }
         
-        private void SpawnOccupant(Vector3Int gridPos, GameObject occupant)
+        private void SpawnOccupant(Vector3Int alignedPosition, GameObject occupant)
         {
-            Vector2Int empty = _map.NearestVacantCell(new Vector2Int(gridPos.x, gridPos.z));
-            gridPos = new Vector3Int(empty.x, 0, empty.y);
+            Vector2Int empty = Map.NearestVacantCell(new Vector2Int(alignedPosition.x, alignedPosition.z));
+            alignedPosition = new Vector3Int(empty.x, 0, empty.y);
 
             state.SetGameObject(occupant);
 
@@ -191,9 +186,7 @@ namespace Construction.Placement
             
             visuals.Place(state.CurrentObject);
             visuals.Show();
-            
-            floorDecal.SetActive(true);
-            SetFloorDecalPos(gridPos); 
+            visuals.SetFloorDecalPos(alignedPosition); 
         }
 
         private void ConfirmPlacement(InputAction.CallbackContext ctx)
@@ -202,39 +195,26 @@ namespace Construction.Placement
             
             if (state.PlaceableFound)
             {
-                _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetPosition);
+                _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetGridCoordinate);
             }
 
             if (!state.IsRunning)
             {
-                FinalisePosition(state.CurrentObject, state.TargetPosition).Forget();
+                ClearTokenSource(ref _disableCancellation);
+                _disableCancellation = new CancellationTokenSource(); 
+                FinalisePosition(state.CurrentObject, state.WorldAlignedPosition, _disableCancellation.Token).Forget();
             }
         }
 
-        private async UniTaskVoid FinalisePosition(GameObject go, Vector3 finalPosition)
+        private async UniTaskVoid FinalisePosition(GameObject go, Vector3Int finalPosition, CancellationToken token)
         {
             while(DistanceAboveThreshold(go, finalPosition))
             {
                 LerpPosition(go, finalPosition);
-                await UniTask.Yield(_disableCancellation.Token); 
+                await UniTask.Yield(token); 
             }
         }
         
-        public bool TryGetGridPosition(out Vector3Int gridPosition)
-        {
-            gridPosition = new Vector3Int(); 
-            if (!TryGetPosition(out Vector3 position)) return false;
-            gridPosition = Grid.Position(position, settings.gridOrigin, _map.MapWidth, _map.MapHeight, settings.tileSize);
-            return true;
-        }
-        
-        private bool TryGetPosition(out Vector3 position)
-        {
-            bool positionFound = FloorPosition.Get(mainCamera, settings.raycastDistance, settings.floorLayer, out Vector3 foundPosition);
-            position = foundPosition; 
-            return positionFound;
-        }
-
         private void Rotate(InputAction.CallbackContext ctx)
         {
             if (!state.IsRunning) return;
@@ -244,25 +224,11 @@ namespace Construction.Placement
 
         private void CancelPlacement(InputAction.CallbackContext ctx)
         {
-            if (state.IsRunning)
-            {
-                if (state.PlaceableFound)
-                {
-                    _placementCoordinator.CancelPlacement(state.MainPlaceable);
-                }
-                return;
-            } 
-            
-            if(!TryGetGridPosition(out Vector3Int delete)) return;
-
-            if (_nodeMap.GetNode(delete.x, delete.z, out Node nodeToDelete))
-            {
-                _map.DeregisterOccupant(delete.x, delete.z, nodeToDelete.Width, nodeToDelete.Height);
-                _nodeMap.DeregisterNode(nodeToDelete);
-                SimplePool.Despawn(nodeToDelete.gameObject);
-            }
+            if (state.IsRunning && state.PlaceableFound)
+                _placementCoordinator.CancelPlacement(state.MainPlaceable);
         }
-        
-        private void SetFloorDecalPos(Vector3 pos) => floorDecal.transform.position = pos;
+
+        [Button]
+        private void ShowGridAndDecal() => visuals.Show();
     }
 }

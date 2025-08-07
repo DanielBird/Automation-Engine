@@ -1,29 +1,42 @@
-﻿using UnityEngine;
+﻿using Construction.Nodes;
+using UnityEngine;
 
 namespace Construction.Visuals
 {
+    public enum ConnectionType {InputOutput, InputOnly, OutputOnly}
+    
     public class NodeVisuals : MonoBehaviour
     {
+        [SerializeField] private Node myNode;  
+        
         [Header("Arrows")]
-        public MeshRenderer outputArrowRenderer;
-        public MeshRenderer inputArrowMeshRenderer;
+        public GameObject outputArrowPrefab;
+        public GameObject inputArrowPrefab;
+        
         [SerializeField] private Material outputArrowMat;
         [SerializeField] private Material inputArrowMat;
+        
+        [Space]
+        public ConnectionType connectionType = ConnectionType.InputOutput;
+        
         private bool _outputMatFound;
         private bool _inputMatFound; 
         private static readonly int Alpha = Shader.PropertyToID("_Alpha");
         
-        private void Awake()
+        private void Start()
         {
-            if (outputArrowRenderer != null)
+            if(myNode == null)
+                myNode = GetComponent<Node>();
+
+            if (connectionType is ConnectionType.InputOutput or ConnectionType.OutputOnly && outputArrowPrefab != null)
             {
-                outputArrowMat = outputArrowRenderer.sharedMaterial;
+                outputArrowMat = outputArrowPrefab.GetComponent<MeshRenderer>().sharedMaterial;
                 _outputMatFound = true; 
             }
 
-            if (inputArrowMeshRenderer != null)
+            if (connectionType is ConnectionType.InputOutput or ConnectionType.InputOnly && inputArrowPrefab != null)
             {
-                inputArrowMat = inputArrowMeshRenderer.sharedMaterial;
+                inputArrowMat = inputArrowPrefab.GetComponent<MeshRenderer>().sharedMaterial;
                 _inputMatFound = true; 
             }
             
@@ -32,8 +45,8 @@ namespace Construction.Visuals
         
         public void ShowArrows()
         {
-            ShowOutputArrow();
-            ShowInputArrow();
+            if (connectionType is ConnectionType.InputOutput or ConnectionType.OutputOnly) ShowOutputArrow();
+            if (connectionType is ConnectionType.InputOutput or ConnectionType.InputOnly) ShowInputArrow();
         }
 
         public void ShowOutputArrow()
@@ -48,8 +61,8 @@ namespace Construction.Visuals
         
         public void HideArrows()
         {
-            HideInputArrow();
-            HideOutputArrow();
+            if (connectionType is ConnectionType.InputOutput or ConnectionType.OutputOnly) HideOutputArrow();
+            if (connectionType is ConnectionType.InputOutput or ConnectionType.InputOnly) HideInputArrow();
         }
 
         public void HideOutputArrow()

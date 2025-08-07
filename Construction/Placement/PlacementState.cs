@@ -8,11 +8,10 @@ namespace Construction.Placement
     {
         public bool IsRunning { get; set; }
         public GameObject CurrentObject { get; set; }
-        public Vector3Int TargetPosition { get; set; }
-        public Vector3Int GridPosition { get; set; }
-        public Direction CurrentDirection { get; set; }
-        public Axis CurrentAxis { get; set; }
-        
+        public Vector3Int TargetGridCoordinate { get; set; }
+        public Vector3Int WorldAlignedPosition { get; set; }
+        public Direction CurrentDirection { get; private set; }
+        public Axis CurrentAxis { get; private set; }
         
         public bool PlaceableFound { get; private set; }
         public IPlaceable MainPlaceable { get; private set; }
@@ -43,5 +42,8 @@ namespace Construction.Placement
             MainRotatable = rotatable;
             RotatableFound = true;
         }
+        public void SetDirection(Direction direction) => CurrentDirection = direction;
+        
+        public void SetAxis(Axis axis) => CurrentAxis = axis;
     }
 } 

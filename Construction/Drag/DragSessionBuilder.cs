@@ -4,6 +4,7 @@ using System.Linq;
 using Construction.Maps;
 using Construction.Placement;
 using Construction.Visuals;
+using GameState;
 using UnityEngine;
 
 namespace Construction.Drag
@@ -11,9 +12,10 @@ namespace Construction.Drag
     public class DragSessionBuilder
     {
         private PlacementSettings _settings;
+        private InputSettings _inputSettings;
         private IMap _map;
         private PlacementVisuals _visuals;
-        private UnityEngine.Camera _mainCamera;
+        private Camera _mainCamera;
         private GameObject _floorDecal;
         private PlacementState _state;
         
@@ -23,6 +25,11 @@ namespace Construction.Drag
             return this;
         }
         
+        public DragSessionBuilder WithInputSettings(InputSettings inputSettings)
+        {
+            _inputSettings = inputSettings;
+            return this;
+        }
 
         public DragSessionBuilder WithMap(IMap map)
         {
@@ -59,6 +66,7 @@ namespace Construction.Drag
             var missingComponents = new List<string>();
             
             if (_settings == null) missingComponents.Add("PlacementSettings");
+            if (_inputSettings == null) missingComponents.Add("InputSettings");
             if (_map == null) missingComponents.Add("IMap");
             if (_visuals == null) missingComponents.Add("PlacementVisuals");
             if (_mainCamera == null) missingComponents.Add("Camera");
@@ -78,6 +86,7 @@ namespace Construction.Drag
 
             return new DragSession(
                 _settings,
+                _inputSettings,
                 _map,
                 _visuals,
                 _mainCamera,

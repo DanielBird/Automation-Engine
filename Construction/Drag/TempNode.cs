@@ -5,8 +5,8 @@ namespace Construction.Drag
 {
     public readonly struct TempNode
     {
-        public GameObject Prefab { get; }
-        public Node Node { get; }
+        public readonly GameObject Prefab;
+        public readonly Node Node;
         
         public TempNode(GameObject prefab, Node node)
         {

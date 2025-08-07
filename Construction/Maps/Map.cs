@@ -17,11 +17,11 @@ namespace Construction.Maps
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         
-        [ShowInInspector] private CellStatus[,] _grid;
+        [ShowInInspector] public CellStatus[,] Grid { get; private set; }
 
         private int[,] _mark;
         private int _generation; 
-        private Queue<Vector2Int> _queue;
+        private Queue<Vector2Int> _queue = new();
         
         private static readonly Vector2Int[] Directions = {
             new Vector2Int(-1,  0),  // left
@@ -34,7 +34,7 @@ namespace Construction.Maps
         {
             MapWidth = mapWidth;
             MapHeight = mapHeight;
-            _grid = new CellStatus[MapWidth, MapHeight];
+            Grid = new CellStatus[MapWidth, MapHeight];
             _mark = new int[MapWidth, MapHeight];
         }
         
@@ -46,7 +46,7 @@ namespace Construction.Maps
             {
                 for (int j = z; j < z + height; j++)
                 {
-                    _grid[i, j] = CellStatus.Occupied;
+                    Grid[i, j] = CellStatus.Occupied;
                 }
             }
 
@@ -59,11 +59,18 @@ namespace Construction.Maps
             {
                 for (int j = z; j < z + height; j++)
                 {
-                    _grid[i, j] = CellStatus.Empty;
+                    Grid[i, j] = CellStatus.Empty;
                 }
             }
         }
-
+                
+        [Button]
+        public void CheckSpace(int x, int z, int width, int height)
+        {
+            string s = VacantSpace(x, z, width, height) ? "Space Empty" : "Space Occupied";
+            Debug.Log(s);
+        }
+        
         public bool VacantSpace(int x, int z, int width, int height)
         {
             if(!InBounds(x, z)) return false;
@@ -73,7 +80,7 @@ namespace Construction.Maps
             {
                 for (int j = z; j < z + height; j++)
                 {
-                    if (_grid[i, j] == CellStatus.Occupied) 
+                    if (Grid[i, j] == CellStatus.Occupied) 
                         return false; 
                 }
             }
@@ -81,10 +88,17 @@ namespace Construction.Maps
             return true; 
         }
         
+        [Button]
+        public void CheckCell(int x, int z)
+        {
+            string s = VacantCell(x, z) ? "Cell Occupied" : "Cell Empty";
+            Debug.Log(s);
+        }
+        
         public bool VacantCell(int x, int z)
         {
             if (!InBounds(x, z)) return false;
-            return _grid[x, z] == CellStatus.Empty; 
+            return Grid[x, z] == CellStatus.Empty; 
         }
 
         public Vector2Int NearestVacantCell(Vector2Int start)
@@ -113,7 +127,7 @@ namespace Construction.Maps
                     
                     _mark[nx, ny] = _generation;
                         
-                    if (_grid[nx, ny] == CellStatus.Empty)
+                    if (Grid[nx, ny] == CellStatus.Empty)
                         return new Vector2Int(nx, ny);
 
                     _queue.Enqueue(new Vector2Int(nx, ny));
@@ -126,8 +140,8 @@ namespace Construction.Maps
 
         private bool InBounds(int x, int z)
         {
-            return x >= 0 && x < _grid.GetLength(0) &&
-                   z >= 0 && z < _grid.GetLength(1); 
+            return x >= 0 && x < Grid.GetLength(0) &&
+                   z >= 0 && z < Grid.GetLength(1); 
         }
     }
 }

@@ -24,10 +24,10 @@ namespace Construction.Placement
 
         public bool CanHandle(IPlaceable placeable) => placeable.Draggable;
 
-        public void HandlePlacement(IPlaceable placeable, Vector3Int position)
+        public void HandlePlacement(IPlaceable placeable, Vector3Int gridCoordinate)
         {
             _state.IsRunning = false;
-            if(placeable is Node node) _dragManager.HandleDrag(_state.CurrentObject, node, position).Forget();
+            if(placeable is Node node) _dragManager.HandleDrag(_state.CurrentObject, node, gridCoordinate).Forget();
         }
 
         public void CancelPlacement(IPlaceable placeable)

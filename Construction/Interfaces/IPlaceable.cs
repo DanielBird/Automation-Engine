@@ -5,12 +5,12 @@ namespace Construction.Interfaces
 {
     public interface IPlaceable
     {
-        public int Width { get; set; }
-        public int Height { get; set; }
+        public int GridWidth { get; set; }
+        public int GridHeight { get; set; }
         public bool Draggable { get; set; }
-        public Vector3Int Position { get; set; }
+        public Vector3Int GridCoord { get; set; }
 
-        public void Place(Vector3Int position, INodeMap map);
+        public void Place(Vector3Int gridCoord, INodeMap map);
 
         public void FailedPlacement();
 

@@ -1,4 +1,7 @@
-﻿using Construction.Maps;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using Construction.Maps;
 using Construction.Placement;
 using UnityEngine;
 
@@ -6,7 +9,20 @@ namespace Construction.Utilities
 {
     public static class Grid
     {
-        public static Vector3Int Position(Vector3 position, Vector3 gridOrigin, int mapWidth, int mapHeight, float tileSize)
+        /// <summary>
+        /// Converts a world position to a grid-aligned world position, centered on the nearest tile.
+        /// </summary>
+        public static Vector3Int GridAlignedWorldPosition(Vector3 position, Vector3Int gridOrigin, int mapWidth, int mapHeight, float tileSize)
+        {
+            Vector3Int gridPos = WorldToGridCoordinate(position, gridOrigin, mapWidth, mapHeight, tileSize);
+            Vector3Int worldPosition = GridToWorldPosition(gridPos, gridOrigin, tileSize); 
+            return worldPosition;
+        }
+        
+        /// <summary>
+        /// Converts a world position to grid coordinate, within the map bounds
+        /// </summary>
+        public static Vector3Int WorldToGridCoordinate(Vector3 position, Vector3Int gridOrigin, int mapWidth, int mapHeight, float tileSize)
         {
             Vector3 relative = position - gridOrigin;
 
@@ -18,43 +34,93 @@ namespace Construction.Utilities
 
             return new Vector3Int(gridX, 0, gridZ);
         }
+        
+        /// <summary>
+        /// Converts a grid coordinate to a world position, aligned to the grid.
+        /// </summary>
+        public static Vector3Int GridToWorldPosition(Vector3Int gridCoord, Vector3Int gridOrigin, float tileSize)
+        {
+            int worldX = Mathf.FloorToInt(gridOrigin.x + (gridCoord.x * tileSize) + (tileSize * 0.5f));
+            int worldZ = Mathf.FloorToInt(gridOrigin.z + (gridCoord.z * tileSize) + (tileSize * 0.5f));
+            return new Vector3Int(worldX, 0, worldZ);
+        }
 
-        public static CellSelection SelectCells(Vector3Int start, UnityEngine.Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, int stepSize = 1)
+        /// <summary>
+        /// Converts a list of grid coordinates to world positions.
+        /// </summary>
+        public static List<Vector3Int> GridToWorldPositions(List<Vector3Int> gridPositions, Vector3Int gridOrigin, float tileSize)
+        {
+            List<Vector3Int> worldPositions = new List<Vector3Int>(gridPositions.Count);
+            float halfTileSize = tileSize * 0.5f;
+            float originX = gridOrigin.x;
+            float originZ = gridOrigin.z;
+
+            foreach (var gridPos in gridPositions)
+            {
+                int worldX = Mathf.FloorToInt(originX + (gridPos.x * tileSize) + halfTileSize);
+                int worldZ = Mathf.FloorToInt(originZ + (gridPos.z * tileSize) + halfTileSize);
+                worldPositions.Add(new Vector3Int(worldX, 0, worldZ));
+            }
+
+            return worldPositions;
+        }
+        
+        public static CellSelection SelectCells(Vector3Int start, Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, int stepSize = 1)
         {
             CellSelection selection = new CellSelection();
-            
-            if (!TryGetInitialHit(mainCamera, floorLayer, cellHits, map, settings, out Vector3Int initialGridPosition))
+
+            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, map, settings, out Vector3Int endGridCoord))
+            {
                 return selection;
+            }
             
-            DetermineSelectionAxis(start, initialGridPosition, selection);
+            DetermineSelectionAxis(start, endGridCoord, selection);
             
             if(settings.useLShapedPaths) 
-                SelectCellsAsLShapedPath(start, initialGridPosition, selection, map, stepSize);
+                SelectCellsAsLShapedPath(start, endGridCoord, selection, map, stepSize);
             else
-                SelectCellsInRange(start, initialGridPosition, selection, map, stepSize);
+                SelectCellsInRange(start, endGridCoord, selection, map, stepSize);
 
             return selection;
         }
 
-        /// <summary>
-        /// Attempts to get the initial grid position where the user clicked on the floor.
-        /// 
-        /// # How it works
-        /// 1. Creates a ray from the camera through the mouse position
-        /// 2. Casts the ray to detect intersections with the floor layer
-        /// 3. If a hit is found, converts the hit point to grid coordinates
-        /// 
-        /// </summary>
-        private static bool TryGetInitialHit(UnityEngine.Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, out Vector3Int gridPosition)
+        public static CellSelection SelectCellArea(Vector3Int start, Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, out Vector3Int end, int stepSize = 1)
         {
-            gridPosition = Vector3Int.zero;
+            CellSelection selection = new();
+            
+            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, map, settings, out end))
+                return selection;
+            
+            IEnumerable<Vector3Int> cells = GetCellArea(start, end, stepSize);
+            selection.AddRangeToDictionary(cells, Direction.North);
+            
+            return selection;
+        }
+
+        private static IEnumerable<Vector3Int> GetCellArea(Vector3Int start, Vector3Int end, int stepSize)
+        {
+            int xMin = Mathf.Min(start.x, end.x);
+            int xMax = Mathf.Max(start.x, end.x);
+            int zMin = Mathf.Min(start.z, end.z);
+            int zMax = Mathf.Max(start.z, end.z);
+            
+            for (int x = xMin; x <= xMax; x += stepSize)
+            for (int z = zMin; z <= zMax; z += stepSize)
+                yield return new Vector3Int(x, 0, z);
+        }
+        
+        /// <summary>
+        /// Attempts to get the current grid position where a raycast intersects with the floor.
+        /// </summary>
+        private static bool TryGetCurrentGridCoord(Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, out Vector3Int gridCoordinate)
+        {
+            gridCoordinate = Vector3Int.zero;
             
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
             int hits = Physics.RaycastNonAlloc(ray, cellHits, 300f, floorLayer); 
-            
             if (hits <= 0) return false;
             
-            gridPosition = Position(cellHits[0].point, settings.gridOrigin, map.MapWidth, map.MapHeight, settings.tileSize);
+            gridCoordinate = WorldToGridCoordinate(cellHits[0].point, settings.gridOrigin, map.MapWidth, map.MapHeight, settings.tileSize);
             return true;
         }
 
@@ -160,7 +226,7 @@ namespace Construction.Utilities
             int step = ascending ? stepSize : -stepSize;
             
             Direction direction = GetDirectionFromAxis(ascending, axis);
-
+            
             if (axis == Axis.XAxis)
             {
                 for (int x = from.x; ascending ? x < to.x : x > to.x; x += step)
@@ -196,7 +262,7 @@ namespace Construction.Utilities
             }
 
             selection.Corner = IsLeftTurn(start, corner, adjustedEnd) ? Corner.Left : Corner.Right; 
-            selection.CornerCell = corner;
+            selection.SetCornerGridCoord(corner);
         }
         
         private static Vector3Int SnapToStepGrid(Vector3Int start, Vector3Int end, int stepSize)
@@ -264,6 +330,5 @@ namespace Construction.Utilities
                 ? new Vector3Int(fixedCoord, 0, variableCoord)
                 : new Vector3Int(variableCoord, 0, fixedCoord);
         }
-        
     }
 }

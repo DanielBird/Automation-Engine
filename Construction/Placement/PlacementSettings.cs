@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using InputSettings = ScriptableObjects.InputSettings;
+using InputSettings = GameState.InputSettings;
 
 namespace Construction.Placement
 {
@@ -8,8 +8,10 @@ namespace Construction.Placement
     public class PlacementSettings : ScriptableObject
     {
         [Header("Grid Settings")]
-        public Vector3 gridOrigin = Vector3.zero;
+        public Vector3Int gridOrigin = Vector3Int.zero;
+        [Tooltip("The size of each grid cell in world units")]
         public float tileSize = 1f;
+        [Tooltip("Do paths turn corners or run in straight lines only?")]
         public bool useLShapedPaths; 
 
         [Header("Movement Settings")]
@@ -17,7 +19,6 @@ namespace Construction.Placement
         public float raycastDistance = 1000f;
 
         [Header("Input Settings")]
-        public InputSettings inputSettings;
         public InputActionReference place;
         public InputActionReference rotate;
         public InputActionReference cancel;

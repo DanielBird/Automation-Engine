@@ -5,11 +5,10 @@ using Construction.Interfaces;
 using Construction.Maps;
 using Construction.Placement;
 using Construction.Visuals;
-using Construction.Widgets;
-using Events;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using Utilities;
+using Utilities.Events;
 
 namespace Construction.Nodes
 {
@@ -25,12 +24,10 @@ namespace Construction.Nodes
     public abstract class Node : MonoBehaviour, IPlaceable, IRotatable
     {
         [Header("Setup")] 
-        [SerializeField] private int width;
-        [SerializeField] private int height;
-        [SerializeField] private bool draggable;
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public bool Draggable { get; set; }
+        public NodeTypeSo nodeTypeSo;
+        [field: SerializeField] public int GridWidth { get; set; }
+        [field: SerializeField] public int GridHeight { get; set; }
+        [field: SerializeField] public bool Draggable { get; set; }
         [field: SerializeField] public NodeType NodeType { get; private set; } 
         
         [Header("Position & Rotation")] 
@@ -42,7 +39,8 @@ namespace Construction.Nodes
         
         private EasingFunctions.Function _ease; 
         public EasingFunctions.Ease rotationEasing = EasingFunctions.Ease.EaseOutSine;
-        [field: SerializeField] public Vector3Int Position { get; set; }
+        [field: SerializeField] public Vector3Int GridCoord { get; set; }
+        [field: SerializeField] public Vector3 WorldPosition { get; private set; }
 
         [ShowInInspector]
         public Direction Direction
@@ -59,9 +57,17 @@ namespace Construction.Nodes
         
         private void Awake()
         {
-            Width = width;
-            Height = height;
-            Draggable = draggable;
+            if (nodeTypeSo == null)
+            {
+                Debug.LogWarning("NodeTypeSo is null");
+                nodeTypeSo = ScriptableObject.CreateInstance<NodeTypeSo>();
+                nodeTypeSo.width = 1; 
+                nodeTypeSo.height = 1;
+            }
+            
+            GridWidth = nodeTypeSo.width;
+            GridHeight = nodeTypeSo.height;
+            Draggable = nodeTypeSo.draggable;
             _ease = EasingFunctions.GetEasingFunction(rotationEasing);
             if(Visuals == null) Visuals = GetComponent<NodeVisuals>();
             TargetNodes = new List<Node>();
@@ -70,11 +76,16 @@ namespace Construction.Nodes
             _nodeConnections = new NodeConnections(this);
         }
         
-        public virtual void Place(Vector3Int position, INodeMap map)
+        public virtual void Place(Vector3Int gridCoord, INodeMap map)
         {
             NodeMap = map; 
-            Position = position;
+            GridCoord = gridCoord;
+            WorldPosition = transform.position;
         }
+        
+        // Note - nodes register themselves with the Node Map
+        // But they do not register themselves with Map
+        // This must be done at the place of creating / instantiating the node
         
         public virtual void Initialise(NodeConfiguration config)
         {
@@ -124,11 +135,11 @@ namespace Construction.Nodes
         
         public Vector2Int GetSize() => Direction switch
         {
-            Direction.North => new Vector2Int(Width, Height),
-            Direction.East => new Vector2Int(Height, Width),
-            Direction.South => new Vector2Int(Width, Height),
-            Direction.West => new Vector2Int(Height, Width),
-            _ => new Vector2Int(Width, Height),
+            Direction.North => new Vector2Int(GridWidth, GridHeight),
+            Direction.East => new Vector2Int(GridHeight, GridWidth),
+            Direction.South => new Vector2Int(GridWidth, GridHeight),
+            Direction.West => new Vector2Int(GridHeight, GridWidth),
+            _ => new Vector2Int(GridWidth, GridHeight),
         };
 
         public void UpdateTargetNode()

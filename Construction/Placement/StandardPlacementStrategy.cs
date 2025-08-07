@@ -32,9 +32,9 @@ namespace Construction.Placement
 
         public bool CanHandle(IPlaceable placeable) => !placeable.Draggable;
 
-        public void HandlePlacement(IPlaceable placeable, Vector3Int position)
+        public void HandlePlacement(IPlaceable placeable, Vector3Int gridCoordinate)
         {
-            if (!Place(position, placeable)) return;
+            if (!Place(gridCoordinate, placeable)) return;
 
             // If all Nodes are Draggable, then no placeable that gets here will be a Node
             if (placeable is Node node)
@@ -45,7 +45,7 @@ namespace Construction.Placement
             }
 
             _state.IsRunning = false;
-            _neighbourManager.UpdateToCorner(placeable, position, DragPos.Start);
+            _neighbourManager.UpdateToCorner(placeable, gridCoordinate, DragPos.Start);
             _visuals.Hide();
         }
 
@@ -55,15 +55,15 @@ namespace Construction.Placement
             _visuals.Hide();
         }
 
-        private bool Place(Vector3Int position, IPlaceable placeable)
+        private bool Place(Vector3Int gridCoord, IPlaceable placeable)
         {
             Vector2Int size = placeable.GetSize();
-            if (!_map.RegisterOccupant(position.x, position.z, size.x, size.y))
+            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y))
             {
                 placeable.FailedPlacement();
                 return false;
             }
-            placeable.Place(position, _nodeMap);
+            placeable.Place(gridCoord, _nodeMap);
             return true;
         }
     }

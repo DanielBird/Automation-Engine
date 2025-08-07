@@ -1,6 +1,6 @@
-﻿using Events;
-using Events.Types;
-using UnityEngine;
+﻿using UnityEngine;
+using Utilities.Events;
+using Utilities.Events.Types;
 
 namespace UI
 {

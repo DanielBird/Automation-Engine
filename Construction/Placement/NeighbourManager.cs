@@ -16,11 +16,13 @@ namespace Construction.Placement
         private IMap _map;
         private INodeMap _nodeMap;
         private CornerCreator _cornerCreator;
+        private PlacementSettings _settings;
 
         public NeighbourManager(IMap map, INodeMap nodeMap, PlacementSettings settings, Transform transform)
         {
             _map = map;
             _nodeMap = nodeMap;
+            _settings = settings;
             _cornerCreator = new CornerCreator(_nodeMap, settings, transform);
         }
         
@@ -47,8 +49,8 @@ namespace Construction.Placement
 
         private bool UpdatedForwardBackwardNeighbours(Vector3Int position, DragPos dragPosition, Node node)
         {
-            Vector2Int forwardPos = PositionByDirection.GetForwardPosition(position, node.Direction, node.Width); 
-            Vector2Int backwardPos = PositionByDirection.GetBackwardPosition(position, node.Direction, node.Width);
+            Vector2Int forwardPos = PositionByDirection.GetForwardPosition(position, node.Direction, node); 
+            Vector2Int backwardPos = PositionByDirection.GetBackwardPosition(position, node.Direction, node);
             
             bool updatedForward = UpdateNeighbour(node, forwardPos, Target.Forward, dragPosition);
             bool updatedBackward = UpdateNeighbour(node, backwardPos, Target.Backward, dragPosition);
@@ -61,8 +63,8 @@ namespace Construction.Placement
         private bool UpdateSideNeighbour(Node node, Vector3Int position, Target target, DragPos dragPosition)
         {
             Vector2Int sidePosition = target == Target.Right 
-                ? PositionByDirection.GetRightPosition(position, node.Direction, node.Width)
-                : PositionByDirection.GetLeftPosition(position, node.Direction, node.Width);
+                ? PositionByDirection.GetRightPosition(position, node.Direction, node)
+                : PositionByDirection.GetLeftPosition(position, node.Direction, node);
 
             return UpdateNeighbour(node, sidePosition, target, dragPosition);
         }

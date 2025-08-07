@@ -20,10 +20,10 @@ namespace Construction.Maps
 
         public void RegisterNode(Node node)
         {
-            int x = node.Position.x;
-            int z = node.Position.z;
-            int width = node.Width;
-            int height = node.Height; 
+            int x = node.GridCoord.x;
+            int z = node.GridCoord.z;
+            int width = node.GridWidth;
+            int height = node.GridHeight; 
             
             for (int i = x; i < x + width; i++)
             {
@@ -37,10 +37,10 @@ namespace Construction.Maps
         [Button]
         public void DeregisterNode(Node node)
         {
-            int x = node.Position.x;
-            int z = node.Position.z;
-            int width = node.Width;
-            int height = node.Height; 
+            int x = node.GridCoord.x;
+            int z = node.GridCoord.z;
+            int width = node.GridWidth;
+            int height = node.GridHeight; 
             
             for (int i = x; i < x + width; i++)
             {
@@ -57,14 +57,8 @@ namespace Construction.Maps
         [Button]
         public void CheckNode(int x, int z)
         {
-            if (GetNode(x, z, out Node node))
-            {
-                Debug.Log(node.name + " was found");
-            }
-            else
-            {
-                Debug.Log("No node found at " + x + " " + z);
-            }
+            string s = GetNode(x, z, out Node node) ? $"{node.name} was found" : $"no node found at {x} _ {z}";
+            Debug.Log(s);
         }
 
         public bool GetNode(int x, int z, out Node node)
