@@ -49,8 +49,8 @@ namespace Construction.Placement
 
         private bool UpdatedForwardBackwardNeighbours(Vector3Int position, DragPos dragPosition, Node node)
         {
-            Vector2Int forwardPos = PositionByDirection.GetForwardPosition(position, node.Direction, node); 
-            Vector2Int backwardPos = PositionByDirection.GetBackwardPosition(position, node.Direction, node);
+            Vector2Int forwardPos = PositionByDirection.GetForwardPosition(position, node.Direction, node.GridWidth); 
+            Vector2Int backwardPos = PositionByDirection.GetBackwardPosition(position, node.Direction, node.GridWidth);
             
             bool updatedForward = UpdateNeighbour(node, forwardPos, Target.Forward, dragPosition);
             bool updatedBackward = UpdateNeighbour(node, backwardPos, Target.Backward, dragPosition);
@@ -63,8 +63,8 @@ namespace Construction.Placement
         private bool UpdateSideNeighbour(Node node, Vector3Int position, Target target, DragPos dragPosition)
         {
             Vector2Int sidePosition = target == Target.Right 
-                ? PositionByDirection.GetRightPosition(position, node.Direction, node)
-                : PositionByDirection.GetLeftPosition(position, node.Direction, node);
+                ? PositionByDirection.GetRightPosition(position, node.Direction, node.GridWidth)
+                : PositionByDirection.GetLeftPosition(position, node.Direction, node.GridWidth);
 
             return UpdateNeighbour(node, sidePosition, target, dragPosition);
         }

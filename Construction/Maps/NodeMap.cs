@@ -73,6 +73,12 @@ namespace Construction.Maps
             return true; 
         }
 
+        public bool HasNode(int x, int z)
+        {
+            if(!InBounds(x, z)) return false; 
+            return _nodeGrid[x, z] != null;
+        }
+
         public bool GetNeighbour(int x, int z, Direction direction, out Node node)
         {
             Vector2Int neighbour = direction switch

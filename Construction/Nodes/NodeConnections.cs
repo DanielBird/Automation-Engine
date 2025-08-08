@@ -21,14 +21,14 @@ namespace Construction.Nodes
         public bool TryGetForwardNode(out Node forwardNode)
         {
             forwardNode = null; 
-            Vector2Int forwardPosition = PositionByDirection.GetForwardPosition(_node.GridCoord, _node.Direction, _node);
+            Vector2Int forwardPosition = PositionByDirection.GetForwardPosition(_node.GridCoord, _node.Direction, _node.GridWidth);
             return _nodeMapSet && _nodeMap.GetNeighbourAt(forwardPosition, out forwardNode);
         }
         
         public bool TryGetBackwardNode(out Node backwardNode)
         {
             backwardNode = null;
-            Vector2Int backwardPosition = PositionByDirection.GetForwardPosition(_node.GridCoord, InputPosition(), _node);
+            Vector2Int backwardPosition = PositionByDirection.GetForwardPosition(_node.GridCoord, InputPosition(), _node.GridWidth);
             if (_nodeMap == null) return false;
             return _nodeMap.GetNeighbourAt(backwardPosition, out backwardNode);
         }

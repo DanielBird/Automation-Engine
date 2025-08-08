@@ -1,6 +1,6 @@
+using Construction.Nodes;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using InputSettings = GameState.InputSettings;
 
 namespace Construction.Placement
 {
@@ -26,7 +26,8 @@ namespace Construction.Placement
         [Header("Layer Settings")]
         public LayerMask floorLayer;
 
-        [Header("Prefabs")]
+        [Header("Prefabs")] 
+        public NodePrefabRegistry prefabRegistry; 
         public GameObject standardBeltPrefab;
         public GameObject leftBeltPrefab;
         public GameObject rightBeltPrefab;

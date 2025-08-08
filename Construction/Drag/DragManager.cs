@@ -3,6 +3,7 @@ using System.Linq;
 using Construction.Maps;
 using Construction.Nodes;
 using Construction.Placement;
+using Construction.Utilities;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
 using GameState;
@@ -23,7 +24,7 @@ namespace Construction.Drag
         private readonly PlacementState _state;
         private readonly PlacementSettings _settings;
 
-        private readonly Dictionary<GridWorldCoordPair, TempNode> _spawned = new();
+        private readonly Dictionary<Cell, TempNode> _spawned = new();
         private readonly DragSession _dragSession;
 
         public DragManager(
@@ -49,6 +50,7 @@ namespace Construction.Drag
                 .WithSettings(settings)
                 .WithInputSettings(inputSettings)
                 .WithMap(_map)
+                .WithNodeMap(nodeMap)
                 .WithVisuals(_visuals)
                 .WithCamera(mainCamera)
                 .WithFloorDecal(_floorDecal)
@@ -63,59 +65,51 @@ namespace Construction.Drag
         
         public async UniTaskVoid HandleDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord)
         {
-            InitialiseDrag(initialObject, startingNode, startingGridCoord, out GridWorldCoordPair startingPair);
+            InitialiseDrag(initialObject, startingNode, startingGridCoord, out Cell startingCell);
             await _dragSession.RunDrag(initialObject, startingNode, startingGridCoord, _spawned); 
-            FinaliseDrag(startingPair);
+            FinaliseDrag(startingCell);
         }
         
-        private void InitialiseDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord, out GridWorldCoordPair startingPair)
+        private void InitialiseDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord, out Cell startingCell)
         {
             _spawned.Clear();
-            
-            startingPair = GetStartingPair(startingGridCoord); 
-            _spawned.Add(startingPair, new TempNode(initialObject, startingNode));
-            
+            startingCell = new Cell(startingGridCoord, _state.CurrentDirection, NodeType.Straight, _settings);
+            _spawned.Add(startingCell, new TempNode(initialObject, startingNode));
             _state.SetAxis(Axis.XAxis);
         }
-
-        private GridWorldCoordPair GetStartingPair(Vector3Int startingGridCoord)
-        {
-            Vector3Int startWorldPos = Grid.GridToWorldPosition(startingGridCoord, _settings.gridOrigin, _settings.tileSize); 
-            return new GridWorldCoordPair(startingGridCoord, startWorldPos);
-        }
         
-        private void FinaliseDrag(GridWorldCoordPair startingPair)
+        private void FinaliseDrag(Cell startingCell)
         {
             // Register the start node of the drag
-            if (_spawned.TryGetValue(startingPair, out TempNode value))
+            if (_spawned.TryGetValue(startingCell, out TempNode value))
             {
-                RegisterDraggedOccupant(startingPair.GridCoord, value.Node, DragPos.Start, true);
+                RegisterDraggedOccupant(startingCell.GridCoordinate, value.Node, DragPos.Start, true);
             }
             
-            List<GridWorldCoordPair> allPairs = _spawned.Keys.ToList();
-            List<Vector3Int> gridPositions = allPairs
+            List<Cell> allCells = _spawned.Keys.ToList();
+            List<Vector3Int> gridPositions = allCells
                                                 .AsValueEnumerable()
-                                                .Select(pair => pair.GridCoord)
+                                                .Select(pair => pair.GridCoordinate)
                                                 .ToList();
             
-            Vector3Int endGridCoord = VectorUtils.FurthestFrom(gridPositions, startingPair.GridCoord);
-            GridWorldCoordPair endPair = allPairs.First(pair => pair.GridCoord == endGridCoord);
+            Vector3Int endGridCoord = VectorUtils.FurthestFrom(gridPositions, startingCell.GridCoordinate);
+            Cell endCell = allCells.First(cell => cell.GridCoordinate == endGridCoord);
             
             // Get middle pairs (exclude start and end)
-            List<GridWorldCoordPair> middlePairs = allPairs
-                .Where(pair => pair != startingPair && pair != endPair)
+            List<Cell> middlePairs = allCells
+                .Where(pair => pair != startingCell && pair != endCell)
                 .ToList();
 
             // Register the middle nodes of the drag
-            foreach (var pair in middlePairs)
+            foreach (var cell in middlePairs)
             {
-                RegisterDraggedOccupant(pair.GridCoord, _spawned[pair].Node, DragPos.Middle);
+                RegisterDraggedOccupant(cell.GridCoordinate, _spawned[cell].Node, DragPos.Middle);
             }
             
             // Register the end node of the drag -  must come last
-            if (_spawned.TryGetValue(endPair, out TempNode endValue))
+            if (_spawned.TryGetValue(endCell, out TempNode endValue))
             {
-                RegisterDraggedOccupant(endPair.GridCoord, endValue.Node, DragPos.End, true);
+                RegisterDraggedOccupant(endCell.GridCoordinate, endValue.Node, DragPos.End);
             }
             
             CleanupDrag();

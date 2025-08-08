@@ -14,6 +14,7 @@ namespace Construction.Drag
         private PlacementSettings _settings;
         private InputSettings _inputSettings;
         private IMap _map;
+        private INodeMap _nodeMap;
         private PlacementVisuals _visuals;
         private Camera _mainCamera;
         private GameObject _floorDecal;
@@ -37,6 +38,12 @@ namespace Construction.Drag
             return this;
         }
 
+        public DragSessionBuilder WithNodeMap(INodeMap map)
+        {
+            _nodeMap = map;
+            return this;
+        }
+        
         public DragSessionBuilder WithVisuals(PlacementVisuals visuals)
         {
             _visuals = visuals;
@@ -68,6 +75,7 @@ namespace Construction.Drag
             if (_settings == null) missingComponents.Add("PlacementSettings");
             if (_inputSettings == null) missingComponents.Add("InputSettings");
             if (_map == null) missingComponents.Add("IMap");
+            if (_nodeMap == null) missingComponents.Add("INodeMap");
             if (_visuals == null) missingComponents.Add("PlacementVisuals");
             if (_mainCamera == null) missingComponents.Add("Camera");
             if (_floorDecal == null) missingComponents.Add("FloorDecal");
@@ -88,6 +96,7 @@ namespace Construction.Drag
                 _settings,
                 _inputSettings,
                 _map,
+                _nodeMap,
                 _visuals,
                 _mainCamera,
                 _floorDecal,

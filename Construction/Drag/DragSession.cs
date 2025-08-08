@@ -21,17 +21,19 @@ namespace Construction.Drag
         private readonly PlacementSettings _settings;
         private readonly InputSettings _inputSettings;
         private readonly IMap _map;
+        private readonly INodeMap _nodeMap;
         private readonly PlacementVisuals _visuals;
         private readonly Camera _mainCamera;
         private readonly GameObject _floorDecal;
         private readonly PlacementState _state;
 
         private CellSelection _cellSelection = new(); 
-        private HashSet<GridWorldCoordPair> _selectedPos = new();
-        private List<GridWorldCoordPair> _newPos = new();
-        private List<GridWorldCoordPair> _oldPos = new();
+        private HashSet<Cell> _selectedCells = new();
+        private List<Cell> _newCells = new();
+        private List<Cell> _oldCells = new();
+        
         private RaycastHit[] _cellHits = new RaycastHit[1];
-        private GridWorldCoordPair _cornerCell = new (Vector3Int.zero, Vector3Int.zero);
+        private Cell _cornerCell;
         private Corner _corner = Corner.None;
         
         private StringBuilder _nameBuilder = new(64);
@@ -42,6 +44,7 @@ namespace Construction.Drag
             PlacementSettings settings,
             InputSettings inputSettings,
             IMap map,
+            INodeMap nodeMap,
             PlacementVisuals visuals,
             Camera mainCamera,
             GameObject floorDecal,
@@ -50,6 +53,7 @@ namespace Construction.Drag
             _settings = settings;
             _inputSettings = inputSettings;
             _map = map;
+            _nodeMap = nodeMap;
             _visuals = visuals;
             _mainCamera = mainCamera;
             _floorDecal = floorDecal;
@@ -64,10 +68,9 @@ namespace Construction.Drag
         /// <summary>
         /// Handles the drag operation for placing objects in the grid
         /// Does not support placement of rectangular game objects
-        ///
-        /// SpawnedPos is a dictionary of Grid World Coord Pairs and Temporary Nodes
+        /// SpawnedPos is a dictionary of Cells and Temporary Nodes
         /// </summary>
-        public async UniTask RunDrag(GameObject initialObject, Node startingNode, Vector3Int startGridCoord, Dictionary<GridWorldCoordPair, TempNode> spawnedPos)
+        public async UniTask RunDrag(GameObject initialObject, Node startingNode, Vector3Int startGridCoord, Dictionary<Cell, TempNode> spawnedCells)
         {
             var direction = _state.CurrentDirection;
             int stepSize = startingNode.GridWidth;
@@ -78,7 +81,7 @@ namespace Construction.Drag
             while (_settings.place.action.IsPressed())
             {
                 _cellSelection = SelectCells(startGridCoord, stepSize);
-                _selectedPos = _cellSelection.GetGridWorldPairs(_settings); 
+                _selectedCells = _cellSelection.HitCells; 
 
                 if (_state.CurrentDirection != direction)
                 {
@@ -86,14 +89,13 @@ namespace Construction.Drag
                     startingNode.Rotate(direction, false);
                 }
                 
-                UpdateHits(spawnedPos);
+                UpdateHits(spawnedCells);
 
-                if (_newPos.Any() || _oldPos.Any())
+                if (_newCells.Any() || _oldCells.Any())
                 {
-                    ProcessNewHits(initialObject, spawnedPos);
-                    SetCorner(initialObject, spawnedPos);
-                    RemoveOldHits(spawnedPos);
-                    UpdateRotations(spawnedPos);
+                    ProcessNewHits(initialObject, spawnedCells);
+                    RemoveOldHits(spawnedCells);
+                    UpdateRotations(spawnedCells);
                     UpdateFloorDecalPosition();
                 }
                 
@@ -105,47 +107,53 @@ namespace Construction.Drag
         }
         
         /// <summary>
-        /// Generates a CellSelection which contains a list of Vector3Ints
-        /// The hit positions are grid coordinates, NOT world positions. 
+        /// Generates a CellSelection which holds a HashSet of Cells hit during the current drag
         /// </summary>
         private CellSelection SelectCells(Vector3Int startGridCoord, int stepSize)
         {
-            CellSelection selection = Grid.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, _map, _settings, stepSize);
+            CellSelectionParams selectionParams = new(_map, _nodeMap, _settings, stepSize); 
+            CellSelection selection = Grid.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, selectionParams);
             _state.SetAxis(selection.Axis);
             _state.SetDirection(selection.Direction);
             return selection;
         }
         
-        private void UpdateHits(Dictionary<GridWorldCoordPair, TempNode> spawnedPos)
+        private void UpdateHits(Dictionary<Cell, TempNode> spawnedPos)
         {
-            _newPos = _selectedPos
+            _newCells = _selectedCells
                 .AsValueEnumerable()
                 .Except(spawnedPos.Keys)
                 .ToList(); 
             
-            _oldPos = spawnedPos.Keys
+            _oldCells = spawnedPos.Keys
                 .AsValueEnumerable()
-                .Except(_selectedPos)
+                .Except(_selectedCells)
                 .ToList();
         }
          
-        private void ProcessNewHits(GameObject initialObject, Dictionary<GridWorldCoordPair, TempNode> spawnedPos)
+        private void ProcessNewHits(GameObject initialObject, Dictionary<Cell, TempNode> spawnedCells)
         {
-            foreach (GridWorldCoordPair pair in _newPos)
+            foreach (Cell c in _newCells)
             {
-                PlacePrefab(initialObject, _settings.standardBeltPrefab, spawnedPos, pair);
+                PlacePrefab(initialObject, spawnedCells, c);
             }
         }
 
-        private void PlacePrefab(GameObject initialObject, GameObject prefab, Dictionary<GridWorldCoordPair, TempNode> spawnedPos, GridWorldCoordPair pair)
+        private void PlacePrefab(GameObject initialObject, Dictionary<Cell, TempNode> spawnedCells, Cell cell)
         {
-            GameObject newGameObject = SimplePool.Spawn(prefab, pair.WorldPosition, Quaternion.identity, initialObject.transform.parent);
-            SetGameObjectName(newGameObject, prefab, pair.GridCoord);
+            if(!_settings.prefabRegistry.FoundPrefab(cell.Type, out GameObject prefab))
+            {
+                Debug.LogError($"Prefab \"{cell.Type}\" could not be found.");
+                return;
+            }
+            
+            GameObject newGameObject = SimplePool.Spawn(prefab, cell.WorldPosition, Quaternion.identity, initialObject.transform.parent);
+            SetGameObjectName(newGameObject, prefab, cell.GridCoordinate);
             
             if (newGameObject.TryGetComponent(out Node node))
             {
                 _visuals.Place(newGameObject);
-                spawnedPos.Add(pair, new TempNode(newGameObject, node));
+                spawnedCells.Add(cell, new TempNode(newGameObject, node));
                 node.Visuals.ShowArrows();
             }
         }
@@ -161,73 +169,41 @@ namespace Construction.Drag
             go.name = _nameBuilder.ToString();
         }
 
-        private void UpdateRotations(Dictionary<GridWorldCoordPair, TempNode> spawnedPos)
+        private void UpdateRotations(Dictionary<Cell, TempNode> spawnedPos)
         {
             var direction = _state.CurrentDirection;
             
             if (_settings.useLShapedPaths)
             {
-                foreach ((GridWorldCoordPair pair, TempNode tempNode) in spawnedPos)
+                foreach ((Cell cell, TempNode tempNode) in spawnedPos)
                 {
-                    tempNode.Node.RotateInstant(_cellSelection.DirectionFromHit(pair.GridCoord, direction), false);
+                    tempNode.Node.RotateInstant(_cellSelection.DirectionFromHit(cell.GridCoordinate, direction), false);
                 }
             }
             else
             {
-                foreach ((GridWorldCoordPair pair, TempNode tempNode) in spawnedPos)
+                foreach ((Cell cell, TempNode tempNode) in spawnedPos)
                 {
                     tempNode.Node.RotateInstant(direction, false);
                 }
             }
         }
 
-        private void RemoveOldHits(Dictionary<GridWorldCoordPair, TempNode> spawnedPos)
+        private void RemoveOldHits(Dictionary<Cell, TempNode> spawnedCells)
         {
-            foreach (GridWorldCoordPair pair in _oldPos)
+            foreach (Cell c in _oldCells)
             {
-                if (!spawnedPos.TryGetValue(pair, out TempNode temp)) continue;
-                RemovePrefab(spawnedPos, temp.Prefab, pair);
+                if (!spawnedCells.TryGetValue(c, out TempNode temp)) continue;
+                RemovePrefab(spawnedCells, temp.Prefab, c);
             }
         }
 
-        private static void RemovePrefab(Dictionary<GridWorldCoordPair, TempNode> spawnedPos, GameObject go, GridWorldCoordPair pair)
+        private static void RemovePrefab(Dictionary<Cell, TempNode> spawnedCells, GameObject go, Cell cell)
         {
             SimplePool.Despawn(go);
-            spawnedPos.Remove(pair);
+            spawnedCells.Remove(cell);
         }
-
-        private void SetCorner(GameObject initialObject, Dictionary<GridWorldCoordPair, TempNode> spawnedPos)
-        {
-            if(_cellSelection.CornerGridCoord == _cornerCell.GridCoord && _cellSelection.Corner == _corner) return;
-            
-            ResetOldCorners(initialObject, spawnedPos);
-            
-            if(_cellSelection.Corner == Corner.None) return;
-            
-            _corner = _cellSelection.Corner;
-            
-            // Set the new corner cell
-            Vector3Int cornerGridCoord = _cellSelection.CornerGridCoord;
-            Vector3Int cornerWorldPos = Grid.GridToWorldPosition(cornerGridCoord, _settings.gridOrigin, _settings.tileSize);
-            
-            _cornerCell = new GridWorldCoordPair(cornerGridCoord, cornerWorldPos);
-            if(spawnedPos.TryGetValue(_cornerCell, out TempNode value2))
-                RemovePrefab(spawnedPos, value2.Prefab, _cornerCell);
-            
-            GameObject newPrefab = _cellSelection.Corner == Corner.Right ? _settings.rightBeltPrefab : _settings.leftBeltPrefab;
-            PlacePrefab(initialObject, newPrefab, spawnedPos, _cornerCell);
-        }
-
-        private void ResetOldCorners(GameObject initialObject, Dictionary<GridWorldCoordPair, TempNode> spawnedPos)
-        {
-            // Reset the old corner cell
-            if (!_oldPos.Contains(_cornerCell) && spawnedPos.TryGetValue(_cornerCell, out TempNode value))
-            {
-                RemovePrefab(spawnedPos, value.Prefab, _cornerCell);
-                PlacePrefab(initialObject, _settings.standardBeltPrefab, spawnedPos, _cornerCell);
-            }
-        }
-
+        
         private void UpdateFloorDecalPosition()
         {
             if (!TryGetFloorPosition(out Vector3 position)) return;

@@ -25,28 +25,27 @@ namespace Construction.Nodes
             _ => throw new ArgumentOutOfRangeException(nameof(direction), direction, null)
         };
         
-        public static Vector2Int GetForwardPosition(Vector3Int basePosition, Direction currentDirection, Node node)
+        public static Vector2Int GetForwardPosition(Vector3Int basePosition, Direction currentDirection, int size)
         {
-            int size = node.GridWidth; 
             return Get(basePosition.x, basePosition.z, currentDirection, size);
         }
         
-        public static Vector2Int GetBackwardPosition(Vector3Int basePosition, Direction currentDirection, Node node)
+        public static Vector2Int GetBackwardPosition(Vector3Int basePosition, Direction currentDirection, int size)
         {
             Direction opposite = DirectionUtils.Opposite(currentDirection);
-            return Get(basePosition.x, basePosition.z, opposite, node.GridWidth);
+            return Get(basePosition.x, basePosition.z, opposite, size);
         }
         
-        public static Vector2Int GetRightPosition(Vector3Int basePosition, Direction currentDirection, Node node)
+        public static Vector2Int GetRightPosition(Vector3Int basePosition, Direction currentDirection, int size)
         {
             Direction right = DirectionUtils.Increment(currentDirection);
-            return Get(basePosition.x, basePosition.z, right, node.GridWidth);
+            return Get(basePosition.x, basePosition.z, right, size);
         }
         
-        public static Vector2Int GetLeftPosition(Vector3Int basePosition, Direction currentDirection, Node node)
+        public static Vector2Int GetLeftPosition(Vector3Int basePosition, Direction currentDirection, int size)
         {
             Direction left = DirectionUtils.Decrement(currentDirection);
-            return Get(basePosition.x, basePosition.z, left, node.GridWidth);
+            return Get(basePosition.x, basePosition.z, left, size);
         }
         
         public static Vector3Int GetForwardPositionVector3(Vector3Int basePosition, Direction currentDirection, int size) => Get(basePosition, currentDirection, size);

@@ -1,7 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Construction.Maps;
+using Construction.Nodes;
 using Construction.Placement;
 using UnityEngine;
 
@@ -65,21 +64,21 @@ namespace Construction.Utilities
             return worldPositions;
         }
         
-        public static CellSelection SelectCells(Vector3Int start, Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, int stepSize = 1)
+        public static CellSelection SelectCells(Vector3Int start, Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, CellSelectionParams selectionParams)
         {
             CellSelection selection = new CellSelection();
 
-            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, map, settings, out Vector3Int endGridCoord))
+            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, selectionParams.Map, selectionParams.Settings, out Vector3Int endGridCoord))
             {
                 return selection;
             }
             
             DetermineSelectionAxis(start, endGridCoord, selection);
             
-            if(settings.useLShapedPaths) 
-                SelectCellsAsLShapedPath(start, endGridCoord, selection, map, stepSize);
+            if(selectionParams.Settings.useLShapedPaths) 
+                SelectCellsAsLShapedPath(start, endGridCoord, selection, selectionParams);
             else
-                SelectCellsInRange(start, endGridCoord, selection, map, stepSize);
+                SelectCellsInRange(start, endGridCoord, selection, selectionParams);
 
             return selection;
         }
@@ -92,7 +91,7 @@ namespace Construction.Utilities
                 return selection;
             
             IEnumerable<Vector3Int> cells = GetCellArea(start, end, stepSize);
-            selection.AddRangeToDictionary(cells, Direction.North);
+            selection.AddRangeToDictionary(cells, Direction.North, settings);
             
             return selection;
         }
@@ -147,7 +146,7 @@ namespace Construction.Utilities
             selection.SetAxis(deltaX <= deltaZ ? Axis.XAxis : Axis.ZAxis);
         }
         
-        private static void SelectCellsInRange(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, int stepSize)
+        private static void SelectCellsInRange(Vector3Int start, Vector3Int end, CellSelection selection, CellSelectionParams selectionParams)
         {
             int min, max, fixedCoord;
             bool ascending;
@@ -171,98 +170,186 @@ namespace Construction.Utilities
             }
     
             selection.SetDirection(direction);
-            AddCellsInRange(fixedCoord, ascending ? min : max, ascending ? max : min, ascending, selection, map, stepSize);
+            AddCellsInRange(fixedCoord, ascending ? min : max, ascending ? max : min, ascending, selection, selectionParams);
         }
 
-        private static void AddCellsInRange(int fixedCoord, int start, int end, bool ascending, CellSelection selection, IMap map, int stepSize)
+        private static void AddCellsInRange(int fixedCoord, int start, int end, bool ascending, CellSelection selection, CellSelectionParams selectionParams)
         {
+            int stepSize = selectionParams.StepSize; 
             if(stepSize == 0) stepSize = 1;
             
             for (int i = start; ascending ? i <= end : i >= end; i += (ascending ? stepSize : -stepSize))
             {
-                if (!IsValidCell(fixedCoord, i, selection.Axis, map)) return;
+                if (!IsValidCell(fixedCoord, i, selection.Axis, selectionParams.Map)) return;
                 Vector3Int position = CreateCellPosition(fixedCoord, i, selection.Axis);
-                selection.AddCell(position);
+                selection.AddCell(position, selectionParams.Settings);
             }
         }
         
-        private static void SelectCellsAsLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, int stepSize, Direction defaultDirection = Direction.North, bool horizontalFirst = true)
+        private static void SelectCellsAsLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, CellSelectionParams selectionParams, Direction defaultDirection = Direction.North, bool horizontalFirst = true)
         {
             if (start == end)
             {
-                AddCell(start, defaultDirection, selection, map);
+                AddSingleCell(selection, selectionParams, start, defaultDirection);
                 return;
             }
 
             if (IsStraightLine(start, end))
             {
-                AddStraightLine(start, end, selection, map, stepSize);
+                AddStraightLine(start, end, selection, selectionParams);
                 return;
             }
             
-            AddLShapedPath(start, end, selection, map, horizontalFirst, stepSize);
+            AddLShapedPath(start, end, selection, selectionParams, horizontalFirst);
         }
-
+                
+        private static void AddSingleCell(CellSelection selection, CellSelectionParams selectionParams, Vector3Int cell, Direction direction, NodeType type = NodeType.Straight)
+        { 
+            int x = cell.x;
+            int z = cell.z;
+            
+            if (!selectionParams.Map.VacantCell(x, z))
+            {
+                if (selectionParams.NodeMap.HasNode(x, z)) type = NodeType.Intersection; 
+                else return;
+            }
+            selection.AddCell(cell, direction, type, selectionParams.Settings);
+        }
+        
         private static bool IsStraightLine(Vector3Int a, Vector3Int b)
         {
             return a.x == b.x || a.z == b.z;
         }
         
-        private static void AddStraightLine(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, int stepSize)
+        private static void AddStraightLine(Vector3Int start, Vector3Int end, CellSelection selection, CellSelectionParams selectionParams)
         {
             if (start.x == end.x)
-                AddLineAlongAxis(start, end, Axis.ZAxis, selection, map, stepSize);
+                AddLineAlongAxis(start, end, Axis.ZAxis, selection, selectionParams);
             else
-                AddLineAlongAxis(start, end, Axis.XAxis, selection, map, stepSize);
+                AddLineAlongAxis(start, end, Axis.XAxis, selection, selectionParams);
             
             selection.Corner = Corner.None; 
         }
         
-        private static void AddLineAlongAxis(Vector3Int from, Vector3Int to, Axis axis, CellSelection selection, IMap map, int stepSize)
-        {
-            bool ascending = axis == Axis.XAxis ? from.x < to.x : from.z < to.z;
-            
-            if(stepSize == 0) stepSize = 1;
-            int step = ascending ? stepSize : -stepSize;
-            
-            Direction direction = GetDirectionFromAxis(ascending, axis);
-            
-            if (axis == Axis.XAxis)
-            {
-                for (int x = from.x; ascending ? x < to.x : x > to.x; x += step)
-                    AddCell(new Vector3Int(x, 0, from.z), direction, selection, map);
-            }
-            else
-            {
-                for (int z = from.z; ascending ? z < to.z : z > to.z; z += step)
-                    AddCell(new Vector3Int(from.x, 0, z), direction, selection, map);
-            }
-
-            AddCell(to, direction, selection, map);
-        }
-        
-        private static void AddLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, IMap map, bool horizontalFirst, int stepSize)
+        private static void AddLShapedPath(Vector3Int start, Vector3Int end, CellSelection selection, CellSelectionParams selectionParams, bool horizontalFirst)
         {
             Vector3Int corner;
-            Vector3Int adjustedEnd = SnapToStepGrid(start, end, stepSize);
+            Vector3Int adjustedEnd = SnapToStepGrid(start, end, selectionParams.StepSize);
 
             if (horizontalFirst)
             {
-                Vector3Int horizontalEnd = new (adjustedEnd.x, 0, start.z);
-                AddLineAlongAxis(start, horizontalEnd, Axis.XAxis, selection, map, stepSize);
-                AddLineAlongAxis(horizontalEnd, adjustedEnd, Axis.ZAxis, selection, map, stepSize);
-                corner = horizontalEnd;
+                corner = new Vector3Int(adjustedEnd.x, 0, start.z);
+                NodeType cornerType =  IsLeftTurn(start, corner, adjustedEnd) ? NodeType.LeftCorner : NodeType.RightCorner;
+                AddLineAlongAxis(start, corner, Axis.XAxis, selection, selectionParams, true);
+                AddLineAlongAxis(corner, adjustedEnd, Axis.ZAxis, selection, selectionParams, false,true, cornerType);
             }
             else
             {
-                Vector3Int verticalEnd = new (start.x, 0, adjustedEnd.z);
-                AddLineAlongAxis(start, verticalEnd, Axis.ZAxis, selection, map, stepSize);
-                AddLineAlongAxis(verticalEnd, adjustedEnd, Axis.XAxis, selection, map, stepSize);
-                corner = verticalEnd;
+                corner = new Vector3Int(start.x, 0, adjustedEnd.z);
+                NodeType cornerType =  IsLeftTurn(start, corner, adjustedEnd) ? NodeType.LeftCorner : NodeType.RightCorner;
+                AddLineAlongAxis(start, corner, Axis.ZAxis, selection, selectionParams, true);
+                AddLineAlongAxis(corner, adjustedEnd, Axis.XAxis, selection, selectionParams, false, true, cornerType);
             }
-
+            
             selection.Corner = IsLeftTurn(start, corner, adjustedEnd) ? Corner.Left : Corner.Right; 
             selection.SetCornerGridCoord(corner);
+        }
+        
+        private static void AddLineAlongAxis(
+            Vector3Int from, Vector3Int to, Axis axis, 
+            CellSelection selection, CellSelectionParams selectionParams,
+            bool excludeEnd = false, 
+            bool startIsCorner = false, NodeType cornerType = NodeType.LeftCorner)
+        {
+            bool ascending = axis == Axis.XAxis 
+                ? from.x < to.x 
+                : from.z < to.z;
+            
+            int step = ascending ? selectionParams.StepSize : -selectionParams.StepSize;
+            Direction direction = GetDirectionFromAxis(ascending, axis);
+
+            HashSet<Cell> cells = new(); 
+            
+            // Add the main cells 
+            if (axis == Axis.XAxis)
+            {
+                int xStart = from.x + step;
+                for (int x = xStart; ascending ? x < to.x : x >  to.x; x += step)
+                {
+                    AddCell(selectionParams, x, from.z, cells, direction);
+                }
+            }
+            else
+            {
+                int zStart = from.z + step;
+                for (int z = zStart; ascending ? z < to.z : z > to.z; z += step)
+                {
+                    AddCell(selectionParams, from.x, z, cells, direction);
+                }
+            }
+
+            // Add the 'from' cell to the HashSet
+            if (startIsCorner) cells.Add(new Cell(from, direction, cornerType, selectionParams.Settings));
+            else AddStartEndCell(cells, from, direction, selectionParams.Settings, step, selectionParams.NodeMap, false);
+            
+            // Add the 'to' cell to the HashSet
+            if (!excludeEnd)
+                AddStartEndCell(cells, to, direction, selectionParams.Settings, step, selectionParams.NodeMap, true);
+            
+            // Add the HashSet of cells to the cell selection class
+            selection.AddCells(cells);
+        }
+
+        private static void AddCell(CellSelectionParams selectionParams, int x, int z, HashSet<Cell> cells, Direction direction, NodeType nodeType = NodeType.Straight)
+        {
+            if (!selectionParams.Map.VacantCell(x, z))
+            {
+                if (selectionParams.NodeMap.HasNode(x, z)) nodeType = NodeType.Intersection;
+                else return;
+            }
+                    
+            cells.Add(new Cell(new Vector3Int(x, 0, z), direction, nodeType, selectionParams.Settings));
+        }
+
+        private static void AddStartEndCell(HashSet<Cell> cells, Vector3Int gridCoord, Direction direction, PlacementSettings settings, int step, INodeMap nodeMap, bool end)
+        {
+            // Check if the left or right neighbouring cells are occupied by another node
+            step = Mathf.Abs(step); // step should always be positive for this method
+            
+            Direction rightDirection = DirectionUtils.Increment(direction);
+            Direction leftDirection = DirectionUtils.Decrement(direction);
+            
+            Vector2Int rightPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, rightDirection, step);
+            Vector2Int leftPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, leftDirection, step);
+
+            bool rightFound = nodeMap.GetNeighbour(rightPos.x, rightPos.y, rightDirection, out Node rightN);
+            bool leftFound  = nodeMap.GetNeighbour(leftPos.x, leftPos.y, leftDirection, out Node leftN) && leftN.Direction == (end ? leftDirection : rightDirection);
+            
+            bool right = rightFound && rightN.Direction == (end ? rightDirection : leftDirection);
+            bool left = leftFound && leftN.Direction == (end ? leftDirection : rightDirection);
+            
+            // Debug.Log($"Right direction is {rightDirection} and left direction is {leftDirection}");
+            // Debug.Log($"Right Position is {rightPos} and Left is {leftPos}");
+            // Debug.Log($"Right is found is {rightFound} and it is facing the correct direction is {right}. Left is found is {leftFound} and it is facing the correct direction is {left}");
+            
+            NodeType nodeType = (left, right) switch
+            {
+                (true,  true)  => NodeType.Intersection,
+                (true,  false) => NodeType.LeftCorner,
+                (false, true)  => NodeType.RightCorner,
+                _              => NodeType.Straight
+            };
+
+            Direction finalDirection = (left, right) switch
+            {
+                (false,  false) => direction,
+                (true,  false) => end ? leftDirection : direction,
+                (false, true)  => end ? rightDirection : direction,
+                _              => direction
+
+            };
+
+            cells.Add(new Cell(gridCoord, finalDirection, nodeType, settings));
         }
         
         private static Vector3Int SnapToStepGrid(Vector3Int start, Vector3Int end, int stepSize)
@@ -309,12 +396,6 @@ namespace Construction.Utilities
                     return Direction.South;
             }
             return Direction.North;
-        }
-        
-        private static void AddCell(Vector3Int cell, Direction direction, CellSelection selection, IMap map)
-        { 
-            if (!map.VacantCell(cell.x, cell.z)) return;
-            selection.AddCell(cell, direction);
         }
         
         private static bool IsValidCell(int fixedCoord, int variableCoord, Axis axis, IMap map)

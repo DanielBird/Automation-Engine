@@ -106,7 +106,7 @@ namespace Construction.Placement
         
         private void RemoveSingleNode(GridWorldCoordPair delete, Node node)
         {
-            Vector3Int gridCoord = delete.GridCoord;
+            Vector3Int gridCoord = delete.GridCoordinate;
             Map.DeregisterOccupant(gridCoord.x, gridCoord.z, node.GridWidth, node.GridHeight);
             NodeMap.DeregisterNode(node);
             SimplePool.Despawn(node.gameObject);
@@ -135,7 +135,7 @@ namespace Construction.Placement
             
             foreach (GridWorldCoordPair pair in _newHits)
             {
-                if (!NodeMap.GetNode(pair.GridCoord.x, pair.GridCoord.z, out Node node))
+                if (!NodeMap.GetNode(pair.GridCoordinate.x, pair.GridCoordinate.z, out Node node))
                 {
                     _pendingEmptyDestructions.Add(pair.WorldPosition);
                 }

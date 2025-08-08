@@ -17,6 +17,7 @@ namespace Construction.Nodes
         Straight,
         LeftCorner,
         RightCorner,
+        Intersection,
     }
     
     [RequireComponent(typeof(NodeVisuals))]
