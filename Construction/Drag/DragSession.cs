@@ -173,7 +173,7 @@ namespace Construction.Drag
         {
             var direction = _state.CurrentDirection;
             
-            if (_settings.useLShapedPaths)
+            if (_settings.cellSelectionAlgorithm != CellSelectionAlgorithm.StraightLinesOnly)
             {
                 foreach ((Cell cell, TempNode tempNode) in spawnedPos)
                 {
@@ -213,12 +213,12 @@ namespace Construction.Drag
         
         private Vector3Int GridAlignedWorldPosition(Vector3 position)
         {
-            return Grid.GridAlignedWorldPosition(position, _settings.gridOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize);
+            return Grid.GridAlignedWorldPosition(position, new GridParams(_settings.gridOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
         }
 
         private Vector3Int GetGridPosition(Vector3Int position)
         {
-            return Grid.WorldToGridCoordinate(position, _settings.gridOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize);
+            return Grid.WorldToGridCoordinate(position, new GridParams(_settings.gridOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
         }
         
         private bool TryGetFloorPosition(out Vector3 position) 

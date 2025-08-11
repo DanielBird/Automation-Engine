@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Construction.Maps;
 using Construction.Nodes;
@@ -11,25 +12,25 @@ namespace Construction.Utilities
         /// <summary>
         /// Converts a world position to a grid-aligned world position, centered on the nearest tile.
         /// </summary>
-        public static Vector3Int GridAlignedWorldPosition(Vector3 position, Vector3Int gridOrigin, int mapWidth, int mapHeight, float tileSize)
+        public static Vector3Int GridAlignedWorldPosition(Vector3 position, GridParams gridParams)
         {
-            Vector3Int gridPos = WorldToGridCoordinate(position, gridOrigin, mapWidth, mapHeight, tileSize);
-            Vector3Int worldPosition = GridToWorldPosition(gridPos, gridOrigin, tileSize); 
+            Vector3Int gridPos = WorldToGridCoordinate(position, gridParams);
+            Vector3Int worldPosition = GridToWorldPosition(gridPos, gridParams.Origin, gridParams.TileSize); 
             return worldPosition;
         }
         
         /// <summary>
         /// Converts a world position to grid coordinate, within the map bounds
         /// </summary>
-        public static Vector3Int WorldToGridCoordinate(Vector3 position, Vector3Int gridOrigin, int mapWidth, int mapHeight, float tileSize)
+        public static Vector3Int WorldToGridCoordinate(Vector3 position, GridParams gp)
         {
-            Vector3 relative = position - gridOrigin;
+            Vector3 relative = position - gp.Origin;
 
-            int gridX = Mathf.FloorToInt(relative.x / tileSize);
-            int gridZ = Mathf.FloorToInt(relative.z / tileSize);
+            int gridX = Mathf.FloorToInt(relative.x / gp.TileSize);
+            int gridZ = Mathf.FloorToInt(relative.z / gp.TileSize);
 
-            gridX = Mathf.Clamp(gridX, 0, mapWidth - 1);
-            gridZ = Mathf.Clamp(gridZ, 0, mapHeight - 1);
+            gridX = Mathf.Clamp(gridX, 0, gp.Width - 1);
+            gridZ = Mathf.Clamp(gridZ, 0, gp.Height - 1);
 
             return new Vector3Int(gridX, 0, gridZ);
         }
@@ -74,11 +75,21 @@ namespace Construction.Utilities
             }
             
             DetermineSelectionAxis(start, endGridCoord, selection);
-            
-            if(selectionParams.Settings.useLShapedPaths) 
-                SelectCellsAsLShapedPath(start, endGridCoord, selection, selectionParams);
-            else
-                SelectCellsInRange(start, endGridCoord, selection, selectionParams);
+
+            switch (selectionParams.Settings.cellSelectionAlgorithm)
+            {
+                case CellSelectionAlgorithm.StraightLinesOnly:
+                    SelectCellsInRange(start, endGridCoord, selection, selectionParams);
+                    break;
+                case CellSelectionAlgorithm.LShapedPaths:
+                    SelectCellsAsLShapedPath(start, endGridCoord, selection, selectionParams);
+                    break;
+                case CellSelectionAlgorithm.FindShortestPath:
+                    SelectCellsByShortestPath(start, endGridCoord, selection, selectionParams);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
 
             return selection;
         }
@@ -119,7 +130,7 @@ namespace Construction.Utilities
             int hits = Physics.RaycastNonAlloc(ray, cellHits, 300f, floorLayer); 
             if (hits <= 0) return false;
             
-            gridCoordinate = WorldToGridCoordinate(cellHits[0].point, settings.gridOrigin, map.MapWidth, map.MapHeight, settings.tileSize);
+            gridCoordinate = WorldToGridCoordinate(cellHits[0].point, new GridParams(settings.gridOrigin, map.MapWidth, map.MapHeight, settings.tileSize));
             return true;
         }
 
@@ -322,8 +333,8 @@ namespace Construction.Utilities
             Vector2Int rightPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, rightDirection, step);
             Vector2Int leftPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, leftDirection, step);
 
-            bool rightFound = nodeMap.GetNeighbour(rightPos.x, rightPos.y, rightDirection, out Node rightN);
-            bool leftFound  = nodeMap.GetNeighbour(leftPos.x, leftPos.y, leftDirection, out Node leftN) && leftN.Direction == (end ? leftDirection : rightDirection);
+            bool rightFound = nodeMap.GetNeighbourAt(rightPos, out Node rightN);
+            bool leftFound  = nodeMap.GetNeighbourAt(leftPos, out Node leftN);
             
             bool right = rightFound && rightN.Direction == (end ? rightDirection : leftDirection);
             bool left = leftFound && leftN.Direction == (end ? leftDirection : rightDirection);
@@ -410,6 +421,149 @@ namespace Construction.Utilities
             return axis == Axis.XAxis
                 ? new Vector3Int(fixedCoord, 0, variableCoord)
                 : new Vector3Int(variableCoord, 0, fixedCoord);
+        }
+        
+        private static void SelectCellsByShortestPath(Vector3Int start, Vector3Int end, CellSelection selection, CellSelectionParams selectionParams)
+        {
+            // Snap end to step grid so path expands in multiples of StepSize
+            Vector3Int adjustedEnd = SnapToStepGrid(start, end, selectionParams.StepSize);
+
+            // Single cell selection
+            if (start == adjustedEnd)
+            {
+                AddSingleCell(selection, selectionParams, start, Direction.North);
+                selection.Corner = Corner.None;
+                return;
+            }
+
+            List<Vector3Int> path = FindShortestPath(start, adjustedEnd, selectionParams);
+            if (path == null || path.Count == 0)
+                return;
+
+            AddPathCells(path, selection, selectionParams);
+            selection.Corner = Corner.None; // multi-corner paths: don't use single-corner UI
+        }
+        
+        private static List<Vector3Int> FindShortestPath(Vector3Int start, Vector3Int goal, CellSelectionParams p)
+        {
+            int w = p.Map.MapWidth;
+            int h = p.Map.MapHeight;
+            int step = Mathf.Max(1, p.StepSize);
+
+            // Breadth-first search
+            Queue<Vector3Int> q = new();
+            HashSet<Vector3Int> visited = new();
+            Dictionary<Vector3Int, Vector3Int> parent = new();
+
+            q.Enqueue(start);
+            visited.Add(start);
+
+            while (q.Count > 0)
+            {
+                Vector3Int cur = q.Dequeue();
+                if (cur == goal)
+                {
+                    List<Vector3Int> path = new();
+                    Vector3Int t = goal;
+                    while (true)
+                    {
+                        path.Add(t);
+                        if (t == start) break;
+                        t = parent[t];
+                    }
+                    path.Reverse();
+                    return path;
+                }
+
+                foreach (Vector3Int nb in GetNeighbours(cur, step, w, h))
+                {
+                    if (visited.Contains(nb)) continue;
+                    if (!IsPassable(nb.x, nb.z, p)) continue;
+
+                    visited.Add(nb);
+                    parent[nb] = cur;
+                    q.Enqueue(nb);
+                }
+            }
+
+            // No path
+            return null;
+        }
+        
+        private static IEnumerable<Vector3Int> GetNeighbours(Vector3Int c, int step, int width, int height)
+        {
+            // 4-connected moves by step
+            int nx;
+
+            nx = c.x + step; if (nx >= 0 && nx < width) yield return new Vector3Int(nx, 0, c.z);
+            nx = c.x - step; if (nx >= 0 && nx < width) yield return new Vector3Int(nx, 0, c.z);
+
+            int nz;
+            nz = c.z + step; if (nz >= 0 && nz < height) yield return new Vector3Int(c.x, 0, nz);
+            nz = c.z - step; if (nz >= 0 && nz < height) yield return new Vector3Int(c.x, 0, nz);
+        }
+
+        private static bool IsPassable(int x, int z, CellSelectionParams p)
+        {
+            // Allow moving through vacant cells; 
+            if (p.Map.VacantCell(x, z)) return true;
+            
+            // Implement logic for detecting when an intersection should be placed
+            // if (p.NodeMap.HasNode(x, z)) return false;
+            return false;
+        }
+        
+        private static void AddPathCells(List<Vector3Int> path, CellSelection selection, CellSelectionParams selectionParams)
+        {
+            int n = path.Count;
+            int step = Mathf.Max(1, selectionParams.StepSize);
+            HashSet<Cell> cells = new();
+
+            if (n == 1)
+            {
+                // Single cell
+                AddSingleCell(selection, selectionParams, path[0], Direction.North);
+                selection.AddCells(cells);
+                return;
+            }
+
+            // First cell (start)
+            Direction firstDir = DirectionBetween(path[0], path[1]);
+            AddStartEndCell(cells, path[0], firstDir, selectionParams.Settings, step, selectionParams.NodeMap, false);
+
+            // Middles
+            for (int i = 1; i < n - 1; i++)
+            {
+                Direction prevDir = DirectionBetween(path[i - 1], path[i]);
+                Direction nextDir = DirectionBetween(path[i], path[i + 1]);
+
+                if (prevDir == nextDir)
+                {
+                    // Straight
+                    AddCell(selectionParams, path[i].x, path[i].z, cells, nextDir);
+                }
+                else
+                {
+                    // Corner at path[i]
+                    bool leftTurn = IsLeftTurn(path[i - 1], path[i], path[i + 1]);
+                    NodeType cornerType = leftTurn ? NodeType.LeftCorner : NodeType.RightCorner;
+                    AddCell(selectionParams, path[i].x, path[i].z, cells, nextDir, cornerType);
+                }
+            }
+
+            // Last cell (end)
+            Direction lastDir = DirectionBetween(path[n - 2], path[n - 1]);
+            AddStartEndCell(cells, path[n - 1], lastDir, selectionParams.Settings, step, selectionParams.NodeMap, true);
+
+            selection.AddCells(cells);
+        }
+        
+        private static Direction DirectionBetween(Vector3Int a, Vector3Int b)
+        {
+            if (b.x > a.x) return Direction.East;
+            if (b.x < a.x) return Direction.West;
+            if (b.z > a.z) return Direction.North;
+            return Direction.South;
         }
     }
 }

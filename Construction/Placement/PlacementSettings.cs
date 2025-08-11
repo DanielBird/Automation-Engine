@@ -4,6 +4,8 @@ using UnityEngine.InputSystem;
 
 namespace Construction.Placement
 {
+    public enum CellSelectionAlgorithm {FindShortestPath, StraightLinesOnly, LShapedPaths }
+    
     [CreateAssetMenu(fileName = "PlacementSettings", menuName = "Construction/PlacementSettings")]
     public class PlacementSettings : ScriptableObject
     {
@@ -11,8 +13,8 @@ namespace Construction.Placement
         public Vector3Int gridOrigin = Vector3Int.zero;
         [Tooltip("The size of each grid cell in world units")]
         public float tileSize = 1f;
-        [Tooltip("Do paths turn corners or run in straight lines only?")]
-        public bool useLShapedPaths; 
+        [Tooltip("How are paths for placing nodes (like belts) calculated?")]
+        public CellSelectionAlgorithm cellSelectionAlgorithm; 
 
         [Header("Movement Settings")]
         public float moveSpeed = 30f;

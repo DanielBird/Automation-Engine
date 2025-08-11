@@ -55,7 +55,7 @@ namespace Construction.Placement
         {
             alignedPosition = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            alignedPosition = Grid.GridAlignedWorldPosition(position, settings.gridOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize);
+            alignedPosition = Grid.GridAlignedWorldPosition(position, new GridParams(settings.gridOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
             return true;
         }
 
@@ -68,7 +68,7 @@ namespace Construction.Placement
         {
             gridCoordinate = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            gridCoordinate = Grid.WorldToGridCoordinate(position, settings.gridOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize);
+            gridCoordinate = Grid.WorldToGridCoordinate(position, new GridParams(settings.gridOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
             return true;
         }
         

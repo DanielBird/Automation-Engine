@@ -108,7 +108,7 @@ namespace Construction.Nodes
 
         public virtual void FailedPlacement()
         {
-            //Debug.Log("Failed placement on " + name);
+            Debug.Log("Failed placement on " + name);
         }
 
         public void Reset() => Direction = startingDirection;
@@ -181,7 +181,9 @@ namespace Construction.Nodes
         
         public bool TryGetBackwardNode(out Node backwardNode) => _nodeConnections.TryGetBackwardNode(out backwardNode);
 
-        public bool HasNeighbour(Direction direction) => _nodeConnections.HasNeighbour(direction); 
+        public bool HasNeighbour(Direction direction) => _nodeConnections.HasNeighbour(direction);
+
+        public bool TryGetNeighbour(Direction direction, out Node neighbour) => _nodeConnections.TryGetNeighbour(direction, out neighbour); 
 
         // The orientation that a neighbouring input node must have to correctly input to this node
         public Direction InputDirection() => _nodeConnections.InputDirection(); 

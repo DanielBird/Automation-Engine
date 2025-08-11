@@ -18,6 +18,12 @@ namespace Construction.Nodes
             _nodeMapSet = true;
         } 
         
+        public bool TryGetNeighbour(Direction direction, out Node neighbour)
+        {
+            neighbour = null;
+            return _nodeMapSet && _nodeMap.GetNeighbour(_node.GridCoord.x, _node.GridCoord.z, direction, out neighbour);
+        }
+        
         public bool TryGetForwardNode(out Node forwardNode)
         {
             forwardNode = null; 

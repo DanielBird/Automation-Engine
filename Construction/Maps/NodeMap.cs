@@ -9,7 +9,7 @@ namespace Construction.Maps
     [RequireComponent(typeof(Map))]
     public class NodeMap : MonoBehaviour, INodeMap
     {
-        [ShowInInspector] private Node[,] _nodeGrid;
+        private Node[,] _nodeGrid;
         public Map map;
 
         private void Awake()
@@ -79,6 +79,13 @@ namespace Construction.Maps
             return _nodeGrid[x, z] != null;
         }
 
+        [Button]
+        public void TestGetNeighbour(int x, int z, Direction direction)
+        {
+            if(GetNeighbour(x, z, direction, out Node node)) Debug.Log($"{node} found");
+            else Debug.Log("No node found");
+        }
+        
         public bool GetNeighbour(int x, int z, Direction direction, out Node node)
         {
             Vector2Int neighbour = direction switch

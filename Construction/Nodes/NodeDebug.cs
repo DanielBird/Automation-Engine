@@ -71,7 +71,14 @@ namespace Construction.Nodes
         
         [Button]
         public void DebugNeighbour(Direction direction) =>  
-            Debug.Log($"Has neighbour {direction} on {name} is {node.HasNeighbour(direction)}");
+            Debug.Log($"Has neighbour to the {direction} on {name} is {node.HasNeighbour(direction)}");
+
+        [Button]
+        public void WhoIsNeighbour(Direction direction)
+        {
+            if(!node.TryGetNeighbour(direction, out var neighbour)) Debug.Log("No neighbour found");
+            else Debug.Log($"The neighbour to the {direction} is {neighbour.name}");
+        }
 
         private void OnDrawGizmosSelected()
         {

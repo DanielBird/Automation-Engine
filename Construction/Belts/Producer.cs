@@ -52,6 +52,12 @@ namespace Construction.Belts
 
         private bool WidgetPrefabFound(int widgetType)
         {
+            if (widgetPrefabs.widgets.Count == 0)
+            {
+                Debug.LogWarning("No widget prefabs found in the scriptable object");
+                return false;
+            }
+            
             _widgetPrefab = widgetPrefabs.widgets[widgetType];
             if (_widgetPrefab == null)
             {

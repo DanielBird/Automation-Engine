@@ -17,7 +17,7 @@ namespace Construction.Maps
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         
-        [ShowInInspector] public CellStatus[,] Grid { get; private set; }
+        public CellStatus[,] Grid { get; private set; }
 
         private int[,] _mark;
         private int _generation; 
@@ -40,6 +40,8 @@ namespace Construction.Maps
         
         public bool RegisterOccupant(int x, int z, int width, int height)
         {
+            //Debug.Log($"Attempt to register occupant at {x} , {z}");
+            
             if(!VacantSpace(x, z, width, height)) return false;
 
             for (int i = x; i < x + width; i++)
@@ -49,7 +51,7 @@ namespace Construction.Maps
                     Grid[i, j] = CellStatus.Occupied;
                 }
             }
-
+            
             return true; 
         }
 
@@ -91,7 +93,7 @@ namespace Construction.Maps
         [Button]
         public void CheckCell(int x, int z)
         {
-            string s = VacantCell(x, z) ? "Cell Occupied" : "Cell Empty";
+            string s = VacantCell(x, z) ? "Cell Empty" : "Cell Occupied";
             Debug.Log(s);
         }
         
