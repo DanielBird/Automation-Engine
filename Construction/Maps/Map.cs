@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Construction.Placement;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -12,10 +13,11 @@ namespace Construction.Maps
     
     public class Map : MonoBehaviour, IMap
     {
-        public int mapWidth = 50;
-        public int mapHeight = 50;
+        public PlacementSettings settings; 
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
+        
+        public Vector3Int MapOrigin { get; set; }
         
         public CellStatus[,] Grid { get; private set; }
 
@@ -32,16 +34,22 @@ namespace Construction.Maps
 
         private void Awake()
         {
-            MapWidth = mapWidth;
-            MapHeight = mapHeight;
+            if (settings == null)
+            {
+                Debug.LogError("Missing placement settings on the Map");
+                return;
+            }
+            
+            MapWidth = settings.mapWidth;
+            MapHeight = settings.mapHeight;
+            MapOrigin = settings.mapOrigin;
+            
             Grid = new CellStatus[MapWidth, MapHeight];
             _mark = new int[MapWidth, MapHeight];
         }
         
         public bool RegisterOccupant(int x, int z, int width, int height)
         {
-            //Debug.Log($"Attempt to register occupant at {x} , {z}");
-            
             if(!VacantSpace(x, z, width, height)) return false;
 
             for (int i = x; i < x + width; i++)
@@ -105,7 +113,8 @@ namespace Construction.Maps
 
         public Vector2Int NearestVacantCell(Vector2Int start)
         {
-            if (VacantCell(start.x, start.y)) return start;
+            if (!InBounds(start.x, start.y)) return new Vector2Int(-1, -1);
+            if (Grid[start.x, start.y] == CellStatus.Empty) return start;
 
             _generation++; 
             _mark[start.x, start.y] = _generation;

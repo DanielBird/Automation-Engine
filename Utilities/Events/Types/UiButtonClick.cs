@@ -1,14 +1,12 @@
 ﻿namespace Utilities.Events.Types
 {
-    public enum UiButtonType {None, Belt, Producer }
-    
     public class UiButtonClick: IEvent
     {
-        public UiButtonType ButtonType { get; private set; }
+        public BuildRequestType BuildRequestType { get; private set; }
         
-        public UiButtonClick(UiButtonType buttonType)
+        public UiButtonClick(BuildRequestType buildRequestType)
         {
-            ButtonType = buttonType;
+            BuildRequestType = buildRequestType;
         }
     }
 }

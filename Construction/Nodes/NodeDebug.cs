@@ -84,8 +84,10 @@ namespace Construction.Nodes
         {
             if (showDirection)
             {
-                Vector3 position = transform.position + new Vector3(0, 1, 0); 
+                Vector3 position = transform.position + new Vector3(0, 1, 0);
+                # if UNITY_EDITOR
                 Handles.Label(position, node.Direction.ToString());
+                # endif
             }
 
             if (showNeighbours)

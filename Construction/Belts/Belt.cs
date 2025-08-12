@@ -1,7 +1,10 @@
-﻿using Construction.Maps;
+﻿using Construction.Events;
+using Construction.Maps;
 using Construction.Nodes;
 using Construction.Widgets;
 using UnityEngine;
+using Utilities.Events;
+using Utilities.Events.Types;
 
 namespace Construction.Belts
 {
@@ -79,7 +82,20 @@ namespace Construction.Belts
             target.Receive(widget);
             widget.Move(MoveType.Standard, this, target);
         }
-        
+
+        public override void OnPlayerSelect()
+        {
+            if(IsSelected || !IsEnabled ) return;
+            IsSelected = true;
+            
+            // Allow the player to start a new drag session by clicking on this belt 
+            // If this belt is connected to a belt in front, do not continue
+            Vector2Int forwardGridPos = PositionByDirection.GetForwardPosition(GridCoord, Direction, GridWidth);
+            if(NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
+            
+            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), BuildRequestType.Belt));
+        }
+
         protected virtual void OnDrawGizmosSelected()
         {
             if (drawWidgetTarget)

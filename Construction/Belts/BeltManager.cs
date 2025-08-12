@@ -94,7 +94,7 @@ namespace Construction.Belts
             {
                 _graph[b] = next;
                 if (DetectsLoop(b))
-                    Debug.LogError($"Loop detected between {b.name} and {next.name}");
+                    Debug.Log($"Loop detected between {b.name} and {next.name}");
             }
         }
         

@@ -213,12 +213,12 @@ namespace Construction.Drag
         
         private Vector3Int GridAlignedWorldPosition(Vector3 position)
         {
-            return Grid.GridAlignedWorldPosition(position, new GridParams(_settings.gridOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
+            return Grid.GridAlignedWorldPosition(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
         }
 
         private Vector3Int GetGridPosition(Vector3Int position)
         {
-            return Grid.WorldToGridCoordinate(position, new GridParams(_settings.gridOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
+            return Grid.WorldToGridCoordinate(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
         }
         
         private bool TryGetFloorPosition(out Vector3 position) 

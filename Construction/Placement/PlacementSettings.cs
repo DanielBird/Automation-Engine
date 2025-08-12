@@ -9,8 +9,10 @@ namespace Construction.Placement
     [CreateAssetMenu(fileName = "PlacementSettings", menuName = "Construction/PlacementSettings")]
     public class PlacementSettings : ScriptableObject
     {
-        [Header("Grid Settings")]
-        public Vector3Int gridOrigin = Vector3Int.zero;
+        [Header("Grid Settings")] public int mapWidth = 36; 
+        public int mapHeight = 36;
+        
+        public Vector3Int mapOrigin = Vector3Int.zero;
         [Tooltip("The size of each grid cell in world units")]
         public float tileSize = 1f;
         [Tooltip("How are paths for placing nodes (like belts) calculated?")]

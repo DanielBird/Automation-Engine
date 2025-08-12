@@ -7,6 +7,8 @@ namespace Construction.Placement.Factory
         PlacementManager PlacementManager { get; }
         PlacementSettings PlacementSettings { get; }
         
-        bool Create(out GameObject prefab, out Vector3Int alignedPosition); 
+        bool Create(out GameObject prefab, out Vector3Int alignedWorldPosition); 
+        
+        GameObject CreateAt(Vector3Int alignedWorldPosition);
     }
 }

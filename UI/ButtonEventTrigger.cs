@@ -6,11 +6,11 @@ namespace UI
 {
     public class ButtonEventTrigger : MonoBehaviour
     {
-        public UiButtonType buttonType;
+        public BuildRequestType requestType;
         
         public void TriggerEvent()
         {
-            EventBus<UiButtonClick>.Raise(new UiButtonClick(buttonType));
+            EventBus<UiButtonClick>.Raise(new UiButtonClick(requestType));
         }
     }
 }

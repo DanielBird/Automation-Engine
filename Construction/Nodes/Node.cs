@@ -20,9 +20,14 @@ namespace Construction.Nodes
         Intersection,
     }
     
+    /// <summary>
+    /// Abstract parent class for everything that is either a connection mechanism (e.g., belt, road)
+    /// Or that can be connected to a connection mechanism (e.g., buildings that connect to belts) 
+    /// </summary>
+    
     [RequireComponent(typeof(NodeVisuals))]
     [Serializable]
-    public abstract class Node : MonoBehaviour, IPlaceable, IRotatable
+    public abstract class Node : MonoBehaviour, IPlaceable, IRotatable, IClickable
     {
         [Header("Setup")] 
         public NodeTypeSo nodeTypeSo;
@@ -32,7 +37,7 @@ namespace Construction.Nodes
         [field: SerializeField] public NodeType NodeType { get; private set; } 
         
         [Header("Position & Rotation")] 
-        private Vector3Int _position; 
+        protected Vector3Int _position; 
         private Direction _direction; 
         
         public Direction startingDirection; 
@@ -41,7 +46,7 @@ namespace Construction.Nodes
         private EasingFunctions.Function _ease; 
         public EasingFunctions.Ease rotationEasing = EasingFunctions.Ease.EaseOutSine;
         [field: SerializeField] public Vector3Int GridCoord { get; set; }
-        [field: SerializeField] public Vector3 WorldPosition { get; private set; }
+        [field: SerializeField] public Vector3Int WorldPosition { get; private set; }
 
         [ShowInInspector]
         public Direction Direction
@@ -55,6 +60,10 @@ namespace Construction.Nodes
         public INodeMap NodeMap { get; protected set; }
         private NodeRotation _nodeRotation;
         private NodeConnections _nodeConnections;
+        
+        // Player Selection
+        public bool IsEnabled { get; set; }
+        public bool IsSelected { get; set; }
         
         private void Awake()
         {
@@ -81,7 +90,7 @@ namespace Construction.Nodes
         {
             NodeMap = map; 
             GridCoord = gridCoord;
-            WorldPosition = transform.position;
+            WorldPosition = Vector3Int.RoundToInt(transform.position);
         }
         
         // Note - nodes register themselves with the Node Map
@@ -104,6 +113,7 @@ namespace Construction.Nodes
             Initialised = true;
             
             EventBus<NodePlaced>.Raise(new NodePlaced(this));
+            IsEnabled = true;
         }
 
         public virtual void FailedPlacement()
@@ -190,5 +200,17 @@ namespace Construction.Nodes
 
         // The direction of the cell that should be checked for a connecting input node
         public Direction InputPosition() => _nodeConnections.InputPosition();
+
+        public virtual void OnPlayerSelect()
+        {
+            if(IsSelected || !IsEnabled ) return;
+            IsSelected = true;
+        }
+
+        public virtual void OnPlayerDeselect()
+        {
+            if(!IsSelected || !IsEnabled) return;
+            IsSelected = false;
+        }
     }
 }

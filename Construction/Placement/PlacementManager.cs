@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Threading;
 using Construction.Drag;
+using Construction.Events;
 using Construction.Nodes;
 using Construction.Placement.Factory;
+using Construction.Utilities;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
@@ -36,7 +38,7 @@ namespace Construction.Placement
         public NeighbourManager NeighbourManager; 
         private PlacementCoordinator _placementCoordinator;
         
-        private Dictionary<UiButtonType, IPlaceableFactory> _factory;
+        private Dictionary<BuildRequestType, IPlaceableFactory> _factories;
 
         [Header("State")] 
         [SerializeField] private PlacementState state = new();
@@ -49,6 +51,7 @@ namespace Construction.Placement
         
         // EVENTS
         private EventBinding<UiButtonClick> _onButtonClick; 
+        private EventBinding<BeltClickEvent> _onBeltClick;
 
         protected override void Awake()
         {
@@ -81,10 +84,10 @@ namespace Construction.Placement
                 visuals
             );
 
-            _factory = new Dictionary<UiButtonType, IPlaceableFactory>
+            _factories = new Dictionary<BuildRequestType, IPlaceableFactory>
             {
-                { UiButtonType.Belt, new BeltFactory(this, settings)},
-                { UiButtonType.Producer, new ProducerFactory(this, settings)}
+                { BuildRequestType.Belt, new BeltFactory(this, settings)},
+                { BuildRequestType.Producer, new ProducerFactory(this, settings)}
             };
             
             RegisterEvents();
@@ -106,7 +109,10 @@ namespace Construction.Placement
             settings.cancel.action.performed += CancelPlacement; 
             
             _onButtonClick = new EventBinding<UiButtonClick>(RequestPlacement);
+            _onBeltClick = new EventBinding<BeltClickEvent>(RequestDrag); 
+            
             EventBus<UiButtonClick>.Register(_onButtonClick);
+            EventBus<BeltClickEvent>.Register(_onBeltClick);
         }
 
         private void UnRegisterEvents()
@@ -116,11 +122,13 @@ namespace Construction.Placement
             settings.cancel.action.performed -= CancelPlacement; 
             
             EventBus<UiButtonClick>.Deregister(_onButtonClick);
+            EventBus<BeltClickEvent>.Deregister(_onBeltClick);
         }
 
+        // The start of spawning game objects via Ui Button clicks 
         private void RequestPlacement(UiButtonClick e)
         {
-            if (_factory.TryGetValue(e.ButtonType, out IPlaceableFactory factory))
+            if (_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory))
             {
                 ClearTokenSource(ref _waitTokenSource);
                 _waitTokenSource = new CancellationTokenSource();
@@ -130,7 +138,7 @@ namespace Construction.Placement
         
         private async UniTaskVoid WaitToStartPlacement(IPlaceableFactory factory, CancellationToken token)
         {
-            while (!TryGetGridAlignedPosition(out Vector3Int pos))
+            while (!TryGetGridAlignedWorldPosition(out Vector3Int pos))
             {
                 await UniTask.WaitForSeconds(0.1f, cancellationToken: token); 
             }
@@ -139,7 +147,21 @@ namespace Construction.Placement
             {
                 SpawnOccupant(alignedPosition, prefab);
             }
-        } 
+        }
+
+        // The start of spawning a draggable node by clicking on a node already placed
+        private void RequestDrag(BeltClickEvent e)
+        {
+            if(!_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory)) return;
+
+            Vector3Int gridCoordinate = Grid.WorldToGridCoordinate(e.WorldPosition, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
+            state.IsRunning = false; 
+            state.TargetGridCoordinate = gridCoordinate;
+            state.WorldAlignedPosition = e.WorldPosition; 
+            
+            GameObject build = factory.CreateAt(e.WorldPosition); 
+            SpawnOccupant(e.WorldPosition, build);
+        }
 
         private void Update()
         {
@@ -149,7 +171,7 @@ namespace Construction.Placement
             state.TargetGridCoordinate = gridCoord;
             state.WorldAlignedPosition = WorldAlignedPosition(gridCoord);
             
-            if(!Map.VacantCell(state.TargetGridCoordinate.x, state.TargetGridCoordinate.z)) return;
+            if (!Map.VacantCell(state.TargetGridCoordinate.x, state.TargetGridCoordinate.z)) return;
             if (DistanceAboveThreshold(state.CurrentObject, state.TargetGridCoordinate)) return;
             
             LerpPosition(state.CurrentObject, state.WorldAlignedPosition);

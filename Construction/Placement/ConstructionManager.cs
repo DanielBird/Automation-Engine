@@ -51,15 +51,15 @@ namespace Construction.Placement
         /// <summary>
         /// Try to find a position aligned to the grid from a raycast intersection with the floor layer 
         /// </summary>
-        public bool TryGetGridAlignedPosition(out Vector3Int alignedPosition)
+        public bool TryGetGridAlignedWorldPosition(out Vector3Int alignedPosition)
         {
             alignedPosition = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            alignedPosition = Grid.GridAlignedWorldPosition(position, new GridParams(settings.gridOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
+            alignedPosition = Grid.GridAlignedWorldPosition(position, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
             return true;
         }
 
-        public Vector3Int WorldAlignedPosition(Vector3Int gridCoord) => Grid.GridToWorldPosition(gridCoord, settings.gridOrigin, settings.tileSize);
+        public Vector3Int WorldAlignedPosition(Vector3Int gridCoord) => Grid.GridToWorldPosition(gridCoord, settings.mapOrigin, settings.tileSize);
         
         /// <summary>
         /// Try to find a grid coordinate from a raycast intersection with the floor layer 
@@ -68,7 +68,7 @@ namespace Construction.Placement
         {
             gridCoordinate = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            gridCoordinate = Grid.WorldToGridCoordinate(position, new GridParams(settings.gridOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
+            gridCoordinate = Grid.WorldToGridCoordinate(position, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
             return true;
         }
         

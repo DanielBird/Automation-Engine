@@ -15,7 +15,7 @@ namespace Construction.Maps
         private void Awake()
         {
             if (map == null) map = GetComponent<Map>();
-            _nodeGrid = new Node[map.mapWidth, map.mapHeight];
+            _nodeGrid = new Node[map.MapWidth, map.MapHeight];
         }
 
         public void RegisterNode(Node node)

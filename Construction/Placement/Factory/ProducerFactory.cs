@@ -14,17 +14,23 @@ namespace Construction.Placement.Factory
             PlacementSettings = placementSettings;
         }
         
-        public bool Create(out GameObject prefab, out Vector3Int alignedPosition)
+        public bool Create(out GameObject prefab, out Vector3Int alignedWorldPosition)
         {
             prefab = null; 
-            alignedPosition = Vector3Int.zero;
+            alignedWorldPosition = Vector3Int.zero;
             
-            if(!PlacementManager.TryGetGridAlignedPosition(out alignedPosition)) return false;
-            
-            prefab  = SimplePool.Spawn(PlacementSettings.producerPrefab, alignedPosition, Quaternion.identity, PlacementManager.transform);
-            prefab.name = PlacementSettings.producerPrefab.name + "_" + alignedPosition.x + "_" + alignedPosition.z; 
+            if(!PlacementManager.TryGetGridAlignedWorldPosition(out alignedWorldPosition)) return false;
+
+            prefab = CreateAt(alignedWorldPosition); 
             
             return true;
+        }
+
+        public GameObject CreateAt(Vector3Int alignedWorldPosition)
+        {
+            GameObject prefab = SimplePool.Spawn(PlacementSettings.producerPrefab, alignedWorldPosition, Quaternion.identity, PlacementManager.transform);
+            prefab.name = PlacementSettings.producerPrefab.name + "_" + alignedWorldPosition.x + "_" + alignedWorldPosition.z;
+            return prefab;
         }
     }
 }
