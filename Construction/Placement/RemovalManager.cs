@@ -35,12 +35,12 @@ namespace Construction.Placement
         protected override void Awake()
         {
             base.Awake();
-            settings.cancel.action.performed += RemoveNodes;
+            inputSettings.cancel.action.performed += RemoveNodes;
         }
 
         private void OnDisable()
         {
-            settings.cancel.action.performed -= RemoveNodes; 
+            inputSettings.cancel.action.performed -= RemoveNodes; 
             ClearToken();
         }
 
@@ -71,7 +71,7 @@ namespace Construction.Placement
 
             GridWorldCoordPair startingPair = new (start, WorldAlignedPosition(start));
             
-            if (!settings.cancel.action.IsPressed())
+            if (!inputSettings.cancel.action.IsPressed())
             {
                 if (!NodeMap.GetNode(start.x, start.z, out Node node)) return;
                 RemoveSingleNode(startingPair, node);
@@ -80,7 +80,7 @@ namespace Construction.Placement
 
             visuals.Show();
             
-            while (settings.cancel.action.IsPressed())
+            while (inputSettings.cancel.action.IsPressed())
             {
                 _cellSelection = SelectCells(start, out Vector3Int endGridCoord);
                 _selectedPos = _cellSelection.GetGridWorldPairs(settings); 

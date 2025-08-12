@@ -53,7 +53,7 @@ namespace Construction.Utilities
         public List<Vector3Int> GetCellsInWorldSpace(PlacementSettings settings)
         {
             List<Vector3Int> cells = HitCells.Select(c => c.GridCoordinate).ToList();
-            return Grid.GridToWorldPositions(cells, settings.mapOrigin, settings.tileSize); 
+            return Grid.GridToWorldPositions(cells, settings.mapOrigin, settings.cellSize); 
         }
 
         public HashSet<GridWorldCoordPair> GetGridWorldPairs(PlacementSettings settings)

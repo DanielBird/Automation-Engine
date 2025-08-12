@@ -1,10 +1,16 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace GameState
 {
     [CreateAssetMenu(fileName = "InputSettings", menuName = "Scriptable Objects/InputSettings")]
     public class InputSettings : ScriptableObject
     {
+        [Header("Key Input References")]
+        public InputActionReference place;
+        public InputActionReference rotate;
+        public InputActionReference cancel;
+        
         [Header("Directional Input And Rotation")]
         [Tooltip("How long to wait to confirm that a button click is being held?")]
         public float waitForInputTime = 0.2f;

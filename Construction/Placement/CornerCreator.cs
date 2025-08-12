@@ -73,18 +73,30 @@ namespace Construction.Placement
             if (turn == RightTurn)
             {
                 nodeType = NodeType.RightCorner; 
-                return _settings.rightBeltPrefab;
+                return GetPrefab(nodeType);
             }
 
             if (turn == LeftTurn)
             {
                 nodeType = NodeType.LeftCorner; 
-                return _settings.leftBeltPrefab;
+                return GetPrefab(nodeType);
             }
             
             Debug.Log($"Attempting to spawn a prefab based on invalid directions: {oldDirection} and {newDirection}");
+            
             nodeType = NodeType.Straight;
-            return _settings.standardBeltPrefab; 
+            if (_settings.prefabRegistry.FoundPrefab(nodeType, out GameObject prefab))
+                return prefab;
+                
+            Debug.LogWarning($"Unable to find the prefab for {nodeType} in the prefab registry");
+            return null; 
+        }
+
+        private GameObject GetPrefab(NodeType nodeType)
+        {
+            if (_settings.prefabRegistry.FoundPrefab(nodeType, out GameObject prefabToSpawn)) return prefabToSpawn;
+            Debug.LogWarning($"Unable to find the prefab for a the {nodeType} node in the prefab registry");
+            return null;
         }
         
         private void SpawnCorner(Direction oldDirection, Direction newDirection, Target target, GameObject prefab, Vector3Int gridCoord, Vector3 position, NodeType nodeType)

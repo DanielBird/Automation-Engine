@@ -15,7 +15,7 @@ namespace Construction.Belts
         public WidgetPrefabsSO widgetPrefabs;
         public int poolPreLoadCount = 3; 
         [SerializeField] private int _widgetType;
-        [SerializeField] private GameObject _widgetPrefab;
+        [SerializeField] private GameObject widgetPrefab;
         
         [Header("Spawning")]
         public Vector3 spawnLocation;
@@ -58,15 +58,15 @@ namespace Construction.Belts
                 return false;
             }
             
-            _widgetPrefab = widgetPrefabs.widgets[widgetType];
-            if (_widgetPrefab == null)
+            widgetPrefab = widgetPrefabs.widgets[widgetType];
+            if (widgetPrefab == null)
             {
                 Debug.LogWarning("Missing widget prefab");
                 Active = false;
                 return false;
             }
             
-            SimplePool.Preload(_widgetPrefab, transform, poolPreLoadCount);
+            SimplePool.Preload(widgetPrefab, transform, poolPreLoadCount);
             return true;
         }
 
@@ -115,7 +115,7 @@ namespace Construction.Belts
             if (!isActiveAndEnabled) return;
 
             Transform t = transform; 
-            GameObject widgetGo = SimplePool.Spawn(_widgetPrefab, t.position + spawnLocation, Quaternion.identity, t);
+            GameObject widgetGo = SimplePool.Spawn(widgetPrefab, t.position + spawnLocation, Quaternion.identity, t);
 
             if (widgetGo.TryGetComponent<Widget>(out Widget widget))
             {

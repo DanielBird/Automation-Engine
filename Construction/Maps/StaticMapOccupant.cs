@@ -26,7 +26,7 @@ namespace Construction.Maps
                 return;
             }
             
-            Vector3Int gridCoord = Grid.WorldToGridCoordinate(transform.position, new GridParams(map.MapOrigin, map.MapWidth, map.MapHeight, map.settings.tileSize));
+            Vector3Int gridCoord = Grid.WorldToGridCoordinate(transform.position, new GridParams(map.MapOrigin, map.MapWidth, map.MapHeight, map.settings.cellSize));
             
             map.RegisterOccupant(gridCoord.x, gridCoord.z, gridWidth, gridHeight);
         }

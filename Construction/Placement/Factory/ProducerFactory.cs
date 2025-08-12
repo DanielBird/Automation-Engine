@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Construction.Nodes;
+using UnityEngine;
 using Utilities;
 
 namespace Construction.Placement.Factory
@@ -28,8 +29,14 @@ namespace Construction.Placement.Factory
 
         public GameObject CreateAt(Vector3Int alignedWorldPosition)
         {
-            GameObject prefab = SimplePool.Spawn(PlacementSettings.producerPrefab, alignedWorldPosition, Quaternion.identity, PlacementManager.transform);
-            prefab.name = PlacementSettings.producerPrefab.name + "_" + alignedWorldPosition.x + "_" + alignedWorldPosition.z;
+            if (!PlacementSettings.prefabRegistry.FoundPrefab(NodeType.Producer, out GameObject prefabToSpawn))
+            {
+                Debug.LogWarning($"Unable to find the prefab for a producer node in the prefab registry");
+                return null; 
+            }
+            
+            GameObject prefab = SimplePool.Spawn(prefabToSpawn, alignedWorldPosition, Quaternion.identity, PlacementManager.transform);
+            prefab.name = prefabToSpawn.name + "_" + alignedWorldPosition.x + "_" + alignedWorldPosition.z;
             return prefab;
         }
     }

@@ -18,6 +18,7 @@ namespace Construction.Nodes
         LeftCorner,
         RightCorner,
         Intersection,
+        Producer
     }
     
     /// <summary>

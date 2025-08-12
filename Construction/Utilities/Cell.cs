@@ -15,7 +15,7 @@ namespace Construction.Utilities
         public Cell(Vector3Int gridCoordinate, Direction direction, NodeType type, PlacementSettings settings)
         {
             GridCoordinate = gridCoordinate;
-            WorldPosition = Grid.GridToWorldPosition(gridCoordinate, settings.mapOrigin, settings.tileSize);
+            WorldPosition = Grid.GridToWorldPosition(gridCoordinate, settings.mapOrigin, settings.cellSize);
             Direction = direction;
             Type = type;
         }

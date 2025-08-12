@@ -39,7 +39,7 @@ namespace Construction.Maps
                 {
                     Gizmos.color = map.Grid[i, j] == CellStatus.Empty ? Color.green : Color.red;
                     
-                    Vector3Int pos = Grid.GridToWorldPosition(new Vector3Int(i, 0, j), placementSettings.mapOrigin, placementSettings.tileSize);
+                    Vector3Int pos = Grid.GridToWorldPosition(new Vector3Int(i, 0, j), placementSettings.mapOrigin, placementSettings.cellSize);
                     Gizmos.DrawWireCube(pos, _cubeSize);
                 }
             }

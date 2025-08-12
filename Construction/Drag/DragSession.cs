@@ -78,7 +78,7 @@ namespace Construction.Drag
             _disableCancellation = new CancellationTokenSource();
             await UniTask.WaitForSeconds(_inputSettings.waitForInputTime, cancellationToken: _disableCancellation.Token);
             
-            while (_settings.place.action.IsPressed())
+            while (_inputSettings.place.action.IsPressed())
             {
                 _cellSelection = SelectCells(startGridCoord, stepSize);
                 _selectedCells = _cellSelection.HitCells; 
@@ -213,12 +213,12 @@ namespace Construction.Drag
         
         private Vector3Int GridAlignedWorldPosition(Vector3 position)
         {
-            return Grid.GridAlignedWorldPosition(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
+            return Grid.GridAlignedWorldPosition(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.cellSize));
         }
 
         private Vector3Int GetGridPosition(Vector3Int position)
         {
-            return Grid.WorldToGridCoordinate(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.tileSize));
+            return Grid.WorldToGridCoordinate(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.cellSize));
         }
         
         private bool TryGetFloorPosition(out Vector3 position) 

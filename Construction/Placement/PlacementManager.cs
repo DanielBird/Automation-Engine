@@ -104,9 +104,9 @@ namespace Construction.Placement
 
         private void RegisterEvents()
         {            
-            settings.place.action.performed += ConfirmPlacement;
-            settings.rotate.action.performed += Rotate;
-            settings.cancel.action.performed += CancelPlacement; 
+            inputSettings.place.action.performed += ConfirmPlacement;
+            inputSettings.rotate.action.performed += Rotate;
+            inputSettings.cancel.action.performed += CancelPlacement; 
             
             _onButtonClick = new EventBinding<UiButtonClick>(RequestPlacement);
             _onBeltClick = new EventBinding<BeltClickEvent>(RequestDrag); 
@@ -117,9 +117,9 @@ namespace Construction.Placement
 
         private void UnRegisterEvents()
         {
-            settings.place.action.performed -= ConfirmPlacement;
-            settings.rotate.action.performed -= Rotate;
-            settings.cancel.action.performed -= CancelPlacement; 
+            inputSettings.place.action.performed -= ConfirmPlacement;
+            inputSettings.rotate.action.performed -= Rotate;
+            inputSettings.cancel.action.performed -= CancelPlacement; 
             
             EventBus<UiButtonClick>.Deregister(_onButtonClick);
             EventBus<BeltClickEvent>.Deregister(_onBeltClick);
@@ -154,7 +154,7 @@ namespace Construction.Placement
         {
             if(!_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory)) return;
 
-            Vector3Int gridCoordinate = Grid.WorldToGridCoordinate(e.WorldPosition, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.tileSize));
+            Vector3Int gridCoordinate = Grid.WorldToGridCoordinate(e.WorldPosition, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.cellSize));
             state.IsRunning = false; 
             state.TargetGridCoordinate = gridCoordinate;
             state.WorldAlignedPosition = e.WorldPosition; 

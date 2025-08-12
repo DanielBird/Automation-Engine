@@ -130,7 +130,7 @@ namespace Construction.Utilities
             int hits = Physics.RaycastNonAlloc(ray, cellHits, 300f, floorLayer); 
             if (hits <= 0) return false;
             
-            gridCoordinate = WorldToGridCoordinate(cellHits[0].point, new GridParams(settings.mapOrigin, map.MapWidth, map.MapHeight, settings.tileSize));
+            gridCoordinate = WorldToGridCoordinate(cellHits[0].point, new GridParams(settings.mapOrigin, map.MapWidth, map.MapHeight, settings.cellSize));
             return true;
         }
 
