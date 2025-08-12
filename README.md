@@ -1,9 +1,14 @@
 # Automation Engine 
 
-This project is currently a work in progress. 
+Automation engine is an open source template for creating automation games.
+
+
+This project is regularly being updated. 
+
+
+It is being built in Unity 6.  
 
 ![Demo](Media/BeltTest.gif)
-
 
 
 # To get started using the template
@@ -36,6 +41,15 @@ Widgets
 - Belts inherit from Nodes and ship widgets to one another
 - Producers inherit from Belts and spawn new widgets
 
+# Scriptable objects
+
+| Scriptable Objects | Function  
+|----------|----------|
+| PlacementSettings    | Data about placement like the map size and cell size |
+| InputSettings    | Input action references and camera movement parameters |
+| NodePrefabBindings    | A list of node/prefab bindings (enums and prefabs) |
+| WidgetPrefabs    | A list of game objects that should be delivered via nodes / belts |
+| NodeTypes    | Each type of node (e.g. belt) should have a corresponding node type that records its width, height, and whether it is draggable |
 
 # Dependencies
 
