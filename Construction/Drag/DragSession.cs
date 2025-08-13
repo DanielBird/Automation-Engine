@@ -9,6 +9,7 @@ using Construction.Utilities;
 using Construction.Visuals;
 using Cysharp.Threading.Tasks;
 using GameState;
+using NUnit.Framework;
 using UnityEngine;
 using Utilities;
 using ZLinq;
@@ -28,9 +29,11 @@ namespace Construction.Drag
         private readonly PlacementState _state;
 
         private CellSelection _cellSelection = new(); 
+        private CellSelectionParams _cellSelectionParams;
         private HashSet<Cell> _selectedCells = new();
         private List<Cell> _newCells = new();
         private List<Cell> _oldCells = new();
+        private Dictionary<Vector3Int, Node> _replacedByIntersections = new();
         
         private RaycastHit[] _cellHits = new RaycastHit[1];
         private Cell _cornerCell;
@@ -93,6 +96,7 @@ namespace Construction.Drag
 
                 if (_newCells.Any() || _oldCells.Any())
                 {
+                    ManageIntersections();
                     ProcessNewHits(initialObject, spawnedCells);
                     RemoveOldHits(spawnedCells);
                     UpdateRotations(spawnedCells);
@@ -103,6 +107,7 @@ namespace Construction.Drag
             }
             
             _cellSelection.Clear();
+            CleanUpAfterIntersections();
             CtsCtrl.Clear(ref _disableCancellation);
         }
         
@@ -111,8 +116,8 @@ namespace Construction.Drag
         /// </summary>
         private CellSelection SelectCells(Vector3Int startGridCoord, int stepSize)
         {
-            CellSelectionParams selectionParams = new(_map, _nodeMap, _settings, stepSize); 
-            CellSelection selection = Grid.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, selectionParams);
+            _cellSelectionParams = new CellSelectionParams(_map, _nodeMap, _settings, stepSize); 
+            CellSelection selection = Grid.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, _cellSelectionParams);
             _state.SetAxis(selection.Axis);
             _state.SetDirection(selection.Direction);
             return selection;
@@ -130,6 +135,50 @@ namespace Construction.Drag
                 .Except(_selectedCells)
                 .ToList();
         }
+
+        private void ManageIntersections()
+        {
+            HashSet<Vector3Int> newIntersections = _cellSelectionParams.Intersections
+                                                        .AsValueEnumerable()
+                                                        .Except(_replacedByIntersections.Keys)
+                                                        .ToHashSet();
+            
+            Dictionary<Vector3Int, Node> oldIntersections = _replacedByIntersections
+                                                                .AsValueEnumerable()
+                                                                .Where(kvp => !_cellSelectionParams.Intersections.Contains(kvp.Key))
+                                                                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            
+            foreach (Vector3Int v in newIntersections)
+            {
+                if (!_nodeMap.TryGetNode(v.x, v.z, out Node node)) continue;
+                _replacedByIntersections.Add(v, node);
+                node.Visuals.DisableRenderer();
+            }
+
+            foreach (var kvp in oldIntersections)
+            {
+                Node node = kvp.Value;
+                node.Visuals.EnableRenderer();
+                _replacedByIntersections.Remove(kvp.Key);
+            }
+            
+            _cellSelectionParams.Intersections.Clear();
+        }
+
+        private void CleanUpAfterIntersections()
+        {
+            foreach (KeyValuePair<Vector3Int, Node> kvp in _replacedByIntersections)
+            {
+                Vector3Int pos = kvp.Key;
+                Node node = kvp.Value;
+                _map.DeregisterOccupant(pos.x, pos.z, node.GridWidth, node.GridHeight);
+                _nodeMap.DeregisterNode(node);
+                SimplePool.Despawn(node.gameObject);
+                node.Visuals.EnableRenderer();
+            }
+            
+            _replacedByIntersections.Clear();
+        }
          
         private void ProcessNewHits(GameObject initialObject, Dictionary<Cell, TempNode> spawnedCells)
         {
@@ -141,9 +190,9 @@ namespace Construction.Drag
 
         private void PlacePrefab(GameObject initialObject, Dictionary<Cell, TempNode> spawnedCells, Cell cell)
         {
-            if(!_settings.prefabRegistry.FoundPrefab(cell.Type, out GameObject prefab))
+            if(!_settings.prefabRegistry.FoundPrefab(cell.NodeType, out GameObject prefab))
             {
-                Debug.LogError($"Prefab \"{cell.Type}\" could not be found.");
+                Debug.LogError($"Prefab \"{cell.NodeType}\" could not be found.");
                 return;
             }
             

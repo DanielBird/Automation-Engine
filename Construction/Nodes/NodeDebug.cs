@@ -52,7 +52,7 @@ namespace Construction.Nodes
         
         [Button]
         public void DebugConnection() =>
-            Debug.Log(node.Connected() ? "Node is connected" : "Node is NOT connected");
+            Debug.Log(node.IsConnected() ? "Node is connected" : "Node is NOT connected");
         
         [Button]
         public void DebugLoops()
@@ -104,7 +104,7 @@ namespace Construction.Nodes
 
             if (showConnected)
             {
-                Gizmos.color = node.Connected() ? new Color(0, 1, 0, 0.2f) : new Color(1, 0, 0, 0.2f);
+                Gizmos.color = node.IsConnected() ? new Color(0, 1, 0, 0.2f) : new Color(1, 0, 0, 0.2f);
                 Gizmos.DrawCube(transform.position, Vector3.one);
             }
         }

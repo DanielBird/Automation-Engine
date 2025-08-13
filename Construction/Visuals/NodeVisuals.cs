@@ -10,11 +10,15 @@ namespace Construction.Visuals
         [SerializeField] private Node myNode;  
         
         [Header("Arrows")]
+        public GameObject mainMesh;
         public GameObject outputArrowPrefab;
         public GameObject inputArrowPrefab;
         
         [SerializeField] private Material outputArrowMat;
         [SerializeField] private Material inputArrowMat;
+        
+        private MeshRenderer mainMeshRenderer;
+        private bool _rendererSet; 
         
         [Space]
         public ConnectionType connectionType = ConnectionType.InputOutput;
@@ -39,6 +43,13 @@ namespace Construction.Visuals
                 inputArrowMat = inputArrowPrefab.GetComponent<MeshRenderer>().sharedMaterial;
                 _inputMatFound = true; 
             }
+
+            if (mainMesh != null)
+            {
+                mainMeshRenderer = mainMesh.GetComponent<MeshRenderer>();
+                _rendererSet = true;
+            }
+                
             
             HideArrows();
         }
@@ -73,6 +84,18 @@ namespace Construction.Visuals
         public void HideInputArrow()
         {
             if(_inputMatFound) inputArrowMat.SetFloat(Alpha, 0);
+        }
+
+        public void DisableRenderer()
+        {
+            if(!_rendererSet) return;
+            mainMeshRenderer.enabled = false;
+        }
+
+        public void EnableRenderer()
+        {
+            if(!_rendererSet) return;
+            mainMeshRenderer.enabled = true;
         }
     }
 }

@@ -73,7 +73,7 @@ namespace Construction.Placement
             
             if (!inputSettings.cancel.action.IsPressed())
             {
-                if (!NodeMap.GetNode(start.x, start.z, out Node node)) return;
+                if (!NodeMap.TryGetNode(start.x, start.z, out Node node)) return;
                 RemoveSingleNode(startingPair, node);
                 return;
             }
@@ -135,7 +135,7 @@ namespace Construction.Placement
             
             foreach (GridWorldCoordPair pair in _newHits)
             {
-                if (!NodeMap.GetNode(pair.GridCoordinate.x, pair.GridCoordinate.z, out Node node))
+                if (!NodeMap.TryGetNode(pair.GridCoordinate.x, pair.GridCoordinate.z, out Node node))
                 {
                     _pendingEmptyDestructions.Add(pair.WorldPosition);
                 }

@@ -12,7 +12,7 @@ namespace Construction.Maps
 
         public void CheckNode(int x, int z);
 
-        public bool GetNode(int x, int z, out Node node);
+        public bool TryGetNode(int x, int z, out Node node);
         
         public bool HasNode(int x, int z);
 

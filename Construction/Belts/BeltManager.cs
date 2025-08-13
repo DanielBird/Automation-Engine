@@ -13,13 +13,6 @@ using ZLinq;
 
 namespace Construction.Belts
 {
-    public struct Move
-    {
-        public Belt Source;
-        public Belt Target;
-        public Widget Widget; 
-    }
-    
     [RequireComponent(typeof(INodeMap))]
     public class BeltManager : MonoBehaviour
     {
@@ -32,7 +25,7 @@ namespace Construction.Belts
         [SerializeField] private int timeOfLastTick; 
 
         private HashSet<Belt> _belts = new HashSet<Belt>(); 
-        private Dictionary<Belt, Belt> _graph = new();
+        private Dictionary<Belt, List<Belt>> _graph = new();
 
         private EventBinding<NodePlaced> _onNodePlaced;
         private EventBinding<NodeRemoved> _onNodeRemoved;
@@ -89,12 +82,15 @@ namespace Construction.Belts
             
             _graph.Remove(b);
 
-            if (b.TargetNodes.Count == 0) return;
-            if (b.TargetNodes[0] is Belt next)
+            List<Belt> nextBelts = b.TargetNodes.OfType<Belt>().ToList();
+            if (nextBelts.Count == 0) return; 
+            
+            _graph[b] = nextBelts;
+            if (DetectsLoop(b))
             {
-                _graph[b] = next;
-                if (DetectsLoop(b))
-                    Debug.Log($"Loop detected between {b.name} and {next.name}");
+                # if UNITY_EDITOR
+                Debug.LogError($"Loop detected between {b.name} and {nextBelts[0].name}");
+                # endif
             }
         }
         
@@ -103,25 +99,39 @@ namespace Construction.Belts
             if(!_belts.Add(belt))
                 return;
 
-            if (belt.TargetNodes.FirstOrDefault() is Belt next)
+            List<Belt> nextBelts = belt.TargetNodes.OfType<Belt>().ToList();
+            _graph[belt] = nextBelts;
+
+            if (DetectsLoop(belt))
             {
-                _graph[belt] = next;
-                if (DetectsLoop(belt))
-                    Debug.LogError($"Loop detected between {belt.name} and {next.name}");
+                # if UNITY_EDITOR
+                Debug.LogError($"Loop detected between {belt.name} and {nextBelts[0].name}");
+                # endif
             }
         }
         
         private bool DetectsLoop(Belt start)
         {
-            HashSet<Belt> seen = new HashSet<Belt>();
-            Belt current = start;
-            while (_graph.TryGetValue(current, out Belt next))
+            HashSet<Belt> visiting = new ();
+            HashSet<Belt> visited  = new ();
+
+            bool Dfs(Belt node)
             {
-                if (next == start) return true;
-                if (!seen.Add(next)) return false;  // hit another cycle or end
-                current = next;
+                if (!visiting.Add(node)) return true;   // back-edge
+                if (visited.Contains(node)) { visiting.Remove(node); return false; }
+
+                if (_graph.TryGetValue(node, out var outs))
+                {
+                    foreach (var nxt in outs)
+                        if (Dfs(nxt)) return true;
+                }
+
+                visiting.Remove(node);
+                visited.Add(node);
+                return false;
             }
-            return false;
+
+            return Dfs(start);
         }
 
         private void UnregisterBelt(Belt belt)
@@ -131,14 +141,12 @@ namespace Construction.Belts
             
             _graph.Remove(belt);
 
-            var connections = _graph
-                .AsValueEnumerable()
-                .Where(kv => kv.Value == belt)
-                .ToList(); 
-
-            foreach (var kvp in connections)
+            // Remove any edges pointing to the removed belt
+            foreach (Belt key in _graph.Keys.ToList())
             {
-                _graph.Remove(kvp.Key);
+                List<Belt> connectedBelts = _graph[key];
+                connectedBelts.RemoveAll(t => t == belt);
+                if (connectedBelts.Count == 0) _graph.Remove(key);
             }
         }
 
@@ -167,7 +175,7 @@ namespace Construction.Belts
         {
             while (Active)
             {
-                if (CoreGameState.paused || UiState.uiOpen)
+                if (CoreGameState.Paused || UiState.uiOpen)
                 {
                     await UniTask.NextFrame(cancellationToken: _tickTokenSource.Token);
                 }
@@ -185,17 +193,18 @@ namespace Construction.Belts
                 .OrderByDescending(GetPathLength)
                 .ToList();
 
-            List<Move> moves = new List<Move>(); 
-            
-            foreach (var belt in orderedBelts)
+            Dictionary<Belt, Move> selectedMoves = new ();
+
+            foreach (Belt belt in orderedBelts)
             {
-                if (belt.ReadyToShip(out Belt target, out Widget widget))
-                {
-                    moves.Add(new Move { Source = belt, Target = target, Widget = widget});
-                }
+                if (!belt.ReadyToShip(out Belt target, out Widget widget)) continue;
+                Move move = new Move { Source = belt, Target = target, Widget = widget };
+
+                if (!selectedMoves.TryGetValue(target, out Move best) || move.Source.TimeOfReceipt < best.Source.TimeOfReceipt)
+                    selectedMoves[target] = move;
             }
 
-            foreach (Move move in moves)
+            foreach (Move move in selectedMoves.Values)
             {
                 move.Source.Ship(move.Target, move.Widget);
             }
@@ -203,14 +212,21 @@ namespace Construction.Belts
 
         private int GetPathLength(Belt start)
         {
-            int length = 0;
-            Belt current = start; 
-            while (_graph.TryGetValue(current, out var nxt))
+            Dictionary<Belt, int> memo = new();
+
+            int Dfs(Belt b)
             {
-                length++;
-                current = nxt;
+                if (memo.TryGetValue(b, out int v)) return v;
+                if (!_graph.TryGetValue(b, out List<Belt> outs) || outs.Count == 0)
+                    return memo[b] = 0;
+
+                int best = 0;
+                foreach (Belt nxt in outs)
+                    best = Mathf.Max(best, 1 + Dfs(nxt));
+                return memo[b] = best;
             }
-            return length;
+
+            return Dfs(start);
         }
     }
 }

@@ -46,7 +46,7 @@ namespace Construction.Nodes
             return _nodeMapSet && _nodeMap.GetNeighbourAt(position, out _);
         }
         
-        public bool Connected()
+        public bool IsConnected()
         {
             // For corner belts, we need to check the direction they're receiving from
             // For standard belts the direction of the forward neighbour and backwards neighbour should be the same as the belt's direction

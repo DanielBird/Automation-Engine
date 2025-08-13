@@ -2,7 +2,9 @@
 {
     public static class CoreGameState
     {
-        public static bool paused; 
+        public static bool Paused;
+
+        public static int ProducerCount;
 
     }
 }

@@ -12,6 +12,7 @@ namespace Construction.Belts
     {
         [Header("Transportation")]
         [field: SerializeField] public Widget Occupant { get; protected set; }
+        [field: SerializeField] public float TimeOfReceipt { get; protected set; }
         public bool IsOccupied => Occupant != null;
         public bool CanReceive => Occupant == null;
         
@@ -29,7 +30,7 @@ namespace Construction.Belts
             widgetTarget = gridCoord + widgetTargetOffset;
         }
         
-        public void Receive(Widget widget)
+        public virtual void Receive(Belt sender, Widget widget)
         {
             if (!CanReceive)
             {
@@ -38,9 +39,10 @@ namespace Construction.Belts
             }
             
             Occupant = widget;
+            TimeOfReceipt = Time.time; 
         }
 
-        public bool ReadyToShip(out Belt target, out Widget widget)
+        public virtual bool ReadyToShip(out Belt target, out Widget widget)
         {
             widget = null; 
             target = null;
@@ -57,7 +59,6 @@ namespace Construction.Belts
             {
                 if (logInabilityToShip) Debug.Log($"{name} is unable to ship.");
                 return false;
-                
             }
             
             if (!CanShip(out widget)) 
@@ -66,21 +67,21 @@ namespace Construction.Belts
             return true;
         }
 
-        private bool CanShip(out Widget widget)
+        protected bool CanShip(out Widget widget)
         {
             widget = null;
             if(Occupant == null)
                 return false;
             
             widget = Occupant;
-            Occupant = null;
             return true;
         }
         
         public virtual void Ship(Belt target, Widget widget)
         {
-            target.Receive(widget);
+            target.Receive(this, widget);
             widget.Move(MoveType.Standard, this, target);
+            Occupant = null;
         }
 
         public override void OnPlayerSelect()

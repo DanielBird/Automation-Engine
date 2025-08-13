@@ -73,7 +73,7 @@ namespace Construction.Placement
         {
             if (_map.VacantCell(neighbourPosition.x, neighbourPosition.y)) return false;
             if (!_nodeMap.GetNeighbourAt(neighbourPosition, out Node neighbourNode)) return false;
-            if (neighbourNode.Connected()) return false;
+            if (neighbourNode.IsConnected()) return false;
             
             // Calculate the relative turn between the current node and neighbour
             // 0 = same direction, 1 = 90-degree clockwise turn, 2 = opposite direction, 3 = 90-degree counterclockwise turn 

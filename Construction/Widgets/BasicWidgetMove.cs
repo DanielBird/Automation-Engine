@@ -38,7 +38,7 @@ namespace Construction.Widgets
             _widget.SetMoving(true); 
             while (t < moveTime)
             {
-                if (CoreGameState.paused)
+                if (CoreGameState.Paused)
                 {
                     yield return null;
                     continue;

@@ -57,11 +57,11 @@ namespace Construction.Maps
         [Button]
         public void CheckNode(int x, int z)
         {
-            string s = GetNode(x, z, out Node node) ? $"{node.name} was found" : $"no node found at {x} _ {z}";
+            string s = TryGetNode(x, z, out Node node) ? $"{node.name} was found" : $"no node found at {x} _ {z}";
             Debug.Log(s);
         }
 
-        public bool GetNode(int x, int z, out Node node)
+        public bool TryGetNode(int x, int z, out Node node)
         {
             if (_nodeGrid[x, z] == null)
             {

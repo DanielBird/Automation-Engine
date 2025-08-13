@@ -301,11 +301,11 @@ namespace Construction.Utilities
 
             // Add the 'from' cell to the HashSet
             if (startIsCorner) cells.Add(new Cell(from, direction, cornerType, selectionParams.Settings));
-            else AddStartEndCell(cells, from, direction, selectionParams.Settings, step, selectionParams.NodeMap, false);
+            else AddStartEndCell(cells, from, direction, selectionParams, false);
             
             // Add the 'to' cell to the HashSet
             if (!excludeEnd)
-                AddStartEndCell(cells, to, direction, selectionParams.Settings, step, selectionParams.NodeMap, true);
+                AddStartEndCell(cells, to, direction, selectionParams, true);
             
             // Add the HashSet of cells to the cell selection class
             selection.AddCells(cells);
@@ -313,28 +313,32 @@ namespace Construction.Utilities
 
         private static void AddCell(CellSelectionParams selectionParams, int x, int z, HashSet<Cell> cells, Direction direction, NodeType nodeType = NodeType.Straight)
         {
-            if (!selectionParams.Map.VacantCell(x, z))
-            {
-                if (selectionParams.NodeMap.HasNode(x, z)) nodeType = NodeType.Intersection;
-                else return;
-            }
-                    
-            cells.Add(new Cell(new Vector3Int(x, 0, z), direction, nodeType, selectionParams.Settings));
+            Vector3Int gridCoord = new (x, 0, z); 
+            if (selectionParams.Intersections.Contains(gridCoord)) nodeType = NodeType.Intersection;
+            cells.Add(new Cell(gridCoord, direction, nodeType, selectionParams.Settings));
         }
 
-        private static void AddStartEndCell(HashSet<Cell> cells, Vector3Int gridCoord, Direction direction, PlacementSettings settings, int step, INodeMap nodeMap, bool end)
+        private static void AddStartEndCell(HashSet<Cell> cells, Vector3Int gridCoord, Direction direction, CellSelectionParams selectionParams, bool end)
         {
+            if (selectionParams.Intersections.Contains(gridCoord))
+            {
+                if (end) cells.Add(new Cell(gridCoord, direction, NodeType.Intersection, selectionParams.Settings));
+                return;
+            }
+            
             // Check if the left or right neighbouring cells are occupied by another node
-            step = Mathf.Abs(step); // step should always be positive for this method
+
+            int stepSize = selectionParams.StepSize;
+            stepSize = Mathf.Abs(stepSize); // step should always be positive for this method
             
             Direction rightDirection = DirectionUtils.Increment(direction);
             Direction leftDirection = DirectionUtils.Decrement(direction);
             
-            Vector2Int rightPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, rightDirection, step);
-            Vector2Int leftPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, leftDirection, step);
+            Vector2Int rightPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, rightDirection, stepSize);
+            Vector2Int leftPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, leftDirection, stepSize);
 
-            bool rightFound = nodeMap.GetNeighbourAt(rightPos, out Node rightN);
-            bool leftFound  = nodeMap.GetNeighbourAt(leftPos, out Node leftN);
+            bool rightFound = selectionParams.NodeMap.GetNeighbourAt(rightPos, out Node rightN);
+            bool leftFound  = selectionParams.NodeMap.GetNeighbourAt(leftPos, out Node leftN);
             
             bool right = rightFound && rightN.Direction == (end ? rightDirection : leftDirection);
             bool left = leftFound && leftN.Direction == (end ? leftDirection : rightDirection);
@@ -357,10 +361,9 @@ namespace Construction.Utilities
                 (true,  false) => end ? leftDirection : direction,
                 (false, true)  => end ? rightDirection : direction,
                 _              => direction
-
             };
 
-            cells.Add(new Cell(gridCoord, finalDirection, nodeType, settings));
+            cells.Add(new Cell(gridCoord, finalDirection, nodeType, selectionParams.Settings));
         }
         
         private static Vector3Int SnapToStepGrid(Vector3Int start, Vector3Int end, int stepSize)
@@ -441,6 +444,7 @@ namespace Construction.Utilities
                 return;
 
             AddPathCells(path, selection, selectionParams);
+            selectionParams.FilterIntersections(path);
             selection.Corner = Corner.None; // multi-corner paths: don't use single-corner UI
         }
         
@@ -508,9 +512,23 @@ namespace Construction.Utilities
             // Allow moving through vacant cells; 
             if (p.Map.VacantCell(x, z)) return true;
             
-            // Implement logic for detecting when an intersection should be placed
-            // if (p.NodeMap.HasNode(x, z)) return false;
+            // Allow intersections
+            if (ViableAsIntersection(x, z, p))
+            {
+                p.Intersections.Add(new Vector3Int(x, 0, z));
+                return true;
+            }
+            
             return false;
+        }
+
+        private static bool ViableAsIntersection(int x, int z, CellSelectionParams p)
+        {
+            // if there is a node, and that node is a straight node, and it is connected...
+            // then this is viable as an intersection
+            if (!p.NodeMap.TryGetNode(x, z, out Node node)) return false;
+            if (node.NodeType != NodeType.Straight) return false;
+            return node.IsConnected();
         }
         
         private static void AddPathCells(List<Vector3Int> path, CellSelection selection, CellSelectionParams selectionParams)
@@ -529,9 +547,9 @@ namespace Construction.Utilities
 
             // First cell (start)
             Direction firstDir = DirectionBetween(path[0], path[1]);
-            AddStartEndCell(cells, path[0], firstDir, selectionParams.Settings, step, selectionParams.NodeMap, false);
+            AddStartEndCell(cells, path[0], firstDir, selectionParams, false);
 
-            // Middles
+            // Middle cells
             for (int i = 1; i < n - 1; i++)
             {
                 Direction prevDir = DirectionBetween(path[i - 1], path[i]);
@@ -553,7 +571,7 @@ namespace Construction.Utilities
 
             // Last cell (end)
             Direction lastDir = DirectionBetween(path[n - 2], path[n - 1]);
-            AddStartEndCell(cells, path[n - 1], lastDir, selectionParams.Settings, step, selectionParams.NodeMap, true);
+            AddStartEndCell(cells, path[n - 1], lastDir, selectionParams, true);
 
             selection.AddCells(cells);
         }

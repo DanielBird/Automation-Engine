@@ -186,7 +186,7 @@ namespace Construction.Nodes
             EventBus<NodeTargetEvent>.Raise(new NodeTargetEvent(this, node));
         }
         
-        public bool Connected() => _nodeConnections.Connected();
+        public bool IsConnected() => _nodeConnections.IsConnected();
 
         public bool TryGetForwardNode(out Node forwardNode) => _nodeConnections.TryGetForwardNode(out forwardNode);
         

@@ -3,6 +3,7 @@ using System.Threading;
 using Construction.Nodes;
 using Construction.Widgets;
 using Cysharp.Threading.Tasks;
+using GameState;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using Utilities;
@@ -32,11 +33,13 @@ namespace Construction.Belts
         public override void Initialise(NodeConfiguration config)
         {
             base.Initialise(config);
-            Activate(0);
+            
+            Activate(CoreGameState.ProducerCount);
+            CoreGameState.ProducerCount++; 
         }
         
         [Button]
-        public void Activate() => Activate(0);
+        public void Activate() => Activate(CoreGameState.ProducerCount);
         
         public void Activate(int widgetType)
         {
