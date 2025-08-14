@@ -92,7 +92,7 @@ namespace Construction.Belts
             // Allow the player to start a new drag session by clicking on this belt 
             // If this belt is connected to a belt in front, do not continue
             Vector2Int forwardGridPos = PositionByDirection.GetForwardPosition(GridCoord, Direction, GridWidth);
-            if(NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
+            if (NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
             
             EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), BuildRequestType.Belt));
         }

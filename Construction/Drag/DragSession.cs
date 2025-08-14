@@ -162,7 +162,7 @@ namespace Construction.Drag
                 _replacedByIntersections.Remove(kvp.Key);
             }
             
-            _cellSelectionParams.Intersections.Clear();
+            _cellSelectionParams.ClearIntersections();
         }
 
         private void CleanUpAfterIntersections()

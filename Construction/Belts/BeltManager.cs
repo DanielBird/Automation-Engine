@@ -86,12 +86,13 @@ namespace Construction.Belts
             if (nextBelts.Count == 0) return; 
             
             _graph[b] = nextBelts;
+            
+# if UNITY_EDITOR
             if (DetectsLoop(b))
             {
-                # if UNITY_EDITOR
-                Debug.LogError($"Loop detected between {b.name} and {nextBelts[0].name}");
-                # endif
+                Debug.Log($"Loop detected on Node Target Change - between {b.name} and {nextBelts[0].name}");
             }
+# endif
         }
         
         private void RegisterBelt(Belt belt)
@@ -105,8 +106,11 @@ namespace Construction.Belts
             if (DetectsLoop(belt))
             {
                 # if UNITY_EDITOR
-                Debug.LogError($"Loop detected between {belt.name} and {nextBelts[0].name}");
+                Debug.Log($"Loop detected between {belt.name} and {nextBelts[0].name}");
                 # endif
+                
+                _belts.Remove(belt);
+                _graph.Remove(belt); 
             }
         }
         
@@ -213,16 +217,24 @@ namespace Construction.Belts
         private int GetPathLength(Belt start)
         {
             Dictionary<Belt, int> memo = new();
+            HashSet<Belt> visited = new();
 
             int Dfs(Belt b)
             {
                 if (memo.TryGetValue(b, out int v)) return v;
+                if (!visited.Add(b)) return 0; // loop detected
+
                 if (!_graph.TryGetValue(b, out List<Belt> outs) || outs.Count == 0)
+                {
+                    visited.Remove(b);
                     return memo[b] = 0;
+                }
 
                 int best = 0;
                 foreach (Belt nxt in outs)
                     best = Mathf.Max(best, 1 + Dfs(nxt));
+
+                visited.Remove(b);
                 return memo[b] = best;
             }
 

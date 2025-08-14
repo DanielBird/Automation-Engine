@@ -29,6 +29,11 @@ namespace Construction.Nodes
         {
             return Get(basePosition.x, basePosition.z, currentDirection, size);
         }
+
+        public static Vector3Int GetForwardPositionV3(Vector3Int basePosition, Direction currentDirection, int size)
+        {
+            return Get(basePosition, currentDirection, size);
+        }
         
         public static Vector2Int GetBackwardPosition(Vector3Int basePosition, Direction currentDirection, int size)
         {

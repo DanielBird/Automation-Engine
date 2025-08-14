@@ -15,8 +15,10 @@ namespace Construction.Nodes
         public bool showDirection;
         public bool showNeighbours = true;
         public bool showConnected;
-        public bool logNewTargets; 
-        
+        public bool logNewTargets;
+        public bool showPath;
+
+        private Vector3 _pathOffset = new Vector3(0, 0.7f, 0); 
         private Vector3 _northGizmo = new Vector3(0, 1, 0.2f); 
         private Vector3 _eastGizmo = new Vector3(0.2f, 1,0); 
         private Vector3 _southGizmo = new Vector3(0, 1, -0.2f); 
@@ -106,6 +108,16 @@ namespace Construction.Nodes
             {
                 Gizmos.color = node.IsConnected() ? new Color(0, 1, 0, 0.2f) : new Color(1, 0, 0, 0.2f);
                 Gizmos.DrawCube(transform.position, Vector3.one);
+            }
+
+            if (showPath)
+            {
+                Gizmos.color = Color.aquamarine;
+                foreach (Node target in node.TargetNodes)
+                {
+                    Gizmos.DrawLine(transform.position + _pathOffset, target.transform.position + _pathOffset);
+                    Gizmos.DrawSphere(target.transform.position + _pathOffset, 0.05f);
+                }
             }
         }
     }

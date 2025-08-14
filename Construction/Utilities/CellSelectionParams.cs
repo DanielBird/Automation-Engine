@@ -11,7 +11,7 @@ namespace Construction.Utilities
         public readonly INodeMap NodeMap;
         public readonly PlacementSettings Settings;
         public readonly int StepSize;
-        public HashSet<Vector3Int> Intersections;
+        public HashSet<Vector3Int> Intersections { get; private set; }
 
         public CellSelectionParams(IMap map, INodeMap nodeMap, PlacementSettings settings, int stepSize)
         {
@@ -25,9 +25,9 @@ namespace Construction.Utilities
             Intersections = new HashSet<Vector3Int>();
         }
 
-        public void FilterIntersections(List<Vector3Int> path)
-        {
-            Intersections.IntersectWith(path); 
-        }
+        public void AddIntersection(Vector3Int intersection) => Intersections.Add(intersection);
+        public void RemoveIntersection(Vector3Int intersection) => Intersections.Remove(intersection);
+        public void ClearIntersections() => Intersections.Clear();
+        public void FilterIntersections(List<Vector3Int> path) => Intersections.IntersectWith(path); 
     }
 }

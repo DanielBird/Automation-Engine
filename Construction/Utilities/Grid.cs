@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Construction.Maps;
 using Construction.Nodes;
 using Construction.Placement;
@@ -342,6 +343,14 @@ namespace Construction.Utilities
             
             bool right = rightFound && rightN.Direction == (end ? rightDirection : leftDirection);
             bool left = leftFound && leftN.Direction == (end ? leftDirection : rightDirection);
+
+            // Avoid connecting if it leads to a loop
+            if (right || left)
+            {
+                HashSet<Vector3Int> positions = cells.Select(c => c.GridCoordinate).ToHashSet();
+                if (right && rightN.LoopDetected(positions)) right = false;
+                if (left && leftN.LoopDetected(positions)) left = false;
+            }
             
             // Debug.Log($"Right direction is {rightDirection} and left direction is {leftDirection}");
             // Debug.Log($"Right Position is {rightPos} and Left is {leftPos}");
@@ -444,8 +453,18 @@ namespace Construction.Utilities
                 return;
 
             AddPathCells(path, selection, selectionParams);
-            selectionParams.FilterIntersections(path);
+            // selectionParams.FilterIntersections(path);
             selection.Corner = Corner.None; // multi-corner paths: don't use single-corner UI
+        }
+
+        private readonly struct Record : IEquatable<Record>
+        {
+            public readonly Vector3Int Pos; 
+            public readonly bool PrevWasIntersection;
+            public Record(Vector3Int pos, bool prevWasIntersection) { Pos = pos; PrevWasIntersection = prevWasIntersection; }
+            public bool Equals(Record other) => Pos.Equals(other.Pos) && PrevWasIntersection == other.PrevWasIntersection;
+            public override bool Equals(object obj) => obj is Record other && Equals(other);
+            public override int GetHashCode() => HashCode.Combine(Pos, PrevWasIntersection);
         }
         
         private static List<Vector3Int> FindShortestPath(Vector3Int start, Vector3Int goal, CellSelectionParams p)
@@ -454,46 +473,66 @@ namespace Construction.Utilities
             int h = p.Map.MapHeight;
             int step = Mathf.Max(1, p.StepSize);
 
-            // Breadth-first search
-            Queue<Vector3Int> q = new();
-            HashSet<Vector3Int> visited = new();
-            Dictionary<Vector3Int, Vector3Int> parent = new();
+            // State
+            Queue<Record> q = new();
+            HashSet<Record> visited = new();
+            Dictionary<Vector3Int, Record> parent = new();
 
-            q.Enqueue(start);
-            visited.Add(start);
+            Record startingRecord = new Record(start, false); 
+            q.Enqueue(startingRecord);
+            visited.Add(startingRecord);
 
             while (q.Count > 0)
             {
-                Vector3Int cur = q.Dequeue();
-                if (cur == goal)
+                Record current = q.Dequeue();
+                if (current.Pos == goal)
                 {
-                    List<Vector3Int> path = new();
-                    Vector3Int t = goal;
-                    while (true)
-                    {
-                        path.Add(t);
-                        if (t == start) break;
-                        t = parent[t];
-                    }
-                    path.Reverse();
-                    return path;
+                    return GetPath(p, current, parent);
                 }
 
-                foreach (Vector3Int nb in GetNeighbours(cur, step, w, h))
+                foreach (Vector3Int nb in GetNeighbours(current.Pos, step, w, h))
                 {
-                    if (visited.Contains(nb)) continue;
-                    if (!IsPassable(nb.x, nb.z, p)) continue;
+                    bool isGoal = nb == goal;
+                    bool passable = IsPassable(nb.x, nb.z, p, current.PrevWasIntersection, out bool addedIntersection);
 
-                    visited.Add(nb);
-                    parent[nb] = cur;
-                    q.Enqueue(nb);
+                    if (isGoal && !passable)
+                    {
+                        return GetPath(p, current, parent);
+                    }
+                    
+                    if (!passable) continue;
+
+                    Record next = new(nb, addedIntersection);
+                    if (!visited.Add(next)) continue;
+                    if (!parent.ContainsKey(nb)) parent[nb] = current;
+                    q.Enqueue(next);
                 }
             }
 
+            Debug.Log("No path");
             // No path
             return null;
         }
-        
+
+        private static List<Vector3Int> GetPath(CellSelectionParams p, Record current, Dictionary<Vector3Int, Record> parent)
+        {
+            List<Vector3Int> path = new();
+            HashSet<Vector3Int> intersections = new(); 
+                    
+            Record t = current;
+            while (true)
+            {
+                path.Add(t.Pos);
+                if (t.PrevWasIntersection) intersections.Add(t.Pos);
+                if (!parent.TryGetValue(t.Pos, out Record next)) break;
+                t = next;
+            }
+            path.Reverse();
+            p.ClearIntersections();
+            foreach (Vector3Int i in intersections) p.AddIntersection(i);
+            return path;
+        }
+
         private static IEnumerable<Vector3Int> GetNeighbours(Vector3Int c, int step, int width, int height)
         {
             // 4-connected moves by step
@@ -507,28 +546,34 @@ namespace Construction.Utilities
             nz = c.z - step; if (nz >= 0 && nz < height) yield return new Vector3Int(c.x, 0, nz);
         }
 
-        private static bool IsPassable(int x, int z, CellSelectionParams p)
+        private static bool IsPassable(int x, int z, CellSelectionParams p, bool previouslyAddedIntersection, out bool addedIntersection)
         {
+            addedIntersection = false;
             // Allow moving through vacant cells; 
             if (p.Map.VacantCell(x, z)) return true;
             
             // Allow intersections
-            if (ViableAsIntersection(x, z, p))
+            if (ViableIntersection(x, z, p, previouslyAddedIntersection))
             {
-                p.Intersections.Add(new Vector3Int(x, 0, z));
+                // addedIntersection = p.Intersections.Add(new Vector3Int(x, 0, z));
+                addedIntersection = true;
                 return true;
             }
             
             return false;
         }
 
-        private static bool ViableAsIntersection(int x, int z, CellSelectionParams p)
+        private static bool ViableIntersection(int x, int z, CellSelectionParams p, bool previouslyAddedIntersection)
         {
-            // if there is a node, and that node is a straight node, and it is connected...
-            // then this is viable as an intersection
+            if (previouslyAddedIntersection) return false; 
             if (!p.NodeMap.TryGetNode(x, z, out Node node)) return false;
             if (node.NodeType != NodeType.Straight) return false;
-            return node.IsConnected();
+            if (!node.TryGetForwardNode(out Node forwardNode)) return false;
+            if (!node.TryGetBackwardNode(out Node backwardNode)) return false;
+            if (forwardNode.InputDirection() != node.Direction) return false;
+            if (backwardNode.Direction != node.InputDirection()) return false;
+            if (forwardNode.NodeType == NodeType.Intersection || backwardNode.NodeType == NodeType.Intersection) return false;
+            return true;
         }
         
         private static void AddPathCells(List<Vector3Int> path, CellSelection selection, CellSelectionParams selectionParams)

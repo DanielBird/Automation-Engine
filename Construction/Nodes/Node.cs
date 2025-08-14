@@ -161,27 +161,31 @@ namespace Construction.Nodes
             // Setting up target nodes during a drag relies on the node in front updating this node 
             
             if (TryGetForwardNode(out Node forwardNode))
-                SetTargetNode(forwardNode);
+                AddTargetNode(forwardNode);
             
             if (TryGetBackwardNode(out Node backwardNode))
-                backwardNode.SetTargetNode(this);
+                backwardNode.AddTargetNode(this);
         }
 
         public bool HasForwardNode(out Node forwardNode)
         {
             if (TryGetForwardNode(out forwardNode))
             {
-                SetTargetNode(forwardNode);
+                AddTargetNode(forwardNode);
                 return true; 
             }
             forwardNode = null;
             return false;
         }
 
-        public void SetTargetNode(Node node)
+        
+        // To Do: Review how the list of Target Nodes should be managed
+        // What should happen here when Target Nodes Count > 0? 
+        public void AddTargetNode(Node node)
         {
-            if (TargetNodes.Count == 0) TargetNodes.Add(node);
-            else TargetNodes[0] = node;
+            if (LoopDetected(node)) return; 
+            
+            TargetNodes.Add(node);
             
             EventBus<NodeTargetEvent>.Raise(new NodeTargetEvent(this, node));
         }
@@ -212,6 +216,45 @@ namespace Construction.Nodes
         {
             if(!IsSelected || !IsEnabled) return;
             IsSelected = false;
+        }
+
+        public bool LoopDetected(HashSet<Vector3Int> newPath)
+        {
+            HashSet<Node> visited = new();
+
+            bool Dfs(Node start)
+            {
+                if (!visited.Add(start)) return true;
+                Vector3Int target = PositionByDirection.GetForwardPositionV3(start.GridCoord, start.Direction, start.GridWidth);
+                if (newPath.Contains(target)) return true;
+
+                foreach (Node node in start.TargetNodes)
+                {
+                    if(Dfs(node)) return true;
+                }
+
+                return false;
+            }
+            
+            return Dfs(this);
+        }
+        
+        private bool LoopDetected(Node start)
+        {
+            HashSet<Node> visited = new();
+
+            bool Dfs(Node n)
+            {
+                if (!visited.Add(n)) return false;
+                if (n == this) return true;           
+                foreach (Node next in n.TargetNodes)
+                {
+                    if (Dfs(next)) return true;
+                }
+                return false;
+            }
+
+            return Dfs(start);
         }
     }
 }

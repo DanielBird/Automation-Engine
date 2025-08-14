@@ -117,8 +117,6 @@ namespace Construction.Drag
 
         private void RegisterDraggedOccupant(Vector3Int gridCoord, Node node, DragPos dragPos , bool manageNeighbours = false)
         {
-            if(node.NodeType == NodeType.Intersection) Debug.Log("Register intersection");
-            
             Vector2Int size = node.GetSize();
             if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y)) node.FailedPlacement();
             else
