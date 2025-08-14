@@ -8,8 +8,10 @@ It is being built in Unity 6.
 
 # Features
 
-A belt graph that handles deliveries.
+A grid based construction system. 
 Player placement uses breadth first search to avoid barriers to constuction.  
+
+A belt graph that handles deliveries.
 
 ![Demo](Media/BeltTest.gif)
 
