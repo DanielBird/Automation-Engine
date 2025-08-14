@@ -1,14 +1,29 @@
 # Automation Engine 
 
-Automation engine is an open source template for creating automation games.
-
+Automation engine is an open source template for 3d, automation games.
 
 This project is regularly being updated. 
 
-
 It is being built in Unity 6.  
 
+# Features
+
+A grid based construction system. 
+Player placement uses breadth first search to avoid barriers to constuction.  
+
+A belt graph that handles deliveries.
+
 ![Demo](Media/BeltTest.gif)
+
+Intersections - allowing two distinct paths to cross. 
+
+![Demo](Media/IntersectionGif.gif)
+
+Belt path splitters - coming
+
+Delivery combiners - comning
+
+Path elevation handling - coming
 
 
 # To get started using the template
