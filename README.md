@@ -25,6 +25,9 @@ Delivery combiners - comning
 
 Path elevation handling - coming
 
+Belt path loop detection and automatic avoidance. 
+
+Player removal of placed game objects. 
 
 # To get started using the template
 
