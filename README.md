@@ -25,10 +25,15 @@ Delivery combiners - comning
 
 Path elevation handling - coming
 
+Click and drag to add more belts to an existing belt path in the scene. 
+
+Belt path loop detection and automatic avoidance. 
+
+Player removal of placed game objects. 
 
 # To get started using the template
 
-5 monobehaviour scripts are required in the scene: 
+Monobehaviour scripts required in the scene: 
 
 | Monobehavior            | Function  
 |----------|----------|
@@ -37,24 +42,33 @@ Path elevation handling - coming
 | Placement Manager    | coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations |
 | Placement Visuals    | manages visual aspects of game object placement | 
 | Belt Manager    | coordinates a belt graph, triggering widget movement | 
+| Removal Manager    | coordinates game object removal via right mouse click and hold |
+| Player Click Manager   | casts a raycast on left mouse down and any class implementing IClickable will be notified if hit |
 
-The Placement Manager class requires a scriptable object - PlacementSettings - that holds data about placement e.g. prefabs, input action references, the grid cell size.   
 
 # Key Components 
 
 Nodes 
 
+├── Belt
 
-├── Belts
+│   ├── Producer
 
+│   ├── Intersection
 
-│   ├── Producers
+│   ├── Splitter
+
+│   ├── Combiner
 
 Widgets
 
 - Nodes are any object you would want to place on the map that have a direction and a target
-- Belts inherit from Nodes and ship widgets to one another
+- Belts inherit from Nodes and ship Widgets to one another
+- Widgets are the deliveries handled by belts. They manage their own movement logic and implement a strategy pattern for handling different movement styles. 
 - Producers inherit from Belts and spawn new widgets
+- Intersections inherit from Belts. They ship Widgets to different target Nodes based on which Node they recieved the Widget. 
+- Splitters - to come
+- Combiners - to come
 
 # Scriptable objects
 
