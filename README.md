@@ -25,6 +25,8 @@ Delivery combiners - comning
 
 Path elevation handling - coming
 
+Click and drag to add more belts to an existing belt path in the scene. 
+
 Belt path loop detection and automatic avoidance. 
 
 Player removal of placed game objects. 
@@ -61,7 +63,8 @@ Nodes
 Widgets
 
 - Nodes are any object you would want to place on the map that have a direction and a target
-- Belts inherit from Nodes and ship widgets to one another
+- Belts inherit from Nodes and ship Widgets to one another
+- Widgets are the deliveries handled by belts. They manage their own movement logic and implement a strategy pattern for handling different movement styles. 
 - Producers inherit from Belts and spawn new widgets
 - Intersections inherit from Belts. They ship Widgets to different target Nodes based on which Node they recieved the Widget. 
 - Splitters - to come
