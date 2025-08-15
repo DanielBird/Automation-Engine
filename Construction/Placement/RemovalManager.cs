@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Construction.Drag;
 using Construction.Events;
 using Construction.Nodes;
 using Construction.Utilities;
@@ -46,7 +45,7 @@ namespace Construction.Placement
 
         private void ClearToken()
         {
-            if(_rightClickDragTokenSource == null) return;
+            if(_rightClickDragTokenSource == null) return; 
             _rightClickDragTokenSource.Cancel();
             _rightClickDragTokenSource.Dispose();
             _rightClickDragTokenSource = null;
@@ -107,6 +106,7 @@ namespace Construction.Placement
         private void RemoveSingleNode(GridWorldCoordPair delete, Node node)
         {
             Vector3Int gridCoord = delete.GridCoordinate;
+            node.OnRemoval();
             Map.DeregisterOccupant(gridCoord.x, gridCoord.z, node.GridWidth, node.GridHeight);
             NodeMap.DeregisterNode(node);
             SimplePool.Despawn(node.gameObject);

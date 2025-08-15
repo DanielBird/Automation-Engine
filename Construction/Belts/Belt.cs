@@ -3,6 +3,7 @@ using Construction.Maps;
 using Construction.Nodes;
 using Construction.Widgets;
 using UnityEngine;
+using Utilities;
 using Utilities.Events;
 using Utilities.Events.Types;
 
@@ -92,9 +93,19 @@ namespace Construction.Belts
             // Allow the player to start a new drag session by clicking on this belt 
             // If this belt is connected to a belt in front, do not continue
             Vector2Int forwardGridPos = PositionByDirection.GetForwardPosition(GridCoord, Direction, GridWidth);
+            if (!NodeMap.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
             if (NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
             
             EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), BuildRequestType.Belt));
+
+        }
+
+        public override void OnRemoval()
+        {
+            if(!IsOccupied) return;
+            Occupant.CancelMovement();
+            SimplePool.Despawn(Occupant.gameObject);
+            Occupant = null;
         }
 
         protected virtual void OnDrawGizmosSelected()

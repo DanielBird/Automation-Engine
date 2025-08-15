@@ -114,7 +114,7 @@ namespace Construction.Maps
             return false;
         }
         
-        private bool InBounds(int x, int z)
+        public bool InBounds(int x, int z)
         {
             return x >= 0 && x < _nodeGrid.GetLength(0) &&
                    z >= 0 && z < _nodeGrid.GetLength(1); 

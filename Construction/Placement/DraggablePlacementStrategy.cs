@@ -35,5 +35,7 @@ namespace Construction.Placement
             _dragManager.DespawnAll();
             _visuals.Hide();
         }
+
+        public void CleanUpOnDisable() =>_dragManager.Disable();
     }
 } 

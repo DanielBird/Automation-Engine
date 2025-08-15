@@ -17,7 +17,7 @@ namespace GameState
         public float deadZoneRadius = 10;
         public float sphereCastRadius = 0.1f;
 
-        [Header("Belt Selection")] 
+        [Header("Placement")] 
         public float minTimeBetweenClicks = 0.1f;
 
         [Header("Camera Movement")] public float moveSpeedZoomedIn = 20f;

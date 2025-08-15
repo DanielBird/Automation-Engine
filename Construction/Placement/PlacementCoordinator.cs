@@ -18,13 +18,14 @@ namespace Construction.Placement
             IMap map,
             INodeMap nodeMap,
             NeighbourManager neighbourManager,
+            PlacementSettings placementSettings,
             PlacementState state,
             PlacementVisuals visuals)
         {
             _strategies = new List<IPlacementStrategy>
             {
                 new DraggablePlacementStrategy(dragManager, state, visuals),
-                new StandardPlacementStrategy(map, nodeMap, neighbourManager, state, visuals)
+                new StandardPlacementStrategy(map, nodeMap, neighbourManager, placementSettings, state, visuals)
             };
 
             _state = state; 
@@ -53,6 +54,14 @@ namespace Construction.Placement
                 strategy.CancelPlacement(placeable);
                 _visuals.DeactivateFloorDecal();
                 return;
+            }
+        }
+
+        public void RegisterOnDisable()
+        {
+            foreach (IPlacementStrategy strategy in _strategies)
+            {
+                strategy.CleanUpOnDisable();
             }
         }
     }

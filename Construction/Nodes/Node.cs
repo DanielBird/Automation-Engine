@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using Construction.Events;
 using Construction.Interfaces;
 using Construction.Maps;
@@ -38,9 +39,7 @@ namespace Construction.Nodes
         [field: SerializeField] public NodeType NodeType { get; private set; } 
         
         [Header("Position & Rotation")] 
-        protected Vector3Int _position; 
         private Direction _direction; 
-        
         public Direction startingDirection; 
         public float rotationTime = 0.25f;
         
@@ -61,6 +60,7 @@ namespace Construction.Nodes
         public INodeMap NodeMap { get; protected set; }
         private NodeRotation _nodeRotation;
         private NodeConnections _nodeConnections;
+        private StringBuilder _nameBuilder = new(64);
         
         // Player Selection
         public bool IsEnabled { get; set; }
@@ -96,7 +96,7 @@ namespace Construction.Nodes
         
         // Note - nodes register themselves with the Node Map
         // But they do not register themselves with Map
-        // This must be done at the place of creating / instantiating the node
+        // This must be done at the place of instantiating the node
         
         public virtual void Initialise(NodeConfiguration config)
         {
@@ -115,6 +115,19 @@ namespace Construction.Nodes
             
             EventBus<NodePlaced>.Raise(new NodePlaced(this));
             IsEnabled = true;
+            
+            SetGameObjectName(GridCoord);
+        }
+        
+        private void SetGameObjectName(Vector3Int coord)
+        {
+            _nameBuilder.Clear();
+            _nameBuilder.Append(gameObject.name);
+            _nameBuilder.Append('_');
+            _nameBuilder.Append(coord.x);
+            _nameBuilder.Append('_');
+            _nameBuilder.Append(coord.z);
+            gameObject.name = _nameBuilder.ToString();
         }
 
         public virtual void FailedPlacement()
@@ -144,6 +157,8 @@ namespace Construction.Nodes
             _nodeRotation.RotateInstant(direction);
             if(updateTarget) UpdateTargetNode();
         }
+        
+        public virtual void OnRemoval(){}
         
         public Vector2Int GetSize() => Direction switch
         {
@@ -177,13 +192,14 @@ namespace Construction.Nodes
             forwardNode = null;
             return false;
         }
-
         
-        // To Do: Review how the list of Target Nodes should be managed
+        // TO DO: Review how the list of Target Nodes should be managed
         // What should happen here when Target Nodes Count > 0? 
         public void AddTargetNode(Node node)
         {
             if (LoopDetected(node)) return; 
+            
+            if(TargetNodes.Contains(node)) return;
             
             TargetNodes.Add(node);
             

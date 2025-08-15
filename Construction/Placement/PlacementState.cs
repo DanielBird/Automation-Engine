@@ -7,7 +7,7 @@ namespace Construction.Placement
     public class PlacementState
     {
         public bool IsRunning { get; set; }
-        public GameObject CurrentObject { get; set; }
+        public GameObject CurrentObject { get; private set; }
         public Vector3Int TargetGridCoordinate { get; set; }
         public Vector3Int WorldAlignedPosition { get; set; }
         public Direction CurrentDirection { get; private set; }
@@ -20,7 +20,7 @@ namespace Construction.Placement
         public IRotatable MainRotatable { get; private set; }
 
         public void SetGameObject(GameObject gameObject)
-        { 
+        {
             CurrentObject = gameObject;
             IsRunning = true; 
             

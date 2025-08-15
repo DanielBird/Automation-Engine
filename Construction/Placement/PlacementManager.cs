@@ -10,7 +10,9 @@ using Construction.Visuals;
 using Cysharp.Threading.Tasks;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using Utilities;
 using Utilities.Events;
 using Utilities.Events.Types;
 using Grid = Construction.Utilities.Grid;
@@ -48,6 +50,8 @@ namespace Construction.Placement
 
         private CancellationTokenSource _disableCancellation = new CancellationTokenSource();
         private CancellationTokenSource _waitTokenSource = new CancellationTokenSource();
+
+        private float _timeOfLastClick; 
         
         // EVENTS
         private EventBinding<UiButtonClick> _onButtonClick; 
@@ -80,6 +84,7 @@ namespace Construction.Placement
                 Map,
                 NodeMap,
                 NeighbourManager,
+                settings,
                 state,
                 visuals
             );
@@ -97,9 +102,8 @@ namespace Construction.Placement
         {
             ClearTokenSource(ref _disableCancellation);
             ClearTokenSource(ref _waitTokenSource);
-            _dragManager.Disable();
-            
             UnRegisterEvents();
+            _placementCoordinator.RegisterOnDisable();
         }
 
         private void RegisterEvents()
@@ -153,7 +157,7 @@ namespace Construction.Placement
         private void RequestDrag(BeltClickEvent e)
         {
             if(!_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory)) return;
-
+            
             Vector3Int gridCoordinate = Grid.WorldToGridCoordinate(e.WorldPosition, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.cellSize));
             state.IsRunning = false; 
             state.TargetGridCoordinate = gridCoordinate;
@@ -213,28 +217,17 @@ namespace Construction.Placement
 
         private void ConfirmPlacement(InputAction.CallbackContext ctx)
         {
-            if (!state.IsRunning) return;
+            // Return if the cursor is over a UI element
+            if (EventSystem.current.IsPointerOverGameObject()) return;
+
+            // Return if this is the second click of a double click
+            if(Time.time < _timeOfLastClick + inputSettings.minTimeBetweenClicks) return;
+            _timeOfLastClick = Time.time; 
             
-            if (state.PlaceableFound)
-            {
-                _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetGridCoordinate);
-            }
-
-            if (!state.IsRunning)
-            {
-                ClearTokenSource(ref _disableCancellation);
-                _disableCancellation = new CancellationTokenSource(); 
-                FinalisePosition(state.CurrentObject, state.WorldAlignedPosition, _disableCancellation.Token).Forget();
-            }
-        }
-
-        private async UniTaskVoid FinalisePosition(GameObject go, Vector3Int finalPosition, CancellationToken token)
-        {
-            while(DistanceAboveThreshold(go, finalPosition))
-            {
-                LerpPosition(go, finalPosition);
-                await UniTask.Yield(token); 
-            }
+            if (!state.IsRunning) return;
+            if (!state.PlaceableFound) return;
+            
+            _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetGridCoordinate);
         }
         
         private void Rotate(InputAction.CallbackContext ctx)

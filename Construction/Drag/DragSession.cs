@@ -39,8 +39,6 @@ namespace Construction.Drag
         private Cell _cornerCell;
         private Corner _corner = Corner.None;
         
-        private StringBuilder _nameBuilder = new(64);
-        
         private CancellationTokenSource _disableCancellation = new();
         
         public DragSession(
@@ -197,7 +195,6 @@ namespace Construction.Drag
             }
             
             GameObject newGameObject = SimplePool.Spawn(prefab, cell.WorldPosition, Quaternion.identity, initialObject.transform.parent);
-            SetGameObjectName(newGameObject, prefab, cell.GridCoordinate);
             
             if (newGameObject.TryGetComponent(out Node node))
             {
@@ -207,17 +204,6 @@ namespace Construction.Drag
             }
         }
         
-        private void SetGameObjectName(GameObject go, GameObject prefab, Vector3Int coord)
-        {
-            _nameBuilder.Clear();
-            _nameBuilder.Append(prefab.name);
-            _nameBuilder.Append('_');
-            _nameBuilder.Append(coord.x);
-            _nameBuilder.Append('_');
-            _nameBuilder.Append(coord.z);
-            go.name = _nameBuilder.ToString();
-        }
-
         private void UpdateRotations(Dictionary<Cell, TempNode> spawnedPos)
         {
             var direction = _state.CurrentDirection;

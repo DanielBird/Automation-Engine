@@ -35,7 +35,10 @@ namespace Construction.Belts
             base.Initialise(config);
             
             Activate(CoreGameState.ProducerCount);
+            
+            // Temporary Code for generating new widgets based purely on the number of producers in the scene
             CoreGameState.ProducerCount++; 
+            if(CoreGameState.ProducerCount >= widgetPrefabs.widgets.Count) CoreGameState.ProducerCount = 0;
         }
         
         [Button]

@@ -10,7 +10,6 @@ using GameState;
 using UnityEngine;
 using Utilities;
 using ZLinq;
-using Grid = Construction.Utilities.Grid;
 
 namespace Construction.Drag
 {
@@ -109,7 +108,8 @@ namespace Construction.Drag
             // Register the end node of the drag -  must come last
             if (_spawned.TryGetValue(endCell, out TempNode endValue))
             {
-                RegisterDraggedOccupant(endCell.GridCoordinate, endValue.Node, DragPos.End);
+                if(startingCell.GridCoordinate != endCell.GridCoordinate) 
+                    RegisterDraggedOccupant(endCell.GridCoordinate, endValue.Node, DragPos.End);
             }
             
             CleanupDrag();

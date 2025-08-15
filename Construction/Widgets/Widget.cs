@@ -75,5 +75,10 @@ namespace Construction.Widgets
         public void SetMoving(bool status) => IsMoving = status;
 
         private void FinalizeMovement() => _moveCoroutine = null;
+
+        public void CancelMovement()
+        {
+            if(_moveCoroutine != null) StopCoroutine(_moveCoroutine);
+        }
     }
 }
