@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Construction.Nodes;
+using UnityEngine;
 
 namespace Construction.Placement.Factory
 {
@@ -6,6 +7,7 @@ namespace Construction.Placement.Factory
     {
         PlacementManager PlacementManager { get; }
         PlacementSettings PlacementSettings { get; }
+        NodeType NodeType { get; }
         
         bool Create(out GameObject prefab, out Vector3Int alignedWorldPosition); 
         

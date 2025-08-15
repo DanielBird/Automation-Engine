@@ -9,6 +9,7 @@ namespace Construction.Placement
 {
     public class CornerCreator
     {
+        private readonly IMap _map;
         private readonly INodeMap _nodeMap;
         private readonly PlacementSettings _settings;
         private readonly Transform _transform;
@@ -16,8 +17,9 @@ namespace Construction.Placement
         private const int RightTurn = 1;
         private const int LeftTurn = 3;
 
-        public CornerCreator(INodeMap nodeMap, PlacementSettings settings, Transform transform)
+        public CornerCreator(IMap map, INodeMap nodeMap, PlacementSettings settings, Transform transform)
         {
+            _map = map; 
             _nodeMap = nodeMap;
             _settings = settings;
             _transform = transform;
@@ -115,7 +117,7 @@ namespace Construction.Placement
             {
                 Direction d = target != Target.Forward ? newDirection : oldDirection;
                 
-                NodeConfiguration config = NodeConfiguration.Create(_nodeMap, nodeType, d); 
+                NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, nodeType, d, true, true); 
                 node.Initialise(config);
                 node.Visuals.HideArrows();
             }

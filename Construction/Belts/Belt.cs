@@ -5,7 +5,6 @@ using Construction.Widgets;
 using UnityEngine;
 using Utilities;
 using Utilities.Events;
-using Utilities.Events.Types;
 
 namespace Construction.Belts
 {
@@ -20,7 +19,8 @@ namespace Construction.Belts
         public Vector3 widgetTargetOffset = new Vector3(0, 1, 0);
         public Vector3 widgetTarget { get; private set; }
 
-        [Header("Debug")] public bool drawWidgetTarget; 
+        [Header("Debug")] 
+        public bool drawWidgetTarget; 
         public bool logFailedWidgetReceipt;
         public bool logInabilityToShip; 
         
@@ -96,8 +96,7 @@ namespace Construction.Belts
             if (!NodeMap.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
             if (NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
             
-            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), BuildRequestType.Belt));
-
+            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), NodeType.GenericBelt));
         }
 
         public override void OnRemoval()

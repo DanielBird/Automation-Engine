@@ -35,8 +35,16 @@ namespace Construction.Nodes
         {
             backwardNode = null;
             Vector2Int backwardPosition = PositionByDirection.GetForwardPosition(_node.GridCoord, InputPosition(), _node.GridWidth);
-            if (_nodeMap == null) return false;
-            return _nodeMap.GetNeighbourAt(backwardPosition, out backwardNode);
+            return _nodeMapSet && _nodeMap.GetNeighbourAt(backwardPosition, out backwardNode);
+        }
+
+        public bool TryGetForwardLeftNode(int step, out Node forwardLeftNode)
+        {
+            forwardLeftNode = null;
+            Vector2Int fPos = PositionByDirection.GetForwardPosition(_node.GridCoord, _node.Direction, step);
+            Direction counterClockwiseTurn = DirectionUtils.RotateCounterClockwise(_node.Direction);
+            Vector2Int forwardLeftPosition = PositionByDirection.GetForwardPosition(new Vector3Int(fPos.x, 0, fPos.y), counterClockwiseTurn, step);
+            return _nodeMapSet && _nodeMap.GetNeighbourAt(forwardLeftPosition, out forwardLeftNode); 
         }
         
         public bool HasNeighbour(Direction direction)

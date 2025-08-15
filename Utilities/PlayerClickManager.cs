@@ -5,7 +5,6 @@ namespace Utilities
 {
     public class PlayerClickManager : MonoBehaviour
     {
-        
         [SerializeField] private LayerMask buildingLayer;
         [SerializeField] private Camera mainCamera;
         

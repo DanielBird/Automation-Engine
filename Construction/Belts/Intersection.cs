@@ -46,6 +46,5 @@ namespace Construction.Belts
             
             return true;
         }
-        
     }
 }

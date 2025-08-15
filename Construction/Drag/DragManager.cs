@@ -124,7 +124,7 @@ namespace Construction.Drag
                 node.Place(gridCoord, _nodeMap);
                 node.Visuals.HideArrows();
 
-                NodeConfiguration config = NodeConfiguration.Create(_nodeMap, NodeType.Straight, node.Direction, false); 
+                NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, NodeType.Straight); 
                 node.Initialise(config);
 
                 if (!manageNeighbours) return;

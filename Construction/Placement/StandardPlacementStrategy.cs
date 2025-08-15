@@ -48,7 +48,7 @@ namespace Construction.Placement
             
             if (placeable is Node node)
             {
-                NodeConfiguration config = NodeConfiguration.Create(_nodeMap, NodeType.Straight, Direction.North, false); 
+                NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, NodeType.Straight); 
                 node.Initialise(config);
                 node.Visuals.HideArrows();
             }

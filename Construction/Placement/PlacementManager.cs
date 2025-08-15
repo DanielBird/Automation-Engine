@@ -12,9 +12,7 @@ using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using Utilities;
 using Utilities.Events;
-using Utilities.Events.Types;
 using Grid = Construction.Utilities.Grid;
 
 namespace Construction.Placement
@@ -40,7 +38,7 @@ namespace Construction.Placement
         public NeighbourManager NeighbourManager; 
         private PlacementCoordinator _placementCoordinator;
         
-        private Dictionary<BuildRequestType, IPlaceableFactory> _factories;
+        private Dictionary<NodeType, IPlaceableFactory> _factories;
 
         [Header("State")] 
         [SerializeField] private PlacementState state = new();
@@ -54,7 +52,7 @@ namespace Construction.Placement
         private float _timeOfLastClick; 
         
         // EVENTS
-        private EventBinding<UiButtonClick> _onButtonClick; 
+        private EventBinding<ConstructionUiButtonClick> _onButtonClick; 
         private EventBinding<BeltClickEvent> _onBeltClick;
 
         protected override void Awake()
@@ -88,11 +86,13 @@ namespace Construction.Placement
                 state,
                 visuals
             );
-
-            _factories = new Dictionary<BuildRequestType, IPlaceableFactory>
+            
+            _factories = new Dictionary<NodeType, IPlaceableFactory>
             {
-                { BuildRequestType.Belt, new BeltFactory(this, settings)},
-                { BuildRequestType.Producer, new ProducerFactory(this, settings)}
+                { NodeType.GenericBelt, new GenericFactory(this, settings, NodeType.Straight)},
+                { NodeType.Producer, new GenericFactory(this, settings, NodeType.Producer)},
+                { NodeType.Splitter, new GenericFactory(this, settings, NodeType.Splitter)}, 
+                { NodeType.Combiner, new GenericFactory(this, settings, NodeType.Combiner)},
             };
             
             RegisterEvents();
@@ -112,10 +112,10 @@ namespace Construction.Placement
             inputSettings.rotate.action.performed += Rotate;
             inputSettings.cancel.action.performed += CancelPlacement; 
             
-            _onButtonClick = new EventBinding<UiButtonClick>(RequestPlacement);
+            _onButtonClick = new EventBinding<ConstructionUiButtonClick>(RequestPlacement);
             _onBeltClick = new EventBinding<BeltClickEvent>(RequestDrag); 
             
-            EventBus<UiButtonClick>.Register(_onButtonClick);
+            EventBus<ConstructionUiButtonClick>.Register(_onButtonClick);
             EventBus<BeltClickEvent>.Register(_onBeltClick);
         }
 
@@ -125,14 +125,14 @@ namespace Construction.Placement
             inputSettings.rotate.action.performed -= Rotate;
             inputSettings.cancel.action.performed -= CancelPlacement; 
             
-            EventBus<UiButtonClick>.Deregister(_onButtonClick);
+            EventBus<ConstructionUiButtonClick>.Deregister(_onButtonClick);
             EventBus<BeltClickEvent>.Deregister(_onBeltClick);
         }
 
         // The start of spawning game objects via Ui Button clicks 
-        private void RequestPlacement(UiButtonClick e)
+        private void RequestPlacement(ConstructionUiButtonClick e)
         {
-            if (_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory))
+            if (_factories.TryGetValue(e.RequestType, out IPlaceableFactory factory))
             {
                 ClearTokenSource(ref _waitTokenSource);
                 _waitTokenSource = new CancellationTokenSource();

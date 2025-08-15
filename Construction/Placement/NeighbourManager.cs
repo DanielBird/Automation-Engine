@@ -23,7 +23,7 @@ namespace Construction.Placement
             _map = map;
             _nodeMap = nodeMap;
             _settings = settings;
-            _cornerCreator = new CornerCreator(_nodeMap, settings, transform);
+            _cornerCreator = new CornerCreator(_map, _nodeMap, settings, transform);
         }
         
         public bool UpdateToCorner(IPlaceable occupant, Vector3Int position, DragPos dragPosition)

@@ -13,15 +13,6 @@ using Utilities.Events;
 
 namespace Construction.Nodes
 {
-    public enum NodeType
-    {
-        Straight,
-        LeftCorner,
-        RightCorner,
-        Intersection,
-        Producer
-    }
-    
     /// <summary>
     /// Abstract parent class for everything that is either a connection mechanism (e.g., belt, road)
     /// Or that can be connected to a connection mechanism (e.g., buildings that connect to belts) 
@@ -39,7 +30,7 @@ namespace Construction.Nodes
         [field: SerializeField] public NodeType NodeType { get; private set; } 
         
         [Header("Position & Rotation")] 
-        private Direction _direction; 
+        [SerializeField] private Direction myDirection; 
         public Direction startingDirection; 
         public float rotationTime = 0.25f;
         
@@ -47,19 +38,18 @@ namespace Construction.Nodes
         public EasingFunctions.Ease rotationEasing = EasingFunctions.Ease.EaseOutSine;
         [field: SerializeField] public Vector3Int GridCoord { get; set; }
         [field: SerializeField] public Vector3Int WorldPosition { get; private set; }
-
-        [ShowInInspector]
+        
         public Direction Direction
         {
-            get => _direction;
-            set => _direction = value;
+            get => myDirection;
+            set => myDirection = value;
         }
         [field: SerializeField] public List<Node> TargetNodes { get; private set; } 
         [field: SerializeField] public NodeVisuals Visuals { get; private set; }
         [field: SerializeField] public bool Initialised { get; private set; }    
         public INodeMap NodeMap { get; protected set; }
-        private NodeRotation _nodeRotation;
-        private NodeConnections _nodeConnections;
+        protected NodeRotation NodeRotation;
+        protected NodeConnections NodeConnections;
         private StringBuilder _nameBuilder = new(64);
         
         // Player Selection
@@ -83,8 +73,8 @@ namespace Construction.Nodes
             if(Visuals == null) Visuals = GetComponent<NodeVisuals>();
             TargetNodes = new List<Node>();
             
-            _nodeRotation = new NodeRotation(this, rotationTime, _ease);
-            _nodeConnections = new NodeConnections(this);
+            NodeRotation = new NodeRotation(this, rotationTime, _ease);
+            NodeConnections = new NodeConnections(this);
         }
         
         public virtual void Place(Vector3Int gridCoord, INodeMap map)
@@ -94,6 +84,9 @@ namespace Construction.Nodes
             WorldPosition = Vector3Int.RoundToInt(transform.position);
         }
         
+        // Initialise is called when the player releases lmb during a drag
+        // Or when the player clicks lmb during a single placement operation
+        
         // Note - nodes register themselves with the Node Map
         // But they do not register themselves with Map
         // This must be done at the place of instantiating the node
@@ -102,13 +95,11 @@ namespace Construction.Nodes
         {
             NodeMap = config.NodeMap; 
             NodeMap.RegisterNode(this);
-            _nodeConnections.UpdateMap(NodeMap);
+            NodeConnections.UpdateMap(NodeMap);
             
-            if (config.UpdateRotation)
-            {
-                Direction = config.Direction;
-                RotateInstant(config.Direction, false);
-            }
+            if (config.UpdateDirection) Direction = config.Direction;
+            if (config.UpdateRotation) RotateInstant(config.Direction, false);
+            
             NodeType = config.NodeType;
             UpdateTargetNode();
             Initialised = true;
@@ -142,19 +133,19 @@ namespace Construction.Nodes
         [Button]
         public void Rotate(bool updateTarget = true)
         {
-            _nodeRotation.Rotate();
+            NodeRotation.Rotate();
             if(updateTarget) UpdateTargetNode();
         }
         
         public void Rotate(Direction direction, bool updateTarget = true)
         {
-            _nodeRotation.Rotate(direction);
+            NodeRotation.Rotate(direction);
             if(updateTarget) UpdateTargetNode();
         }
 
         public void RotateInstant(Direction direction, bool updateTarget = true)
         {
-            _nodeRotation.RotateInstant(direction);
+            NodeRotation.RotateInstant(direction);
             if(updateTarget) UpdateTargetNode();
         }
         
@@ -206,21 +197,21 @@ namespace Construction.Nodes
             EventBus<NodeTargetEvent>.Raise(new NodeTargetEvent(this, node));
         }
         
-        public bool IsConnected() => _nodeConnections.IsConnected();
+        public bool IsConnected() => NodeConnections.IsConnected();
 
-        public bool TryGetForwardNode(out Node forwardNode) => _nodeConnections.TryGetForwardNode(out forwardNode);
+        public bool TryGetForwardNode(out Node forwardNode) => NodeConnections.TryGetForwardNode(out forwardNode);
         
-        public bool TryGetBackwardNode(out Node backwardNode) => _nodeConnections.TryGetBackwardNode(out backwardNode);
+        public bool TryGetBackwardNode(out Node backwardNode) => NodeConnections.TryGetBackwardNode(out backwardNode);
 
-        public bool HasNeighbour(Direction direction) => _nodeConnections.HasNeighbour(direction);
+        public bool HasNeighbour(Direction direction) => NodeConnections.HasNeighbour(direction);
 
-        public bool TryGetNeighbour(Direction direction, out Node neighbour) => _nodeConnections.TryGetNeighbour(direction, out neighbour); 
+        public bool TryGetNeighbour(Direction direction, out Node neighbour) => NodeConnections.TryGetNeighbour(direction, out neighbour); 
 
         // The orientation that a neighbouring input node must have to correctly input to this node
-        public Direction InputDirection() => _nodeConnections.InputDirection(); 
+        public Direction InputDirection() => NodeConnections.InputDirection(); 
 
         // The direction of the cell that should be checked for a connecting input node
-        public Direction InputPosition() => _nodeConnections.InputPosition();
+        public Direction InputPosition() => NodeConnections.InputPosition();
 
         public virtual void OnPlayerSelect()
         {
