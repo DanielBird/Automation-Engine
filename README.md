@@ -62,13 +62,17 @@ Nodes
 
 Widgets
 
-- Nodes are any object you would want to place on the map that have a direction and a target
-- Belts inherit from Nodes and ship Widgets to one another
-- Widgets are the deliveries handled by belts. They manage their own movement logic and implement a strategy pattern for handling different movement styles. 
-- Producers inherit from Belts and spawn new widgets
-- Intersections inherit from Belts. They ship Widgets to different target Nodes based on which Node they recieved the Widget. 
-- Splitters - to come
-- Combiners - to come
+
+| Class            | Function   | Parents and Interfaces
+|----------|----------|----------|
+| Nodes    | Any object you would want to place on the map that have a direction and a target  | Monobehaviour, IPlaceable, IRotatable, IClickable |
+| Belts    | A type of Node that can ship widgets to one another - managed by Belt Manager     | Node |
+| Belts    | A type of Node that can ship widgets to one another - managed by Belt Manager     | Node |
+| Widgets  | Deliveries handled by belts. They manage their own movement logic and implement a strategy pattern for handling different movement styles  | Monobehaviour |
+| Producers  | A type of Belt that spawns new widgets   | Belt |
+| Intersections  | A type of Belt that ships Widgets to different target Nodes based on which Node they recieved the Widget from   | Belt |
+| Splitters  | A type of Belt that splits widgets onto two different children Belt paths  | Belt |
+| Combiners  | A type of Belt that combines widgets onto one child belt path from two parent Belt paths  | Belt |
 
 # Scriptable objects
 
