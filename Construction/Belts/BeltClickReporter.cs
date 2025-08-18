@@ -29,7 +29,7 @@ namespace Construction.Belts
         public bool IsSelected { get; }
         public void OnPlayerSelect()
         {
-            if (myBelt is Splitter splitter)
+            if (myBelt is Splitter_Alternative splitter)
             {
                 splitter.OnPlayerSelect(leftOrRight);
                 return;

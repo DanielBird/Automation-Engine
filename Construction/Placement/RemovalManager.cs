@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Construction.Drag.Selection;
 using Construction.Events;
 using Construction.Nodes;
 using Construction.Utilities;
@@ -113,7 +114,9 @@ namespace Construction.Placement
         }
         
         private CellSelection SelectCells(Vector3Int start, out Vector3Int end)
-            => Utilities.Grid.SelectCellArea(start, mainCamera, settings.floorLayer, _cellHits, Map, settings, out end);
+            // => CellSelector.SelectCellArea(start, mainCamera, settings.floorLayer, _cellHits, Map, settings, out end);
+            => CellSelector.SelectCellAreaWithNodes(start, mainCamera, settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, settings, 1), true, out end);
+
 
         private void UpdateHits()
         {

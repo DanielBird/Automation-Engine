@@ -1,5 +1,5 @@
-﻿using Construction.Events;
-using Construction.Maps;
+﻿using System;
+using Construction.Events;
 using Construction.Nodes;
 using Construction.Widgets;
 using UnityEngine;
@@ -8,6 +8,7 @@ using Utilities.Events;
 
 namespace Construction.Belts
 {
+    
     public class Belt : Node
     {
         [Header("Transportation")]
@@ -16,21 +17,39 @@ namespace Construction.Belts
         public bool IsOccupied => Occupant != null;
         public bool CanReceive => Occupant == null;
         
-        public Vector3 widgetTargetOffset = new Vector3(0, 1, 0);
-        public Vector3 widgetTarget { get; private set; }
-
+        [Tooltip("Where should the widget be on arrival?")][SerializeField]  public GameObject arrivalPoint;
+        [Tooltip("For corner nodes, where should the bezier handle be?")][SerializeField]  public GameObject bezierHandle; 
+        
+        public Vector3 WidgetArrivalPoint { get; private set; }
+        public Vector3 BezierHandle { get; private set; }
+        
         [Header("Debug")] 
-        public bool drawWidgetTarget; 
+        public bool drawWidgetTarget;
         public bool logFailedWidgetReceipt;
         public bool logInabilityToShip; 
         
-        public override void Place(Vector3Int gridCoord, INodeMap map)
+        public override void Initialise(NodeConfiguration config)
         {
-            NodeMap = map; 
-            GridCoord = gridCoord;
-            widgetTarget = gridCoord + widgetTargetOffset;
+            base.Initialise(config);
+
+            if (arrivalPoint == null)
+            {
+                Debug.LogWarning("Belts require a widget arrival point to be assigned in the inspector");
+                return; 
+            }
+            
+            WidgetArrivalPoint = arrivalPoint.transform.position;
+
+            if (bezierHandle == null)
+            {
+                if(NodeType == NodeType.LeftCorner || NodeType == NodeType.RightCorner) 
+                    Debug.LogWarning("Corner belts require a bezier handle to be assigned in the inspector");
+                return;
+            }
+            
+            BezierHandle = bezierHandle.transform.position;
         }
-        
+
         public virtual void Receive(Belt sender, Widget widget)
         {
             if (!CanReceive)
@@ -81,9 +100,18 @@ namespace Construction.Belts
         public virtual void Ship(Belt target, Widget widget)
         {
             target.Receive(this, widget);
-            widget.Move(MoveType.Standard, this, target);
+            widget.Move(GetMoveType(target), this, target);
             Occupant = null;
         }
+
+        private MoveType GetMoveType(Belt target) => target.NodeType switch
+        {
+            NodeType.Straight or NodeType.GenericBelt => MoveType.Forward,
+            NodeType.LeftCorner => MoveType.Left,
+            NodeType.RightCorner => MoveType.Right,
+            NodeType.Intersection or NodeType.Producer or NodeType.Splitter or NodeType.Combiner => MoveType.Forward,
+            _ => throw new ArgumentOutOfRangeException()
+        };
 
         public override void OnPlayerSelect()
         {
@@ -101,6 +129,8 @@ namespace Construction.Belts
 
         public override void OnRemoval()
         {
+            base.OnRemoval();
+            
             if(!IsOccupied) return;
             Occupant.CancelMovement();
             SimplePool.Despawn(Occupant.gameObject);
@@ -112,7 +142,7 @@ namespace Construction.Belts
             if (drawWidgetTarget)
             {
                 Gizmos.color = Color.blue;
-                Gizmos.DrawSphere(transform.position + widgetTargetOffset, 0.15f);
+                Gizmos.DrawSphere(WidgetArrivalPoint, 0.15f);
             }
         }
     }

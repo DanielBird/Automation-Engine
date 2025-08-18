@@ -3,7 +3,7 @@ using Construction.Maps;
 using Construction.Placement;
 using UnityEngine;
 
-namespace Construction.Utilities
+namespace Construction.Drag.Selection
 {
     public class CellSelectionParams
     {

@@ -2,8 +2,9 @@
 using Construction.Nodes;
 using Construction.Placement;
 using UnityEngine;
+using Grid = Construction.Utilities.Grid;
 
-namespace Construction.Utilities
+namespace Construction.Drag.Selection
 {
     public readonly struct Cell : IEquatable<Cell>
     {

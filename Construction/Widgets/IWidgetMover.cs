@@ -1,4 +1,4 @@
-﻿using Construction.Nodes;
+﻿using Construction.Belts;
 using Construction.Placement;
 using UnityEngine;
 
@@ -7,8 +7,7 @@ namespace Construction.Widgets
     public interface IWidgetMover
     {
         Coroutine Move(
-            Vector3 target, 
-            float moveTime, 
+            Belt next,
             Direction direction = Direction.North);
     }
 }

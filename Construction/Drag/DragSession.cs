@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Construction.Drag.Selection;
 using Construction.Maps;
 using Construction.Nodes;
 using Construction.Placement;
@@ -115,7 +116,7 @@ namespace Construction.Drag
         private CellSelection SelectCells(Vector3Int startGridCoord, int stepSize)
         {
             _cellSelectionParams = new CellSelectionParams(_map, _nodeMap, _settings, stepSize); 
-            CellSelection selection = Grid.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, _cellSelectionParams);
+            CellSelection selection = CellSelector.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, _cellSelectionParams);
             _state.SetAxis(selection.Axis);
             _state.SetDirection(selection.Direction);
             return selection;

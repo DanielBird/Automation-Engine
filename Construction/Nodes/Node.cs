@@ -81,7 +81,6 @@ namespace Construction.Nodes
         {
             NodeMap = map; 
             GridCoord = gridCoord;
-            WorldPosition = Vector3Int.RoundToInt(transform.position);
         }
         
         // Initialise is called when the player releases lmb during a drag
@@ -97,10 +96,11 @@ namespace Construction.Nodes
             NodeMap.RegisterNode(this);
             NodeConnections.UpdateMap(NodeMap);
             
+            WorldPosition = Vector3Int.RoundToInt(transform.position);
             if (config.UpdateDirection) Direction = config.Direction;
             if (config.UpdateRotation) RotateInstant(config.Direction, false);
             
-            NodeType = config.NodeType;
+            // NodeType = config.NodeType;
             UpdateTargetNode();
             Initialised = true;
             
@@ -112,8 +112,12 @@ namespace Construction.Nodes
         
         private void SetGameObjectName(Vector3Int coord)
         {
+            string baseName = gameObject.name;
+            int index = baseName.LastIndexOf(')');
+            if (index >= 0) baseName = baseName.Substring(0, index + 1);
+            
             _nameBuilder.Clear();
-            _nameBuilder.Append(gameObject.name);
+            _nameBuilder.Append(baseName);
             _nameBuilder.Append('_');
             _nameBuilder.Append(coord.x);
             _nameBuilder.Append('_');
@@ -148,8 +152,11 @@ namespace Construction.Nodes
             NodeRotation.RotateInstant(direction);
             if(updateTarget) UpdateTargetNode();
         }
-        
-        public virtual void OnRemoval(){}
+
+        public virtual void OnRemoval()
+        {
+            IsEnabled = false;
+        }
         
         public Vector2Int GetSize() => Direction switch
         {

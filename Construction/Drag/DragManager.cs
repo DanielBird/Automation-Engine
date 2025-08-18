@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Construction.Drag.Selection;
 using Construction.Maps;
 using Construction.Nodes;
 using Construction.Placement;

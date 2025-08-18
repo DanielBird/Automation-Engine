@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections;
-using Construction.Nodes;
+using Construction.Belts;
 using Construction.Placement;
 using GameState;
 using UnityEngine;
@@ -12,22 +12,24 @@ namespace Construction.Widgets
     {
         private readonly Widget _widget;
         private readonly Transform _transform;
-        private readonly Collider _collider; 
+        private readonly Collider _collider;
+        private readonly float _moveTime; 
         private readonly EasingFunctions.Function _easeFunc;
         private readonly Action _finaliseMovement;
 
-        public BasicWidgetMove(Widget widget, Transform transform, Collider collider, EasingFunctions.Function easeFunc, Action finaliseMovement)
+        public BasicWidgetMove(Widget widget, Transform transform, Collider collider, float moveTime, EasingFunctions.Function easeFunc, Action finaliseMovement)
         {
             _widget = widget;
             _transform = transform;
             _collider = collider;
+            _moveTime = moveTime;
             _easeFunc = easeFunc;
             _finaliseMovement = finaliseMovement;
         }
         
-        public Coroutine Move(Vector3 target, float moveTime, Direction direction = Direction.North)
+        public Coroutine Move(Belt next, Direction direction = Direction.North)
         {
-            return _widget.StartCoroutine(MoveWidget(target, moveTime)); 
+            return _widget.StartCoroutine(MoveWidget(next.WidgetArrivalPoint, _moveTime)); 
         }
 
         private IEnumerator MoveWidget(Vector3 target, float moveTime)

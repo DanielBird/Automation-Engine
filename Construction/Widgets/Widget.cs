@@ -2,8 +2,11 @@
 using System.Collections.Generic;
 using Construction.Belts;
 using Construction.Nodes;
+using Construction.Placement;
+using Construction.Utilities;
 using UnityEngine;
 using Utilities;
+using Grid = Construction.Utilities.Grid;
 
 namespace Construction.Widgets
 {
@@ -15,7 +18,10 @@ namespace Construction.Widgets
 
     public enum MoveType
     {
-        Standard
+        Forward,
+        Backward,
+        Left,
+        Right,
     }
     
     [RequireComponent(typeof(Collider))]
@@ -25,13 +31,16 @@ namespace Construction.Widgets
         public int widgetType;
         public WidgetStatus Status { get; private set; }
         
+        [SerializeField] private PlacementSettings settings;
+        
         [Header("Movement")]
         public bool IsMoving { get; private set; }
-        public float standardMoveSpeed = 1f; 
+        public float standardMoveTime = 1f;
+        public float cornerMoveTime = 1.2f; 
         
         public EasingFunctions.Ease ease = EasingFunctions.Ease.EaseInCubic;
         private EasingFunctions.Function _easeFunc;
-
+        
         private Collider _collider;
         private Dictionary<MoveType, IWidgetMover> _movementStrategies;
         private Coroutine _moveCoroutine;
@@ -46,7 +55,9 @@ namespace Construction.Widgets
             
             _movementStrategies = new Dictionary<MoveType, IWidgetMover>
             {
-                { MoveType.Standard, new BasicWidgetMove(this, transform, _collider, _easeFunc, FinalizeMovement) }
+                { MoveType.Forward, new BasicWidgetMove(this, transform, _collider, standardMoveTime, _easeFunc, FinalizeMovement) },
+                { MoveType.Right, new CornerWidgetMove(this, MoveType.Right, transform, _collider, cornerMoveTime, _easeFunc, FinalizeMovement) },
+                { MoveType.Left, new CornerWidgetMove(this, MoveType.Left, transform, _collider, cornerMoveTime, _easeFunc, FinalizeMovement) },
             };
         }
 
@@ -69,7 +80,7 @@ namespace Construction.Widgets
             }
             
             if (_moveCoroutine != null) StopCoroutine(_moveCoroutine);
-            _moveCoroutine = _movementStrategies[moveType].Move(next.widgetTarget, standardMoveSpeed, current.Direction);
+            _moveCoroutine = _movementStrategies[moveType].Move(next, current.Direction);
         }
         
         public void SetMoving(bool status) => IsMoving = status;
@@ -79,6 +90,12 @@ namespace Construction.Widgets
         public void CancelMovement()
         {
             if(_moveCoroutine != null) StopCoroutine(_moveCoroutine);
+        }
+
+        public bool IsInCell(Vector3Int cell)
+        {
+            Vector3Int current = Grid.WorldToGridCoordinate(transform.position, new GridParams(settings.mapOrigin, settings.mapWidth, settings.mapHeight, settings.cellSize));
+            return cell == current; 
         }
     }
 }

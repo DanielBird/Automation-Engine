@@ -1,19 +1,19 @@
 ﻿using System;
-using Construction.Events;
 using Construction.Nodes;
-using Construction.Placement;
-using Construction.Utilities;
 using Construction.Widgets;
 using UnityEngine;
-using Utilities.Events;
 
 namespace Construction.Belts
 {
-    public enum SplitterNeighbourStatus {NoneFound, LeftFound, RightFound, BothFound}
-    
     public class Splitter : Belt
     {
-        [Header("Splitter")] 
+        [Header("Splitter")] [TextArea(5, 15)]
+        public string explanation = "Splitters are made up of two belts. " +
+                                    "The Splitter class itself and a child belt. " +
+                                    "The Splitter ships to its forward belt and the child belt. " +
+                                    "The child belt should be assigned in the inspector";
+        public Belt childBelt; 
+        
         [Tooltip("How many steps along the grid should the splitter look for its target Nodes?")]
         public int stepSize = 1; 
         
@@ -21,19 +21,40 @@ namespace Construction.Belts
         [SerializeField] private int nextIndex;
 
         private Vector2Int _forwardGridPosition;
-        private Vector2Int _forwardLeftGridPosition;
-
-        public float minTimeBetweenSelection = 0.2f; 
-        private float _timeOfLastSelection; 
+        private Vector2Int _leftGridPosition; 
         
         public override void Initialise(NodeConfiguration config)
         {
             base.Initialise(config);
             
             _forwardGridPosition = PositionByDirection.GetForwardPosition(GridCoord, Direction, stepSize);
-            Vector3Int forwardPosV3 = new (_forwardGridPosition.x, 0, _forwardGridPosition.y);
-            Direction countClockwiseDirection = DirectionUtils.RotateCounterClockwise(Direction);
-            _forwardLeftGridPosition = PositionByDirection.GetForwardPosition(forwardPosV3, countClockwiseDirection, stepSize);
+
+            if (childBelt == null)
+            {
+                Debug.LogWarning("Every Splitter requires a child belt. The child belt is currently missing");
+                return;
+            }
+            
+            if (!RegisterChildBelt(config)) return;
+
+            NodeConfiguration nodeConfig = NodeConfiguration.Create(config.Map, config.NodeMap, NodeType.Straight, Direction, true); 
+            childBelt.Initialise(nodeConfig);
+        }
+        
+        private bool RegisterChildBelt(NodeConfiguration config)
+        {            
+            _leftGridPosition = PositionByDirection.GetLeftPosition(GridCoord, Direction, stepSize);
+            Vector3Int childGridCoord = new (_leftGridPosition.x, 0, _leftGridPosition.y);
+
+            Vector2Int size = childBelt.GetSize();
+            if (!config.Map.RegisterOccupant(_leftGridPosition.x, _leftGridPosition.y, size.x, size.y))
+            {
+                childBelt.FailedPlacement();
+                return false;
+            }
+            
+            childBelt.Place(childGridCoord, config.NodeMap);
+            return true;
         }
         
         public override bool ReadyToShip(out Belt target, out Widget widget)
@@ -69,20 +90,20 @@ namespace Construction.Belts
 
         private bool GetTarget(ref Belt target)
         {
-            SplitterNeighbourStatus status = TryGetTargetNodes(out Belt leftBelt, out Belt rightBelt);
+            SplitterNeighbourStatus status = TryGetTargetNodes(out Belt rightBelt);
 
             switch (status)
             {
                 case SplitterNeighbourStatus.NoneFound:
                     return false; 
                 case SplitterNeighbourStatus.LeftFound:
-                    target = leftBelt;
+                    target = childBelt;
                     break;
                 case SplitterNeighbourStatus.RightFound:
                     target = rightBelt;
                     break;
                 case SplitterNeighbourStatus.BothFound:
-                    if (nextIndex == 0) target = leftBelt;
+                    if (nextIndex == 0) target = childBelt;
                     else target = rightBelt;
                     break;
                 default:
@@ -94,54 +115,20 @@ namespace Construction.Belts
 
         // The forward left node is at the grid position a step forward (following the delivery direction)
         // And then a turn counterclockwise. 
-        private SplitterNeighbourStatus TryGetTargetNodes(out Belt leftBelt, out Belt rightBelt)
+        private SplitterNeighbourStatus TryGetTargetNodes(out Belt rightBelt)
         {
-            leftBelt = null;
             rightBelt = null;
-
-            if (NodeMap.GetNeighbourAt(_forwardLeftGridPosition, out Node leftNode) && leftNode is Belt lb)
-                leftBelt = lb;
-
+            
             if (NodeMap.GetNeighbourAt(_forwardGridPosition, out Node rightNode) && rightNode is Belt rb)
                 rightBelt = rb;
 
-            return (leftBelt != null, rightBelt != null) switch
+            return (childBelt != null, rightBelt != null) switch
             {
                 (true,  true)  => SplitterNeighbourStatus.BothFound,
                 (true,  false) => SplitterNeighbourStatus.LeftFound,
                 (false, true)  => SplitterNeighbourStatus.RightFound,
                 _              => SplitterNeighbourStatus.NoneFound
             };
-        }
-
-        public void OnPlayerSelect(LeftOrRight leftOrRight)
-        {
-            // Normally, player selection requires that the player clicks on something else before the belt can be clicked and dragged again.
-            // With splitters having two output belts that doesn't make sense. The player is likely to click the splitter twice in a row.
-            // Therefore, we use a timer to reset IsSelected.
-            
-            if (Time.time > _timeOfLastSelection + minTimeBetweenSelection)
-                IsSelected = false; 
-            
-            if(IsSelected || !IsEnabled ) return;
-            IsSelected = true;
-            _timeOfLastSelection = Time.time;
-            
-            Vector2Int gridPos = Vector2Int.zero; 
-            
-            switch (leftOrRight)
-            {
-                case LeftOrRight.Left:
-                    gridPos = _forwardLeftGridPosition;
-                    break;
-                case LeftOrRight.Right:
-                    gridPos = _forwardGridPosition;
-                    break;
-            }
-            
-            if (!NodeMap.InBounds(gridPos.x, gridPos.y)) return;
-            if (NodeMap.GetNeighbourAt(gridPos, out Node neighbour)) return;
-            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(gridPos.x, 0, gridPos.y), NodeType.GenericBelt));
         }
     }
 }
