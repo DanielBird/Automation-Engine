@@ -19,9 +19,9 @@ Intersections - allowing two distinct paths to cross.
 
 ![Demo](Media/IntersectionGif.gif)
 
-Belt path splitters - coming
+Belt path splitters and delivery combiners.
 
-Delivery combiners - comning
+![Demo](Media/SplitAndCombine.gif)
 
 Path elevation handling - coming
 
