@@ -1,14 +1,14 @@
 using System.Threading;
-using Construction.Drag;
-using Construction.Interfaces;
-using Construction.Maps;
-using Construction.Nodes;
-using Construction.Visuals;
 using Cysharp.Threading.Tasks;
+using Engine.Construction.Drag;
+using Engine.Construction.Interfaces;
+using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
+using Engine.Construction.Visuals;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     /// <summary>
     /// Placement strategy for standard (non-draggable) Nodes
@@ -71,7 +71,7 @@ namespace Construction.Placement
             Vector2Int size = placeable.GetSize();
             if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y))
             {
-                placeable.FailedPlacement();
+                placeable.FailedPlacement(gridCoord);
                 return false;
             }
             placeable.Place(gridCoord, _nodeMap);

@@ -1,8 +1,7 @@
-using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace UI
+namespace Engine.UI
 {
     [RequireComponent(typeof(UiScaleLerp))]
     public class UiFeedbackPlayer : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler, IPointerExitHandler

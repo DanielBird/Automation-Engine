@@ -1,11 +1,11 @@
-﻿using Construction.Drag;
-using Construction.Interfaces;
-using Construction.Maps;
-using Construction.Nodes;
-using Construction.Utilities;
+﻿using Engine.Construction.Drag;
+using Engine.Construction.Interfaces;
+using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
+using Engine.Construction.Utilities;
 using UnityEngine;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     /// <summary>
     /// Manages the relationships and connections between nodes in the construction system.

@@ -1,11 +1,11 @@
-﻿using Construction.Drag;
-using Construction.Interfaces;
-using Construction.Maps;
-using Construction.Nodes;
+﻿using Engine.Construction.Drag;
+using Engine.Construction.Interfaces;
+using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     public class CornerCreator
     {

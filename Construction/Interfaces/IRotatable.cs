@@ -1,6 +1,6 @@
-﻿using Construction.Placement;
+﻿using Engine.Construction.Placement;
 
-namespace Construction.Interfaces
+namespace Engine.Construction.Interfaces
 {
     public interface IRotatable
     {

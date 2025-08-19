@@ -1,7 +1,7 @@
-﻿using UnityEngine;
-using Utilities;
+﻿using Engine.Utilities;
+using UnityEngine;
 
-namespace Construction.Belts
+namespace Engine.Construction.Belts
 {
     /// <summary>
     /// An alternative route for having belts detect player clicks

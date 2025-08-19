@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Utilities
+namespace Engine.Utilities
 {
     ///   Instead of calling Instantiate(), use this:
     ///       SimplePool.Spawn(somePrefab, somePosition, someRotation);

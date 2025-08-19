@@ -1,9 +1,9 @@
 ﻿using System;
-using Construction.Placement;
-using Construction.Utilities;
+using Engine.Construction.Placement;
+using Engine.Construction.Utilities;
 using UnityEngine;
 
-namespace Construction.Nodes
+namespace Engine.Construction.Nodes
 {
     public static class PositionByDirection
     {

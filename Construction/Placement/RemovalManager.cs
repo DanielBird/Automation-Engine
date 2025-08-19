@@ -1,19 +1,18 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Construction.Drag.Selection;
-using Construction.Events;
-using Construction.Nodes;
-using Construction.Utilities;
 using Cysharp.Threading.Tasks;
+using Engine.Construction.Drag.Selection;
+using Engine.Construction.Events;
+using Engine.Construction.Nodes;
+using Engine.Construction.Utilities;
+using Engine.Utilities;
+using Engine.Utilities.Events;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Utilities;
-using Utilities.Events;
 using ZLinq;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     public class RemovalManager : ConstructionManager
     {
@@ -107,6 +106,14 @@ namespace Construction.Placement
         private void RemoveSingleNode(GridWorldCoordPair delete, Node node)
         {
             Vector3Int gridCoord = delete.GridCoordinate;
+
+            if (!node.isRemovable)
+            {
+                if(node.ParentNode == null) return;
+                gridCoord = node.ParentNode.GridCoord;
+                node = node.ParentNode;
+            }
+            
             node.OnRemoval();
             Map.DeregisterOccupant(gridCoord.x, gridCoord.z, node.GridWidth, node.GridHeight);
             NodeMap.DeregisterNode(node);
@@ -144,8 +151,17 @@ namespace Construction.Placement
                 }
                 else
                 {
-                    _pendingDestructions.Add(pair.WorldPosition);
-                    _registeredNodes.Add(pair, node);
+                    Vector3Int key = pair.WorldPosition;
+
+                    if (!node.isRemovable)
+                    {
+                        if(node.ParentNode == null) continue;
+                        node = node.ParentNode;
+                        key = node.WorldPosition;
+                    }
+                    
+                    if (_pendingDestructions.Add(key))
+                        _registeredNodes.Add(pair, node);
                 }
                 
                 _registeredHits.Add(pair);

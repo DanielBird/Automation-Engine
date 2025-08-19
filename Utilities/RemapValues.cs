@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Utilities
+namespace Engine.Utilities
 {
     public static class RemapValues 
     {

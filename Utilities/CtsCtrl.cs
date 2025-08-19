@@ -1,6 +1,6 @@
 ﻿using System.Threading;
 
-namespace Utilities
+namespace Engine.Utilities
 {
     public static class CtsCtrl
     {

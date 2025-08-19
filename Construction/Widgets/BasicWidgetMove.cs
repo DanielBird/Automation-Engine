@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Collections;
-using Construction.Belts;
-using Construction.Placement;
-using GameState;
+using Engine.Construction.Belts;
+using Engine.Construction.Placement;
+using Engine.GameState;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 
-namespace Construction.Widgets
+namespace Engine.Construction.Widgets
 {
     public class BasicWidgetMove : IWidgetMover
     {

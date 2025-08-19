@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using Construction.Placement;
+using Engine.Construction.Placement;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-namespace Construction.Maps
+namespace Engine.Construction.Maps
 {
     public enum CellStatus
     {

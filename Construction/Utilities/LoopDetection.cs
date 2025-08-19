@@ -1,11 +1,8 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using Construction.Maps;
-using Construction.Nodes;
-using Construction.Placement;
+﻿using System.Collections.Generic;
+using Engine.Construction.Nodes;
 using UnityEngine;
 
-namespace Construction.Utilities
+namespace Engine.Construction.Utilities
 {
     public static class LoopDetection
     {

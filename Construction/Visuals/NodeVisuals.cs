@@ -1,7 +1,7 @@
-﻿using Construction.Nodes;
+﻿using Engine.Construction.Nodes;
 using UnityEngine;
 
-namespace Construction.Visuals
+namespace Engine.Construction.Visuals
 {
     public enum ConnectionType {InputOutput, InputOnly, OutputOnly}
     

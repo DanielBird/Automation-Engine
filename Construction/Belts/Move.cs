@@ -1,7 +1,7 @@
 ﻿using System;
-using Construction.Widgets;
+using Engine.Construction.Widgets;
 
-namespace Construction.Belts
+namespace Engine.Construction.Belts
 {
     public struct Move : IEquatable<Move>
     {

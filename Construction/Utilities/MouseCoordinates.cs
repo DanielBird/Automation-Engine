@@ -1,7 +1,7 @@
-﻿using Construction.Placement;
+﻿using Engine.Construction.Placement;
 using UnityEngine;
 
-namespace Construction.Utilities
+namespace Engine.Construction.Utilities
 {
     public static class MouseCoordinates
     {

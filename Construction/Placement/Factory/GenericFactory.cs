@@ -1,8 +1,8 @@
-﻿using Construction.Nodes;
+﻿using Engine.Construction.Nodes;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 
-namespace Construction.Placement.Factory
+namespace Engine.Construction.Placement.Factory
 {
     public class GenericFactory : IPlaceableFactory
     {

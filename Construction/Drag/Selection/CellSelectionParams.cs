@@ -1,9 +1,9 @@
 ﻿using System.Collections.Generic;
-using Construction.Maps;
-using Construction.Placement;
+using Engine.Construction.Maps;
+using Engine.Construction.Placement;
 using UnityEngine;
 
-namespace Construction.Drag.Selection
+namespace Engine.Construction.Drag.Selection
 {
     public class CellSelectionParams
     {

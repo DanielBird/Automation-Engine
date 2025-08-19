@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Utilities.Events
+namespace Engine.Utilities.Events
 {
     internal interface IEventBinding<T>
     {

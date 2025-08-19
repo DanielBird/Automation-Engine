@@ -1,37 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
-using Construction.Drag;
-using Construction.Events;
-using Construction.Nodes;
-using Construction.Placement.Factory;
-using Construction.Utilities;
-using Construction.Visuals;
 using Cysharp.Threading.Tasks;
+using Engine.Construction.Drag;
+using Engine.Construction.Events;
+using Engine.Construction.Nodes;
+using Engine.Construction.Placement.Factory;
+using Engine.Construction.Utilities;
+using Engine.Construction.Visuals;
+using Engine.Utilities.Events;
 using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using Utilities.Events;
-using Grid = Construction.Utilities.Grid;
+using Grid = Engine.Construction.Utilities.Grid;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
-    public enum Direction
-    {
-        North,
-        East,
-        South,
-        West,
-    }
-
-    public enum Axis
-    {
-        XAxis,
-        YAxis,
-        ZAxis,
-    }
-    
     [RequireComponent(typeof(PlacementVisuals))]
     public class PlacementManager : ConstructionManager
     {
@@ -90,7 +74,9 @@ namespace Construction.Placement
             _factories = new Dictionary<NodeType, IPlaceableFactory>
             {
                 { NodeType.GenericBelt, new GenericFactory(this, settings, NodeType.Straight)},
+                { NodeType.Straight, new GenericFactory(this, settings, NodeType.Straight)},
                 { NodeType.Producer, new GenericFactory(this, settings, NodeType.Producer)},
+                { NodeType.Consumer, new GenericFactory(this, settings, NodeType.Consumer)},
                 { NodeType.Splitter, new GenericFactory(this, settings, NodeType.Splitter)}, 
                 { NodeType.Combiner, new GenericFactory(this, settings, NodeType.Combiner)},
             };

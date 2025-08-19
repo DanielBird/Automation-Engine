@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Construction.Nodes
+namespace Engine.Construction.Nodes
 {
     [System.Serializable]
     public struct NodePrefabBinding

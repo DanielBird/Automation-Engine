@@ -1,13 +1,13 @@
 ﻿using System.Threading;
-using Construction.Maps;
-using Construction.Utilities;
-using Construction.Visuals;
-using GameState;
+using Engine.Construction.Maps;
+using Engine.Construction.Utilities;
+using Engine.Construction.Visuals;
+using Engine.GameState;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
-using Grid = Construction.Utilities.Grid;
+using Grid = Engine.Construction.Utilities.Grid;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     /// <summary>
     /// Abstract parent class to Placement Manager and Removal Manager 

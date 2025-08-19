@@ -1,12 +1,12 @@
 ﻿using System;
-using Construction.Events;
-using Construction.Nodes;
-using Construction.Widgets;
+using Engine.Construction.Events;
+using Engine.Construction.Nodes;
+using Engine.Construction.Widgets;
+using Engine.Utilities;
+using Engine.Utilities.Events;
 using UnityEngine;
-using Utilities;
-using Utilities.Events;
 
-namespace Construction.Belts
+namespace Engine.Construction.Belts
 {
     
     public class Belt : Node
@@ -17,37 +17,29 @@ namespace Construction.Belts
         public bool IsOccupied => Occupant != null;
         public bool CanReceive => Occupant == null;
         
-        [Tooltip("Where should the widget be on arrival?")][SerializeField]  public GameObject arrivalPoint;
-        [Tooltip("For corner nodes, where should the bezier handle be?")][SerializeField]  public GameObject bezierHandle; 
-        
+        [Tooltip("Where should the widget be on arrival?")] public Vector3 arrivalPointVector; 
+        [Tooltip("For corner nodes, where should the bezier handle be?")] public Vector3 bezierHandleVector;
         public Vector3 WidgetArrivalPoint { get; private set; }
         public Vector3 BezierHandle { get; private set; }
         
         [Header("Debug")] 
-        public bool drawWidgetTarget;
         public bool logFailedWidgetReceipt;
         public bool logInabilityToShip; 
         
         public override void Initialise(NodeConfiguration config)
         {
             base.Initialise(config);
+            SetupWidgetMovement();
+        }
 
-            if (arrivalPoint == null)
-            {
-                Debug.LogWarning("Belts require a widget arrival point to be assigned in the inspector");
-                return; 
-            }
-            
-            WidgetArrivalPoint = arrivalPoint.transform.position;
+        protected void SetupWidgetMovement()
+        {
+            WidgetArrivalPoint = transform.TransformPoint(arrivalPointVector);
 
-            if (bezierHandle == null)
-            {
-                if(NodeType == NodeType.LeftCorner || NodeType == NodeType.RightCorner) 
-                    Debug.LogWarning("Corner belts require a bezier handle to be assigned in the inspector");
+            if(NodeType != NodeType.LeftCorner && NodeType != NodeType.RightCorner) 
                 return;
-            }
             
-            BezierHandle = bezierHandle.transform.position;
+            BezierHandle = transform.TransformPoint(bezierHandleVector);
         }
 
         public virtual void Receive(Belt sender, Widget widget)
@@ -135,15 +127,15 @@ namespace Construction.Belts
             Occupant.CancelMovement();
             SimplePool.Despawn(Occupant.gameObject);
             Occupant = null;
+            
+            if(!transform.parent.TryGetComponent(out Node parentNode)) return;
+            
         }
 
-        protected virtual void OnDrawGizmosSelected()
+        public void SetParent(Belt parent)
         {
-            if (drawWidgetTarget)
-            {
-                Gizmos.color = Color.blue;
-                Gizmos.DrawSphere(WidgetArrivalPoint, 0.15f);
-            }
+            isRemovable = false; 
+            ParentNode = parent;
         }
     }
 }

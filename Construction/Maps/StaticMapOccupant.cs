@@ -1,8 +1,8 @@
-﻿using Construction.Utilities;
+﻿using Engine.Construction.Utilities;
 using UnityEngine;
-using Grid = Construction.Utilities.Grid;
+using Grid = Engine.Construction.Utilities.Grid;
 
-namespace Construction.Maps
+namespace Engine.Construction.Maps
 {
     /// <summary>
     /// A class for entities that occupy space on the map but that are not placed by the player

@@ -1,10 +1,9 @@
-﻿using System;
-using System.Threading;
+﻿using System.Threading;
 using Cysharp.Threading.Tasks;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 
-namespace UI
+namespace Engine.UI
 {
     [RequireComponent(typeof(RectTransform))]
     public class UiScaleLerp : MonoBehaviour

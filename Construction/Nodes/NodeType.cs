@@ -1,4 +1,4 @@
-﻿namespace Construction.Nodes
+﻿namespace Engine.Construction.Nodes
 {
     public enum NodeType
     {
@@ -9,6 +9,7 @@
         Intersection,   // A belt that allows to belt paths to cross
         Producer,       // A belt that generates new widgets
         Splitter,       // A belt that separates one belt path into two 
-        Combiner        // A belt that combines two belt paths into one
+        Combiner,       // A belt that combines two belt paths into one
+        Consumer,       // A belt that collects widgets when they arrive
     }
 }

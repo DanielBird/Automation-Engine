@@ -1,11 +1,11 @@
 using System.Collections.Generic;
-using Construction.Drag;
-using Construction.Interfaces;
-using Construction.Maps;
-using Construction.Visuals;
+using Engine.Construction.Drag;
+using Engine.Construction.Interfaces;
+using Engine.Construction.Maps;
+using Engine.Construction.Visuals;
 using UnityEngine;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     public class PlacementCoordinator
     {

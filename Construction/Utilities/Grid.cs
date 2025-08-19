@@ -1,12 +1,7 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using Construction.Maps;
-using Construction.Nodes;
-using Construction.Placement;
 using UnityEngine;
 
-namespace Construction.Utilities
+namespace Engine.Construction.Utilities
 {
     public static class Grid
     {

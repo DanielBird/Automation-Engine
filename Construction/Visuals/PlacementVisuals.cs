@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 
-namespace Construction.Visuals
+namespace Engine.Construction.Visuals
 {
     public class PlacementVisuals : MonoBehaviour
     {

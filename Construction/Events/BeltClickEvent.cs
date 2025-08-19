@@ -1,8 +1,8 @@
-﻿using Construction.Nodes;
+﻿using Engine.Construction.Nodes;
+using Engine.Utilities.Events;
 using UnityEngine;
-using Utilities.Events;
 
-namespace Construction.Events
+namespace Engine.Construction.Events
 {
     public class BeltClickEvent : IEvent
     {

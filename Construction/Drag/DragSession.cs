@@ -1,22 +1,20 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
-using Construction.Drag.Selection;
-using Construction.Maps;
-using Construction.Nodes;
-using Construction.Placement;
-using Construction.Utilities;
-using Construction.Visuals;
 using Cysharp.Threading.Tasks;
-using GameState;
-using NUnit.Framework;
+using Engine.Construction.Drag.Selection;
+using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
+using Engine.Construction.Placement;
+using Engine.Construction.Utilities;
+using Engine.Construction.Visuals;
+using Engine.GameState;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 using ZLinq;
-using Grid = Construction.Utilities.Grid;
+using Grid = Engine.Construction.Utilities.Grid;
 
-namespace Construction.Drag
+namespace Engine.Construction.Drag
 {
     public class DragSession
     {

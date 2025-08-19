@@ -1,15 +1,20 @@
 ﻿using System;
 using System.Threading;
-using Construction.Nodes;
-using Construction.Widgets;
 using Cysharp.Threading.Tasks;
-using GameState;
+using Engine.Construction.Nodes;
+using Engine.Construction.Widgets;
+using Engine.GameState;
+using Engine.Utilities;
 using Sirenix.OdinInspector;
 using UnityEngine;
-using Utilities;
 
-namespace Construction.Belts
+namespace Engine.Construction.Belts
 {
+    /// <summary>
+    /// A belt that spawns widgets for transportation around a belt network.
+    /// Widgets automatically start spawning when the player places the Producer.
+    /// (... which triggers Initialise)  
+    /// </summary>
     public class Producer : Belt
     {
         [Header("Producer Setup")]
@@ -127,12 +132,6 @@ namespace Construction.Belts
             {
                 Occupant = widget;
             }
-        }
-        
-        protected override void OnDrawGizmosSelected()
-        {
-            Gizmos.color = Color.blue;
-            Gizmos.DrawSphere(spawnLocation, 0.15f);
         }
     }
 }

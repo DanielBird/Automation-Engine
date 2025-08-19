@@ -1,8 +1,8 @@
-﻿using Construction.Belts;
-using Construction.Placement;
+﻿using Engine.Construction.Belts;
+using Engine.Construction.Placement;
 using UnityEngine;
 
-namespace Construction.Widgets
+namespace Engine.Construction.Widgets
 {
     public interface IWidgetMover
     {

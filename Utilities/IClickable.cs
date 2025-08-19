@@ -1,4 +1,4 @@
-﻿namespace Utilities
+﻿namespace Engine.Utilities
 {
     public interface IClickable
     {

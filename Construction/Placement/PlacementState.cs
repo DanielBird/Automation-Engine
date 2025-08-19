@@ -1,7 +1,7 @@
-using Construction.Interfaces;
+using Engine.Construction.Interfaces;
 using UnityEngine;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     [System.Serializable]
     public class PlacementState

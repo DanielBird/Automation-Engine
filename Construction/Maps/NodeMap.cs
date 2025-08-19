@@ -1,10 +1,10 @@
 ﻿using System;
-using Construction.Nodes;
-using Construction.Placement;
+using Engine.Construction.Nodes;
+using Engine.Construction.Placement;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
-namespace Construction.Maps
+namespace Engine.Construction.Maps
 {
     [RequireComponent(typeof(Map))]
     public class NodeMap : MonoBehaviour, INodeMap

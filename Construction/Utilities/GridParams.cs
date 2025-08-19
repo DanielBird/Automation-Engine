@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Construction.Utilities
+namespace Engine.Construction.Utilities
 {
     /// <summary>Immutable description of a grid in world space.</summary>
 

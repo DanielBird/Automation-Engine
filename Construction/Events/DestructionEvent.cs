@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
+using Engine.Utilities.Events;
 using UnityEngine;
-using Utilities.Events;
 
-namespace Construction.Events
+namespace Engine.Construction.Events
 {
     public enum DestructionEventType {Cancel, DestroyNode, DestroyEmpty}
     

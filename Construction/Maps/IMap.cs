@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace Construction.Maps
+namespace Engine.Construction.Maps
 {
     public interface IMap
     {

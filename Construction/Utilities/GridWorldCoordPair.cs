@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace Construction.Utilities
+namespace Engine.Construction.Utilities
 {
     // Used instead of a cell when there is no need to record a direction or node type
     // e.g. for selecting cells for node removal via the Removal Manager

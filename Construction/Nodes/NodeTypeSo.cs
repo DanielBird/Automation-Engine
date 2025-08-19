@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace Construction.Nodes
+namespace Engine.Construction.Nodes
 {
     [CreateAssetMenu(fileName = "NodeTpye", menuName = "Scriptable Objects/NodeType", order = 0)]
     public class NodeTypeSo : ScriptableObject

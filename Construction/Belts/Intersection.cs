@@ -1,9 +1,9 @@
-﻿using Construction.Nodes;
-using Construction.Placement;
-using Construction.Widgets;
+﻿using Engine.Construction.Nodes;
+using Engine.Construction.Placement;
+using Engine.Construction.Widgets;
 using UnityEngine;
 
-namespace Construction.Belts
+namespace Engine.Construction.Belts
 {
     public class Intersection : Belt
     {

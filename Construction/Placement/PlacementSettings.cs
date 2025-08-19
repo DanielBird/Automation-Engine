@@ -1,8 +1,7 @@
-using Construction.Nodes;
+using Engine.Construction.Nodes;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     public enum CellSelectionAlgorithm {FindShortestPath, StraightLinesOnly, LShapedPaths }
     

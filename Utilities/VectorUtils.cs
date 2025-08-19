@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Utilities
+namespace Engine.Utilities
 {
     public static class VectorUtils
     {

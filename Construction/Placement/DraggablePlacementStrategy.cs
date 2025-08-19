@@ -1,10 +1,10 @@
-using Construction.Drag;
-using Construction.Interfaces;
-using Construction.Nodes;
-using Construction.Visuals;
+using Engine.Construction.Drag;
+using Engine.Construction.Interfaces;
+using Engine.Construction.Nodes;
+using Engine.Construction.Visuals;
 using UnityEngine;
 
-namespace Construction.Placement
+namespace Engine.Construction.Placement
 {
     public class DraggablePlacementStrategy : IPlacementStrategy
     {

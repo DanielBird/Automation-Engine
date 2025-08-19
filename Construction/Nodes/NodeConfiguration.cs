@@ -1,7 +1,7 @@
-﻿using Construction.Maps;
-using Construction.Placement;
+﻿using Engine.Construction.Maps;
+using Engine.Construction.Placement;
 
-namespace Construction.Nodes
+namespace Engine.Construction.Nodes
 {
     public class NodeConfiguration
     {

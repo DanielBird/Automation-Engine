@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using Construction.Drag;
-using Construction.Events;
-using UI;
+using Engine.Construction.Events;
+using Engine.UI;
+using Engine.Utilities;
+using Engine.Utilities.Events;
 using UnityEngine;
-using Utilities;
-using Utilities.Events;
 
-namespace Construction.Visuals
+namespace Engine.Construction.Visuals
 {
     public class DestructionUI : MonoBehaviour
     {

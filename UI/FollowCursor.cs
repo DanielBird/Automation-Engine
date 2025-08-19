@@ -1,7 +1,6 @@
-using System;
 using UnityEngine;
 
-namespace UI
+namespace Engine.UI
 {
     public class FollowCursor : MonoBehaviour
     {

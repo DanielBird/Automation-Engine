@@ -1,11 +1,11 @@
 using System.Collections;
-using GameState;
+using Engine.GameState;
+using Engine.Utilities;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Utilities;
-using InputSettings = GameState.InputSettings;
+using InputSettings = Engine.GameState.InputSettings;
 
-namespace CameraCtrl
+namespace Engine.CameraCtrl
 {
     public class CameraZoom : MonoBehaviour
     {

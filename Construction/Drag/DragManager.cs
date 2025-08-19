@@ -1,18 +1,17 @@
 using System.Collections.Generic;
 using System.Linq;
-using Construction.Drag.Selection;
-using Construction.Maps;
-using Construction.Nodes;
-using Construction.Placement;
-using Construction.Utilities;
-using Construction.Visuals;
 using Cysharp.Threading.Tasks;
-using GameState;
+using Engine.Construction.Drag.Selection;
+using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
+using Engine.Construction.Placement;
+using Engine.Construction.Visuals;
+using Engine.GameState;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
 using ZLinq;
 
-namespace Construction.Drag
+namespace Engine.Construction.Drag
 {
     public class DragManager
     {
@@ -119,7 +118,7 @@ namespace Construction.Drag
         private void RegisterDraggedOccupant(Vector3Int gridCoord, Node node, DragPos dragPos , bool manageNeighbours = false)
         {
             Vector2Int size = node.GetSize();
-            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y)) node.FailedPlacement();
+            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y)) node.FailedPlacement(gridCoord);
             else
             {
                 node.Place(gridCoord, _nodeMap);

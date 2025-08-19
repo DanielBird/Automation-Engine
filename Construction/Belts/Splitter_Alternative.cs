@@ -1,13 +1,13 @@
 ﻿using System;
-using Construction.Events;
-using Construction.Nodes;
-using Construction.Placement;
-using Construction.Utilities;
-using Construction.Widgets;
+using Engine.Construction.Events;
+using Engine.Construction.Nodes;
+using Engine.Construction.Placement;
+using Engine.Construction.Utilities;
+using Engine.Construction.Widgets;
+using Engine.Utilities.Events;
 using UnityEngine;
-using Utilities.Events;
 
-namespace Construction.Belts
+namespace Engine.Construction.Belts
 {
     public enum SplitterNeighbourStatus {NoneFound, LeftFound, RightFound, BothFound}
     

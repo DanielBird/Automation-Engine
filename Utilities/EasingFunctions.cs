@@ -58,7 +58,7 @@
 
 using UnityEngine;
 
-namespace Utilities
+namespace Engine.Utilities
 {
     public class EasingFunctions : MonoBehaviour
     { 

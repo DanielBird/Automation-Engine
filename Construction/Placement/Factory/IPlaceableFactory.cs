@@ -1,7 +1,7 @@
-﻿using Construction.Nodes;
+﻿using Engine.Construction.Nodes;
 using UnityEngine;
 
-namespace Construction.Placement.Factory
+namespace Engine.Construction.Placement.Factory
 {
     public interface IPlaceableFactory
     {

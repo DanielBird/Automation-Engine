@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
-namespace Utilities
+namespace Engine.Utilities
 {
     public class PlayerClickManager : MonoBehaviour
     {

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Construction.Maps;
-using Construction.Placement;
-using Construction.Visuals;
-using GameState;
+using Engine.Construction.Maps;
+using Engine.Construction.Placement;
+using Engine.Construction.Visuals;
+using Engine.GameState;
 using UnityEngine;
 
-namespace Construction.Drag
+namespace Engine.Construction.Drag
 {
     public class DragSessionBuilder
     {

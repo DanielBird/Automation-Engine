@@ -1,8 +1,8 @@
-﻿using Construction.Nodes;
-using Construction.Placement;
+﻿using Engine.Construction.Nodes;
+using Engine.Construction.Placement;
 using UnityEngine;
 
-namespace Construction.Maps
+namespace Engine.Construction.Maps
 {
     public interface INodeMap
     {

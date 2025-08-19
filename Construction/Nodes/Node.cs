@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using Construction.Events;
-using Construction.Interfaces;
-using Construction.Maps;
-using Construction.Placement;
-using Construction.Visuals;
+using Engine.Construction.Events;
+using Engine.Construction.Interfaces;
+using Engine.Construction.Maps;
+using Engine.Construction.Placement;
+using Engine.Construction.Visuals;
+using Engine.Utilities;
+using Engine.Utilities.Events;
 using Sirenix.OdinInspector;
 using UnityEngine;
-using Utilities;
-using Utilities.Events;
 
-namespace Construction.Nodes
+namespace Engine.Construction.Nodes
 {
     /// <summary>
     /// Abstract parent class for everything that is either a connection mechanism (e.g., belt, road)
@@ -55,7 +55,14 @@ namespace Construction.Nodes
         // Player Selection
         public bool IsEnabled { get; set; }
         public bool IsSelected { get; set; }
+        public bool isRemovable = true; 
         
+        [Header("Parents/Children")]
+        // Certain GameObjects like Splitters and Combiners are made up of two nodes (a parent and child).
+        // The removal manager refers to the parent node to organize the despawning of both nodes. 
+        // That way, if the player requests destruction of the child node, both the parent and child are removed. 
+        public Node ParentNode { get; protected set; }
+
         private void Awake()
         {
             if (nodeTypeSo == null)
@@ -125,9 +132,9 @@ namespace Construction.Nodes
             gameObject.name = _nameBuilder.ToString();
         }
 
-        public virtual void FailedPlacement()
+        public virtual void FailedPlacement(Vector3Int gridCoord)
         {
-            Debug.Log("Failed placement on " + name);
+            Debug.Log($"Failed placement for {name} at {gridCoord}");
         }
 
         public void Reset() => Direction = startingDirection;

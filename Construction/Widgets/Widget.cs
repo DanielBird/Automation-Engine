@@ -1,14 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using Construction.Belts;
-using Construction.Nodes;
-using Construction.Placement;
-using Construction.Utilities;
+﻿using System.Collections.Generic;
+using Engine.Construction.Belts;
+using Engine.Construction.Placement;
+using Engine.Construction.Utilities;
+using Engine.Utilities;
 using UnityEngine;
-using Utilities;
-using Grid = Construction.Utilities.Grid;
+using Grid = Engine.Construction.Utilities.Grid;
 
-namespace Construction.Widgets
+namespace Engine.Construction.Widgets
 {
     public enum WidgetStatus
     {

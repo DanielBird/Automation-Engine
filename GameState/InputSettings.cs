@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-namespace GameState
+namespace Engine.GameState
 {
     [CreateAssetMenu(fileName = "InputSettings", menuName = "Scriptable Objects/InputSettings")]
     public class InputSettings : ScriptableObject

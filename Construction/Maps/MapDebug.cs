@@ -1,10 +1,8 @@
-﻿using System;
-using Construction.Placement;
-using Construction.Utilities;
+﻿using Engine.Construction.Placement;
 using UnityEngine;
-using Grid = Construction.Utilities.Grid;
+using Grid = Engine.Construction.Utilities.Grid;
 
-namespace Construction.Maps
+namespace Engine.Construction.Maps
 {
     public class MapDebug : MonoBehaviour
     {

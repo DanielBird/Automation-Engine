@@ -1,17 +1,17 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Construction.Events;
-using Construction.Maps;
-using Construction.Widgets;
 using Cysharp.Threading.Tasks;
-using GameState;
+using Engine.Construction.Events;
+using Engine.Construction.Maps;
+using Engine.Construction.Widgets;
+using Engine.GameState;
+using Engine.Utilities.Events;
 using Sirenix.OdinInspector;
 using UnityEngine;
-using Utilities.Events;
 using ZLinq;
 
-namespace Construction.Belts
+namespace Engine.Construction.Belts
 {
     [RequireComponent(typeof(INodeMap))]
     public class BeltManager : MonoBehaviour

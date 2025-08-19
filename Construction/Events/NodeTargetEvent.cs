@@ -1,7 +1,7 @@
-﻿using Construction.Nodes;
-using Utilities.Events;
+﻿using Engine.Construction.Nodes;
+using Engine.Utilities.Events;
 
-namespace Construction.Events
+namespace Engine.Construction.Events
 {
     public class NodeTargetEvent : IEvent
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace Utilities.Events
+namespace Engine.Utilities.Events
 {
     public class EventBus<T> where T : IEvent
     {
