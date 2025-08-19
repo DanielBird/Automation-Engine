@@ -64,6 +64,24 @@ Nodes
 
 │   ├── ├── Splitter
 
+classDiagram
+    class Belt
+    class Producer
+    class Consumer
+    class Intersection
+    class ParentBelt
+    class Combiner
+    class Splitter
+    
+    Belt <|-- Producer
+    Belt <|-- Consumer
+    Belt <|-- Intersection
+    Belt <|-- ParentBelt
+    ParentBelt <|-- Combiner
+    ParentBelt <|-- Splitter
+
+
+
 Widgets
 
 
