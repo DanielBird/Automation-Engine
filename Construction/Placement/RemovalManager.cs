@@ -122,7 +122,8 @@ namespace Engine.Construction.Placement
         
         private CellSelection SelectCells(Vector3Int start, out Vector3Int end)
             // => CellSelector.SelectCellArea(start, mainCamera, settings.floorLayer, _cellHits, Map, settings, out end);
-            => CellSelector.SelectCellAreaWithNodes(start, mainCamera, settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, settings, 1), true, out end);
+             => CellSelector.SelectCellAreaWithNodes(start, mainCamera, settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, settings, 1), true, out end);
+            // => CellsAlongNodePath.SelectCells(start, mainCamera, settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, settings, 1), out end);
 
 
         private void UpdateHits()

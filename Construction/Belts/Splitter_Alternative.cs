@@ -147,7 +147,7 @@ namespace Engine.Construction.Belts
             
             if (!NodeMap.InBounds(gridPos.x, gridPos.y)) return;
             if (NodeMap.GetNeighbourAt(gridPos, out Node neighbour)) return;
-            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(gridPos.x, 0, gridPos.y), NodeType.GenericBelt));
+            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(gridPos.x, 0, gridPos.y), NodeType.GenericBelt, this));
         }
     }
 }

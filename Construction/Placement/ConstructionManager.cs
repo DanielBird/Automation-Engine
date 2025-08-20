@@ -75,7 +75,7 @@ namespace Engine.Construction.Placement
         /// <summary>
         /// Try raycast hit the floor layer, casting a ray from the main camera through the mouse position. 
         /// </summary>
-        protected bool TryGetWorldPosition(out Vector3 position)
+        public bool TryGetWorldPosition(out Vector3 position)
         {
             bool positionFound = FloorPosition.Get(mainCamera, settings.raycastDistance, settings, out Vector3 foundPosition);
             position = foundPosition; 

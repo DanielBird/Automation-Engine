@@ -150,6 +150,10 @@ namespace Engine.Construction.Placement
             state.WorldAlignedPosition = e.WorldPosition; 
             
             GameObject build = factory.CreateAt(e.WorldPosition); 
+            
+            if(build.TryGetComponent(out Node node))
+                node.RotateInstant(e.RequestingNode.Direction);
+            
             SpawnOccupant(e.WorldPosition, build);
         }
 

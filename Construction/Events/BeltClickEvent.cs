@@ -8,10 +8,12 @@ namespace Engine.Construction.Events
     {
         public Vector3Int WorldPosition;
         public readonly NodeType BuildRequestType;
-        public BeltClickEvent(Vector3Int worldPosition, NodeType buildRequestType)
+        public Node RequestingNode;
+        public BeltClickEvent(Vector3Int worldPosition, NodeType buildRequestType, Node requestingNode)
         {
             WorldPosition = worldPosition;
             BuildRequestType = buildRequestType;
+            RequestingNode = requestingNode;
         }
     }
 }

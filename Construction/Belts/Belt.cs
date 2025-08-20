@@ -116,7 +116,7 @@ namespace Engine.Construction.Belts
             if (!NodeMap.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
             if (NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
             
-            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), NodeType.GenericBelt));
+            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), NodeType.GenericBelt, this));
         }
 
         public override void OnRemoval()

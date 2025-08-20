@@ -13,7 +13,7 @@ namespace Engine.GameState
         
         [Header("Directional Input And Rotation")]
         [Tooltip("How long to wait to confirm that a button click is being held?")]
-        public float waitForInputTime = 0.2f;
+        public float waitForInputTime = 0.03f;
         public float deadZoneRadius = 10;
         public float sphereCastRadius = 0.1f;
 

@@ -45,7 +45,7 @@ namespace Engine.Construction.Drag.Selection
         /// <summary>
         /// Attempts to get the current grid position where a raycast intersects with the floor.
         /// </summary>
-        private static bool TryGetCurrentGridCoord(Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, out Vector3Int gridCoordinate)
+        public static bool TryGetCurrentGridCoord(Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, out Vector3Int gridCoordinate)
         {
             gridCoordinate = Vector3Int.zero;
             
@@ -94,7 +94,7 @@ namespace Engine.Construction.Drag.Selection
             return selection;
         }
 
-        private static IEnumerable<Vector3Int> GetCellArea(Vector3Int start, Vector3Int end, int stepSize)
+        public static IEnumerable<Vector3Int> GetCellArea(Vector3Int start, Vector3Int end, int stepSize)
         {
             int xMin = Mathf.Min(start.x, end.x);
             int xMax = Mathf.Max(start.x, end.x);
@@ -106,7 +106,6 @@ namespace Engine.Construction.Drag.Selection
                 yield return new Vector3Int(x, 0, z);
         }
         
-        // SELECT CONNECTED
         public static CellSelection SelectCellAreaWithNodes(Vector3Int start, Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, CellSelectionParams csp, bool ignoreType, out Vector3Int end)
         {
             CellSelection selection = new();
