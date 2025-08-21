@@ -13,23 +13,16 @@ namespace Engine.Construction.Placement
         private PlacementState _state;
         private PlacementVisuals _visuals; 
 
-        public PlacementCoordinator(
-            DragManager dragManager,
-            IMap map,
-            INodeMap nodeMap,
-            NeighbourManager neighbourManager,
-            PlacementSettings placementSettings,
-            PlacementState state,
-            PlacementVisuals visuals)
+        public PlacementCoordinator(PlacementContext placementContext, DragManager dragManager, NeighbourManager neighbourManager, Transform widgetParent)
         {
             _strategies = new List<IPlacementStrategy>
             {
-                new DraggablePlacementStrategy(dragManager, state, visuals),
-                new StandardPlacementStrategy(map, nodeMap, neighbourManager, placementSettings, state, visuals)
+                new DraggablePlacementStrategy(placementContext, dragManager),
+                new StandardPlacementStrategy(placementContext, neighbourManager, widgetParent)
             };
 
-            _state = state; 
-            _visuals = visuals;
+            _state = placementContext.State; 
+            _visuals = placementContext.Visuals;
         }
 
         public void HandlePlacement(IPlaceable placeable, Vector3Int gridCoordinate)

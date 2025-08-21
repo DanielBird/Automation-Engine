@@ -13,16 +13,15 @@ namespace Engine.Construction.Placement
     /// </summary>
     public class NeighbourManager
     {
-        private IMap _map;
-        private INodeMap _nodeMap;
-        private CornerCreator _cornerCreator;
-        private PlacementSettings _settings;
+        private readonly IMap _map;
+        private readonly INodeMap _nodeMap;
+        private readonly CornerCreator _cornerCreator;
 
-        public NeighbourManager(IMap map, INodeMap nodeMap, PlacementSettings settings, Transform transform)
+        public NeighbourManager(PlacementContext ctx, Transform transform)
         {
-            _map = map;
-            _nodeMap = nodeMap;
-            _settings = settings;
+            _map = ctx.Map;
+            _nodeMap = ctx.NodeMap;
+            PlacementSettings settings = ctx.PlacementSettings;
             _cornerCreator = new CornerCreator(_map, _nodeMap, settings, transform);
         }
         

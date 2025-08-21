@@ -26,35 +26,17 @@ namespace Engine.Construction.Drag
         private readonly Dictionary<Cell, TempNode> _spawned = new();
         private readonly DragSession _dragSession;
 
-        public DragManager(
-            PlacementSettings settings,
-            InputSettings inputSettings,
-            IMap map,
-            PlacementVisuals visuals,
-            INodeMap nodeMap,
-            NeighbourManager neighbourManager,
-            Camera mainCamera,
-            GameObject floorDecal,
-            PlacementState state)
+        public DragManager(PlacementContext ctx, NeighbourManager neighbourManager)
         {
-            _map = map;
-            _visuals = visuals;
-            _nodeMap = nodeMap;
+            _map = ctx.Map;
+            _visuals = ctx.Visuals;
+            _nodeMap = ctx.NodeMap;
             _neighbourManager = neighbourManager;
-            _floorDecal = floorDecal;
-            _state = state;
-            _settings = settings;
+            _floorDecal = ctx.Visuals.floorDecal;
+            _state = ctx.State;
+            _settings = ctx.PlacementSettings;
             
-            _dragSession = new DragSessionBuilder()
-                .WithSettings(settings)
-                .WithInputSettings(inputSettings)
-                .WithMap(_map)
-                .WithNodeMap(nodeMap)
-                .WithVisuals(_visuals)
-                .WithCamera(mainCamera)
-                .WithFloorDecal(_floorDecal)
-                .WithState(_state)
-                .Build();
+            _dragSession = new DragSession(ctx); 
         }
 
         public void Disable()

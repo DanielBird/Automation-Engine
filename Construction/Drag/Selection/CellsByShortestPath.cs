@@ -26,7 +26,6 @@ namespace Engine.Construction.Drag.Selection
                 return;
 
             AddPathCells(path, selection, selectionParams);
-            // selectionParams.FilterIntersections(path);
             selection.Corner = Corner.None; // multi-corner paths: don't use single-corner UI
         }
 

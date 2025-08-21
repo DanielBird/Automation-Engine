@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -31,7 +32,8 @@ namespace Engine.Construction.Belts
         private EventBinding<NodeRemoved> _onNodeRemoved;
         private EventBinding<NodeTargetEvent> _onNodeTargetChange;
 
-        private CancellationTokenSource _tickTokenSource; 
+        private CancellationTokenSource _tickTokenSource;
+        private Coroutine _tickForwardRoutine; 
         
         private void Awake()
         { 
@@ -53,6 +55,9 @@ namespace Engine.Construction.Belts
             EventBus<NodeTargetEvent>.Deregister(_onNodeTargetChange);
 
             ClearToken();
+            
+            if(_tickForwardRoutine != null)
+                StopCoroutine(_tickForwardRoutine);
         }
 
         private void ClearToken()
@@ -164,8 +169,16 @@ namespace Engine.Construction.Belts
         public void Run()
         {
             Active = true;
+            
+            #if UNITASK
             _tickTokenSource = new CancellationTokenSource();
             TickForward().Forget();
+
+            
+            #else
+            _tickForwardRoutine = StartCoroutine(TickForwardCoroutine()); 
+
+            #endif
         }
 
         [Button]
@@ -189,6 +202,21 @@ namespace Engine.Construction.Belts
                 await UniTask.WaitForSeconds(tickForwardFrequency, cancellationToken: _tickTokenSource.Token);
             }
         }
+
+        private IEnumerator TickForwardCoroutine()
+        {
+            while (Active)
+            {
+                if (CoreGameState.Paused || UiState.uiOpen)
+                {
+                    yield return null; 
+                }
+                
+                UpdateTick();
+                timeOfLastTick = Mathf.FloorToInt(Time.time);
+                yield return new WaitForSeconds(tickForwardFrequency);
+            }
+        } 
         
         private void UpdateTick()
         {

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -17,6 +18,11 @@ namespace Engine.Utilities
         [SerializeField] private float maxRaycastDistance = 100f;
         private IClickable clickable; 
         private List<IClickable> clickables = new List<IClickable>();
+
+        [Header("Debug")]
+        public bool showClosestHit = true;
+        public Vector3 gizmoScale = Vector3.one;
+        private Transform closestHit; 
         
         RaycastHit[] _results = new RaycastHit[5];   
         
@@ -77,6 +83,7 @@ namespace Engine.Utilities
                 {
                     closestDistance = d;
                     closest = c;
+                    closestHit = t;
                 }
             }
 
@@ -110,6 +117,16 @@ namespace Engine.Utilities
 
             clickables.Clear();
             clickables.AddRange(newHits);
+        }
+
+        private void OnDrawGizmos()
+        {
+            if (showClosestHit && closestHit != null)
+            {
+                Gizmos.color = new Color(0, 1, 0, 0.3f); 
+                Gizmos.DrawCube(closestHit.transform.position, gizmoScale);
+            }
+             
         }
     }
 }

@@ -32,7 +32,7 @@ namespace Engine.Construction.Nodes
         [Header("Position & Rotation")] 
         [SerializeField] private Direction myDirection; 
         public Direction startingDirection; 
-        public float rotationTime = 0.25f;
+        public float rotationTime = 0.2f;
         
         private EasingFunctions.Function _ease; 
         public EasingFunctions.Ease rotationEasing = EasingFunctions.Ease.EaseOutSine;

@@ -1,5 +1,6 @@
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Engine.Construction.Belts;
 using Engine.Construction.Drag;
 using Engine.Construction.Interfaces;
 using Engine.Construction.Maps;
@@ -17,27 +18,23 @@ namespace Engine.Construction.Placement
     {
         private readonly IMap _map;
         private readonly INodeMap _nodeMap;
-        private readonly NeighbourManager _neighbourManager;
         private readonly PlacementSettings _placementSettings;
         private readonly PlacementState _state;
         private readonly PlacementVisuals _visuals;
+        private readonly NeighbourManager _neighbourManager;
+        private readonly Transform _widgetParent;
 
         private CancellationTokenSource _cts; 
 
-        public StandardPlacementStrategy(
-            IMap map,
-            INodeMap nodeMap,
-            NeighbourManager neighbourManager,
-            PlacementSettings placementSettings,
-            PlacementState state,
-            PlacementVisuals visuals)
+        public StandardPlacementStrategy(PlacementContext ctx, NeighbourManager neighbourManager, Transform widgetParent)
         {
-            _map = map;
-            _nodeMap = nodeMap;
+            _map = ctx.Map;
+            _nodeMap = ctx.NodeMap;
+            _placementSettings = ctx.PlacementSettings;
+            _state = ctx.State;
+            _visuals = ctx.Visuals;
             _neighbourManager = neighbourManager;
-            _placementSettings = placementSettings;
-            _state = state;
-            _visuals = visuals;
+            _widgetParent = widgetParent;
         }
 
         public bool CanHandle(IPlaceable placeable) => !placeable.Draggable;
@@ -51,6 +48,8 @@ namespace Engine.Construction.Placement
                 NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, NodeType.Straight); 
                 node.Initialise(config);
                 node.Visuals.HideArrows();
+                
+                if(node is Producer p) p.SetWidgetParent(_widgetParent); 
             }
 
             _state.IsRunning = false;

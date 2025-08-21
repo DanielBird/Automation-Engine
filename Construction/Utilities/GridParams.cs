@@ -9,14 +9,14 @@ namespace Engine.Construction.Utilities
         public readonly Vector3Int Origin;
         public readonly int Width;
         public readonly int Height;
-        public readonly float TileSize;
+        public readonly float CellSize;
 
         public GridParams(Vector3Int origin, int width, int height, float tileSize)
         {
             Origin = origin;
             Width = width;
             Height = height;
-            TileSize = tileSize <= 0 ? 1f : tileSize;
+            CellSize = tileSize <= 0 ? 1f : tileSize;
         }
     }
 }

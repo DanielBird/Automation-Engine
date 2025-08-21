@@ -6,12 +6,12 @@ namespace Engine.Construction.Events
 {
     public class BeltClickEvent : IEvent
     {
-        public Vector3Int WorldPosition;
+        public Vector3Int GridCoord;
         public readonly NodeType BuildRequestType;
         public Node RequestingNode;
-        public BeltClickEvent(Vector3Int worldPosition, NodeType buildRequestType, Node requestingNode)
+        public BeltClickEvent(Vector3Int gridCoord, NodeType buildRequestType, Node requestingNode)
         {
-            WorldPosition = worldPosition;
+            GridCoord = gridCoord;
             BuildRequestType = buildRequestType;
             RequestingNode = requestingNode;
         }

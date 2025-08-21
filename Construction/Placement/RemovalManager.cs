@@ -26,8 +26,8 @@ namespace Engine.Construction.Placement
         private List<GridWorldCoordPair> _newHits = new();
         private List<GridWorldCoordPair> _oldHits = new();
         
-        private HashSet<Vector3Int> _pendingDestructions = new();
-        private HashSet<Vector3Int> _pendingEmptyDestructions = new();
+        private HashSet<Vector3> _pendingDestructions = new();
+        private HashSet<Vector3> _pendingEmptyDestructions = new();
         
         private CancellationTokenSource _rightClickDragTokenSource;
         
@@ -55,7 +55,7 @@ namespace Engine.Construction.Placement
         {
             ClearToken();
             _rightClickDragTokenSource = new CancellationTokenSource();
-            DetectRightClickDown(_rightClickDragTokenSource.Token);
+            DetectRightClickDown(_rightClickDragTokenSource.Token).Forget();
         }
 
         private async UniTaskVoid DetectRightClickDown(CancellationToken token)
@@ -77,18 +77,22 @@ namespace Engine.Construction.Placement
                 return;
             }
 
-            visuals.Show();
+            visuals.Show(false);
             
             while (inputSettings.cancel.action.IsPressed())
             {
                 _cellSelection = SelectCells(start, out Vector3Int endGridCoord);
-                _selectedPos = _cellSelection.GetGridWorldPairs(settings); 
-                
-                Vector3Int endWorldPos = WorldAlignedPosition(endGridCoord);
-                visuals.SetFloorDecalPos(endWorldPos);
-                
+                _selectedPos = _cellSelection.GetGridWorldPairs(settings);
+
                 if (_selectedPos.Any())
+                {
                     UpdateHits();
+                }
+                else
+                {
+                    _oldHits = _registeredHits.ToList();
+                    _newHits.Clear(); // prevent re-adding previously processed pairs
+                }
                 
                 if(_newHits.Any())
                     ProcessNewHits();
@@ -100,7 +104,7 @@ namespace Engine.Construction.Placement
             }
             
             ProcessFinalHits();
-            visuals.Hide();
+            visuals.Hide(false);
         }
         
         private void RemoveSingleNode(GridWorldCoordPair delete, Node node)
@@ -123,9 +127,7 @@ namespace Engine.Construction.Placement
         private CellSelection SelectCells(Vector3Int start, out Vector3Int end)
             // => CellSelector.SelectCellArea(start, mainCamera, settings.floorLayer, _cellHits, Map, settings, out end);
              => CellSelector.SelectCellAreaWithNodes(start, mainCamera, settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, settings, 1), true, out end);
-            // => CellsAlongNodePath.SelectCells(start, mainCamera, settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, settings, 1), out end);
-
-
+        
         private void UpdateHits()
         {
             _newHits = _selectedPos
@@ -152,17 +154,20 @@ namespace Engine.Construction.Placement
                 }
                 else
                 {
-                    Vector3Int key = pair.WorldPosition;
+                    Vector3 key = pair.WorldPosition + Offset(node);
 
                     if (!node.isRemovable)
                     {
                         if(node.ParentNode == null) continue;
                         node = node.ParentNode;
-                        key = node.WorldPosition;
+                        key = node.WorldPosition + Offset(node);
                     }
                     
                     if (_pendingDestructions.Add(key))
-                        _registeredNodes.Add(pair, node);
+                    {
+                        if (!_registeredNodes.ContainsKey(pair))
+                            _registeredNodes.Add(pair, node);
+                    }
                 }
                 
                 _registeredHits.Add(pair);
@@ -192,8 +197,8 @@ namespace Engine.Construction.Placement
                 RemoveSingleNode(kvp.Key, kvp.Value);
             }
             
-            if(_registeredHits.Any())
-                TriggerEvent(_registeredHits, DestructionEventType.Cancel);
+            // Clear everything. 
+            EventBus<DestructionEvent>.Raise(new DestructionEvent(new List<Vector3>(), DestructionEventType.ClearAll));
             
             _cellSelection.Clear();
             _registeredHits.Clear();
@@ -202,13 +207,24 @@ namespace Engine.Construction.Placement
 
         private void TriggerEvent(IEnumerable<GridWorldCoordPair> pairs, DestructionEventType eventType)
         {
-            List<Vector3Int> worldPositions = new List<Vector3Int>();
+            List<Vector3> worldPositions = new List<Vector3>();
             foreach (GridWorldCoordPair pair in pairs)
             {
-                worldPositions.Add(pair.WorldPosition);
+                if(_registeredNodes.TryGetValue(pair, out Node node))
+                    worldPositions.Add(node.WorldPosition + Offset(node));
+                else
+                    worldPositions.Add(pair.WorldPosition);
             }
             
             EventBus<DestructionEvent>.Raise(new DestructionEvent(worldPositions, eventType));
+        }
+        
+        private Vector3 Offset(Node node)
+        {
+            if(settings.FoundOffset(node.NodeType, out Vector3 offset))
+                return offset;
+            
+            return Vector3.zero;
         }
     }
 }

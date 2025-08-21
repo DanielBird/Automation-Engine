@@ -196,11 +196,13 @@ namespace Engine.Construction.Drag.Selection
             Vector2Int rightPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, rightDirection, stepSize);
             Vector2Int leftPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, leftDirection, stepSize);
 
+            // Found a node
             bool rightFound = selectionParams.NodeMap.GetNeighbourAt(rightPos, out Node rightN);
             bool leftFound  = selectionParams.NodeMap.GetNeighbourAt(leftPos, out Node leftN);
             
-            bool right = rightFound && rightN.Direction == (end ? rightDirection : leftDirection);
-            bool left = leftFound && leftN.Direction == (end ? leftDirection : rightDirection);
+            // Found a node and it is facing the right direction for this node to connect to it
+            bool right = rightFound && DirectionIsGood(end, rightN, rightDirection, leftDirection);
+            bool left = leftFound && DirectionIsGood(end, leftN, leftDirection, rightDirection);
 
             // Avoid connecting if it leads to a loop
             if (right || left)
@@ -232,7 +234,21 @@ namespace Engine.Construction.Drag.Selection
 
             cells.Add(new Cell(gridCoord, finalDirection, nodeType, selectionParams.Settings));
         }
-        
+
+        private static bool DirectionIsGood(bool end, Node neighbour, Direction directionOne, Direction directionTwo)
+        {
+            if (end)
+            {
+                // Ends don't connect to Producers
+                if (neighbour.NodeType == NodeType.Producer) return false;
+                
+                // Ends don't connect to corners
+                if (neighbour.NodeType is NodeType.LeftCorner or NodeType.RightCorner) return false;
+            }
+            
+            return neighbour.Direction == (end ? directionOne : directionTwo);
+        }
+
         public static bool IsLeftTurn(Vector3Int start, Vector3Int corner, Vector3Int end)
         {
             // Calculate direction vectors

@@ -10,13 +10,17 @@ namespace Engine.Construction.Interaction
     [RequireComponent(typeof(RemovalManager))]
     public class RemovalVisuals : MonoBehaviour
     {
+        private static readonly int HalfExtents = Shader.PropertyToID("_halfExtents");
         [SerializeField] protected InputSettings inputSettings;
         private CancellationTokenSource _rightClickDragTokenSource;
         
         [SerializeField] private RemovalManager removalManager;
         public Material material;  
-        public GameObject quad; 
+        
+        private GameObject quad; 
         private MeshRenderer quadRenderer;
+        
+        [Space]
         public float yOffset = 0.01f;  
         public Vector2 gridOffset = new (0.5f, 0.5f);
         public float lerpSpeed = 35f; 
@@ -24,17 +28,7 @@ namespace Engine.Construction.Interaction
         private void Awake()
         {
             removalManager = GetComponent<RemovalManager>();
-
-            if (quad == null)
-            {
-                quad = SpawnQuad(); 
-            }
-            else
-            {            
-                quadRenderer = quad.GetComponent<MeshRenderer>();
-                quadRenderer.enabled = false;
-            }
-
+            quad = SpawnQuad(); 
             inputSettings.cancel.action.performed += ShowVisuals;
         }
 
@@ -56,12 +50,11 @@ namespace Engine.Construction.Interaction
         {
             ClearToken();
             _rightClickDragTokenSource = new CancellationTokenSource();
-            DetectRightClickDown(_rightClickDragTokenSource.Token);
+            DetectRightClickDown(_rightClickDragTokenSource.Token).Forget();
         }
 
         private async UniTaskVoid DetectRightClickDown(CancellationToken token)
         {
-            Debug.Log("Detecting right-click down");
             await UniTask.WaitForSeconds(inputSettings.waitForInputTime, cancellationToken: token);
 
             if (!inputSettings.cancel.action.IsPressed())
@@ -114,6 +107,8 @@ namespace Engine.Construction.Interaction
             
             t.position = Vector3.Lerp(pos, newPos, lerpSpeed * Time.deltaTime);
             t.localScale = Vector3.Lerp(scale, newScale, lerpSpeed * Time.deltaTime);
+            
+            material.SetVector(HalfExtents, new Vector4(size.x/2, size.y/2, 0, 0));
         }
 
         private void CleanUpQuad()

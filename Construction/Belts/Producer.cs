@@ -22,6 +22,7 @@ namespace Engine.Construction.Belts
         public int poolPreLoadCount = 3; 
         [SerializeField] private int _widgetType;
         [SerializeField] private GameObject widgetPrefab;
+        private Transform _widgetParent;
         
         [Header("Spawning")]
         public Vector3 spawnLocation;
@@ -45,6 +46,8 @@ namespace Engine.Construction.Belts
             CoreGameState.ProducerCount++; 
             if(CoreGameState.ProducerCount >= widgetPrefabs.widgets.Count) CoreGameState.ProducerCount = 0;
         }
+        
+        public void SetWidgetParent(Transform parent) => _widgetParent = parent;
         
         [Button]
         public void Activate() => Activate(CoreGameState.ProducerCount);
@@ -77,18 +80,16 @@ namespace Engine.Construction.Belts
                 return false;
             }
             
-            SimplePool.Preload(widgetPrefab, transform, poolPreLoadCount);
+            SimplePool.Preload(widgetPrefab, _widgetParent, poolPreLoadCount);
             return true;
         }
 
         private void ClearToken()
         {
-            if (_ctx != null)
-            {
-                _ctx.Cancel();
-                _ctx.Dispose();
-                _ctx = null;
-            }
+            if (_ctx == null) return;
+            _ctx.Cancel();
+            _ctx.Dispose();
+            _ctx = null;
         }
 
         [Button]
@@ -125,8 +126,7 @@ namespace Engine.Construction.Belts
         {
             if (!isActiveAndEnabled) return;
 
-            Transform t = transform; 
-            GameObject widgetGo = SimplePool.Spawn(widgetPrefab, t.position + spawnLocation, Quaternion.identity, t);
+            GameObject widgetGo = SimplePool.Spawn(widgetPrefab, transform.position + spawnLocation, Quaternion.identity, _widgetParent);
 
             if (widgetGo.TryGetComponent<Widget>(out Widget widget))
             {

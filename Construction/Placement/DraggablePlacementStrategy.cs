@@ -12,14 +12,11 @@ namespace Engine.Construction.Placement
         private readonly PlacementState _state;
         private readonly PlacementVisuals _visuals;
 
-        public DraggablePlacementStrategy(
-            DragManager dragManager, 
-            PlacementState state,
-            PlacementVisuals visuals)
+        public DraggablePlacementStrategy(PlacementContext ctx, DragManager dragManager)
         {
+            _state = ctx.State;
+            _visuals = ctx.Visuals;
             _dragManager = dragManager;
-            _state = state;
-            _visuals = visuals;
         }
 
         public bool CanHandle(IPlaceable placeable) => placeable.Draggable;

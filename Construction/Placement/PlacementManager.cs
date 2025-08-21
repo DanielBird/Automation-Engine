@@ -5,7 +5,6 @@ using Engine.Construction.Drag;
 using Engine.Construction.Events;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement.Factory;
-using Engine.Construction.Utilities;
 using Engine.Construction.Visuals;
 using Engine.Utilities.Events;
 using Sirenix.OdinInspector;
@@ -33,7 +32,9 @@ namespace Engine.Construction.Placement
         private CancellationTokenSource _disableCancellation = new CancellationTokenSource();
         private CancellationTokenSource _waitTokenSource = new CancellationTokenSource();
 
-        private float _timeOfLastClick; 
+        private float _timeOfLastClick;
+
+        [Header("Widgets")] public Transform widgetParent; 
         
         // EVENTS
         private EventBinding<ConstructionUiButtonClick> _onButtonClick; 
@@ -43,33 +44,20 @@ namespace Engine.Construction.Placement
         {
             base.Awake();
             
-            NeighbourManager = new NeighbourManager(
-                Map, 
-                NodeMap, 
-                settings, 
-                transform);
-            
-            _dragManager = new DragManagerBuilder()
-                .WithSettings(settings)
-                .WithInputSettings(inputSettings)
-                .WithMap(Map)
-                .WithVisuals(visuals)
-                .WithNodeMap(NodeMap)
-                .WithNeighbourManager(NeighbourManager)
-                .WithCamera(mainCamera)
-                .WithFloorDecal(visuals.floorDecal)
-                .WithState(state)
-                .Build();
-            
-            _placementCoordinator = new PlacementCoordinator(
-                _dragManager,
+            PlacementContext ctx = new PlacementContext(
                 Map,
                 NodeMap,
-                NeighbourManager,
+                inputSettings,
                 settings,
                 state,
-                visuals
+                visuals,
+                mainCamera
             );
+            
+            NeighbourManager = new NeighbourManager(ctx, transform);
+            
+            _dragManager = new DragManager(ctx, NeighbourManager);
+            _placementCoordinator = new PlacementCoordinator(ctx, _dragManager, NeighbourManager, widgetParent);
             
             _factories = new Dictionary<NodeType, IPlaceableFactory>
             {
@@ -144,17 +132,19 @@ namespace Engine.Construction.Placement
         {
             if(!_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory)) return;
             
-            Vector3Int gridCoordinate = Grid.WorldToGridCoordinate(e.WorldPosition, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.cellSize));
+            Vector3Int gridCoordinate = e.GridCoord;
+            Vector3Int worldPosition = Grid.GridToWorldPosition(gridCoordinate, settings.mapOrigin, settings.cellSize);
+            
             state.IsRunning = false; 
             state.TargetGridCoordinate = gridCoordinate;
-            state.WorldAlignedPosition = e.WorldPosition; 
+            state.WorldAlignedPosition = worldPosition; 
             
-            GameObject build = factory.CreateAt(e.WorldPosition); 
+            GameObject build = factory.CreateAt(worldPosition); 
             
             if(build.TryGetComponent(out Node node))
                 node.RotateInstant(e.RequestingNode.Direction);
             
-            SpawnOccupant(e.WorldPosition, build);
+            SpawnOccupant(worldPosition, build);
         }
 
         private void Update()
@@ -166,7 +156,9 @@ namespace Engine.Construction.Placement
             state.WorldAlignedPosition = WorldAlignedPosition(gridCoord);
             
             if (!Map.VacantCell(state.TargetGridCoordinate.x, state.TargetGridCoordinate.z)) return;
-            if (DistanceAboveThreshold(state.CurrentObject, state.TargetGridCoordinate)) return;
+            
+            // If the current object is roughly at the target grid coordinate, then return
+            if (Arrived(state.CurrentObject, state.WorldAlignedPosition)) return;
             
             LerpPosition(state.CurrentObject, state.WorldAlignedPosition);
             
@@ -174,10 +166,10 @@ namespace Engine.Construction.Placement
             visuals.SetFloorDecalPos(state.WorldAlignedPosition); 
         }
 
-        private bool DistanceAboveThreshold(GameObject obj, Vector3 targetPos, float threshold = 0.001f)
+        private bool Arrived(GameObject obj, Vector3 targetPos, float threshold = 0.02f)
         {
             float distance = Vector3.Distance(obj.transform.position, targetPos);
-            if(distance < threshold) return true;
+            if (distance < threshold) return true;
             return false;
         }
 

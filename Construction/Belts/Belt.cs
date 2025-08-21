@@ -8,7 +8,6 @@ using UnityEngine;
 
 namespace Engine.Construction.Belts
 {
-    
     public class Belt : Node
     {
         [Header("Transportation")]
@@ -111,9 +110,10 @@ namespace Engine.Construction.Belts
             IsSelected = true;
             
             // Allow the player to start a new drag session by clicking on this belt 
-            // If this belt is connected to a belt in front, do not continue
             Vector2Int forwardGridPos = PositionByDirection.GetForwardPosition(GridCoord, Direction, GridWidth);
             if (!NodeMap.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
+            
+            // If there is a belt in front, do not continue
             if (NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
             
             EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), NodeType.GenericBelt, this));
@@ -129,7 +129,6 @@ namespace Engine.Construction.Belts
             Occupant = null;
             
             if(!transform.parent.TryGetComponent(out Node parentNode)) return;
-            
         }
 
         public void SetParent(Belt parent)

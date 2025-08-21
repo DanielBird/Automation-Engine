@@ -40,24 +40,16 @@ namespace Engine.Construction.Drag
         
         private CancellationTokenSource _disableCancellation = new();
         
-        public DragSession(
-            PlacementSettings settings,
-            InputSettings inputSettings,
-            IMap map,
-            INodeMap nodeMap,
-            PlacementVisuals visuals,
-            Camera mainCamera,
-            GameObject floorDecal,
-            PlacementState state)
+        public DragSession(PlacementContext ctx)
         {
-            _settings = settings;
-            _inputSettings = inputSettings;
-            _map = map;
-            _nodeMap = nodeMap;
-            _visuals = visuals;
-            _mainCamera = mainCamera;
-            _floorDecal = floorDecal;
-            _state = state;
+            _settings = ctx.PlacementSettings;
+            _inputSettings = ctx.InputSettings;
+            _map = ctx.Map;
+            _nodeMap = ctx.NodeMap;
+            _visuals = ctx.Visuals;
+            _mainCamera = ctx.MainCamera;
+            _floorDecal = ctx.Visuals.floorDecal;
+            _state = ctx.State;
         }
         
         public void Disable()

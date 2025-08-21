@@ -2,6 +2,7 @@
 using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
 using Engine.Construction.Widgets;
+using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Engine.Construction.Belts
@@ -18,6 +19,12 @@ namespace Engine.Construction.Belts
         // 0 means left next, 1 means right next
         [SerializeField] private int nextIndex;
 
+        [Space] 
+        [SerializeField] private bool shipByWidgetType;
+        [SerializeField] private int widgetTypeOne = -1;
+        [SerializeField] private int widgetTypeTwo = -1;
+        private int lastWidgetSet; 
+        
         private Vector2Int _forwardGridPosition;
 
         public override void Initialise(NodeConfiguration config)
@@ -25,6 +32,9 @@ namespace Engine.Construction.Belts
             base.Initialise(config);
             _forwardGridPosition = PositionByDirection.GetForwardPosition(GridCoord, Direction, stepSize);
         }
+
+        [Button]
+        public void ToggleShippingMethod() => shipByWidgetType = !shipByWidgetType;
         
         public override bool ReadyToShip(out Belt target, out Widget widget)
         {
@@ -41,9 +51,11 @@ namespace Engine.Construction.Belts
             // Widget found but it is null
             if (!CanShip(out widget)) 
                 return false;
+            
+            UpdateWidgetTypes(widget);
 
             // No target belts found
-            if (!GetTarget(ref target)) return false;
+            if (!GetTarget(ref target, widget)) return false;
 
             if (target == null || !target.CanReceive)
             {
@@ -57,7 +69,37 @@ namespace Engine.Construction.Belts
             return true;
         }
 
-        private bool GetTarget(ref Belt target)
+        private bool GetTarget(ref Belt target, Widget currentWidget)
+        {
+            return shipByWidgetType ? GetTargetBasedOnWidget(ref target, currentWidget) : GetAlternatingTarget(ref target);
+        }
+
+        private bool GetTargetBasedOnWidget(ref Belt target, Widget currentWidget)
+        { 
+            SplitterNeighbourStatus status = TryGetTargetNodes(out Belt rightBelt);
+
+            switch (status)
+            {
+                case SplitterNeighbourStatus.NoneFound:
+                    return false; 
+                case SplitterNeighbourStatus.LeftFound:
+                    target = childBelt;
+                    break;
+                case SplitterNeighbourStatus.RightFound:
+                    target = rightBelt;
+                    break;
+                case SplitterNeighbourStatus.BothFound:
+                    if (currentWidget.widgetType == widgetTypeOne) target = rightBelt;
+                    else target = childBelt;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            return true;
+        }
+        
+        private bool GetAlternatingTarget(ref Belt target)
         {
             SplitterNeighbourStatus status = TryGetTargetNodes(out Belt rightBelt);
 
@@ -98,6 +140,26 @@ namespace Engine.Construction.Belts
                 (false, true)  => SplitterNeighbourStatus.RightFound,
                 _              => SplitterNeighbourStatus.NoneFound
             };
+        }
+
+        private void UpdateWidgetTypes(Widget widget)
+        {
+            int type = widget.widgetType; 
+            
+            // Matches existing widgets
+            if(widgetTypeOne == type || widgetTypeTwo == type) return;
+            
+            // Doesn't match either type
+            if (lastWidgetSet == 0)
+            {
+                widgetTypeOne = type;
+                lastWidgetSet = 1;
+            }
+            else
+            {
+                widgetTypeTwo = type;
+                lastWidgetSet = 0;
+            }
         }
     }
 }
