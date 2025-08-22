@@ -42,9 +42,9 @@ Monobehaviour scripts required in the scene:
 |                      | And constructs Resource Map - which cells have which resources? |
 | Construction Engine  | Constructs Placement Manager which coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations. |
 |                      | Constructs Placement Visuals which manages visual aspects of game object placement | 
-|                      | Constructs Removal Managercoordinates game object removal via right mouse click and hold and Removal visuals | 
-| Belt Manager         | coordinates a belt graph, triggering widget movement | 
-| Player Click Manager | casts a raycast on left mouse down and any class implementing IClickable will be notified if hit |
+|                      | Constructs Removal Manager which coordinates game object removal via right mouse click and hold and Removal visuals | 
+| Belt Manager         | Coordinates a belt graph, triggering widget movement | 
+| Player Click Manager | Casts a raycast on left mouse down and any class implementing IClickable will be notified if hit |
 
 
 # Key Components 
