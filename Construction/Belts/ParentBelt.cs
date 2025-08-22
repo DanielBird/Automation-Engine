@@ -22,7 +22,7 @@ namespace Engine.Construction.Belts
         public override void Initialise(NodeConfiguration config)
         {
             base.Initialise(config);
-            SetupWidgetMovement();
+            SetupResourceMovement();
             
             Map = config.Map;
             if (!RegisterChildBelt(config)) return;

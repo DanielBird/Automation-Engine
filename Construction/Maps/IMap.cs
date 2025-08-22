@@ -16,5 +16,7 @@ namespace Engine.Construction.Maps
         public bool VacantCell(int x, int z);
 
         public Vector2Int NearestVacantCell(Vector2Int start);
+
+        public void Disable();
     }
 }

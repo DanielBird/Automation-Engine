@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
-using Engine.Construction.Widgets;
-using Engine.GameState;
+using Engine.Construction.Resources;
 using Engine.Utilities;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -11,18 +11,19 @@ using UnityEngine;
 namespace Engine.Construction.Belts
 {
     /// <summary>
-    /// A belt that spawns widgets for transportation around a belt network.
-    /// Widgets automatically start spawning when the player places the Producer.
-    /// (... which triggers Initialise)  
+    /// A belt that extracts resources from a resource source for transportation around a belt network.
+    /// Extracts one resource at a time
     /// </summary>
     public class Producer : Belt
     {
         [Header("Producer Setup")]
-        public WidgetPrefabsSO widgetPrefabs;
+        private IResourceSource _resourceSource;
+        [SerializeField] private ResourceTypeSo myResourceType;
+        [SerializeField] private string myResourceName;
         public int poolPreLoadCount = 3; 
-        [SerializeField] private int _widgetType;
-        [SerializeField] private GameObject widgetPrefab;
-        private Transform _widgetParent;
+        
+        private Transform _resourceParent;
+        private GameObject _resourcePrefab;
         
         [Header("Spawning")]
         public Vector3 spawnLocation;
@@ -33,69 +34,59 @@ namespace Engine.Construction.Belts
 
         private void OnDisable()
         {
-            ClearToken();
+            CtsCtrl.Clear(ref _ctx);
         }
         
         public override void Initialise(NodeConfiguration config)
         {
             base.Initialise(config);
-            
-            Activate(CoreGameState.ProducerCount);
-            
-            // Temporary Code for generating new widgets based purely on the number of producers in the scene
-            CoreGameState.ProducerCount++; 
-            if(CoreGameState.ProducerCount >= widgetPrefabs.widgets.Count) CoreGameState.ProducerCount = 0;
         }
         
-        public void SetWidgetParent(Transform parent) => _widgetParent = parent;
-        
-        [Button]
-        public void Activate() => Activate(CoreGameState.ProducerCount);
-        
-        public void Activate(int widgetType)
+        public void Activate(IResourceMap resourceMap, Transform parent)
         {
+            if (!resourceMap.TryGetResourceSourceAt(GridCoord, out _resourceSource)) return;
+
+            if (!InitialiseTheResource())
+            {
+                Debug.Log(name + " failed to find a resource");
+                return;
+            }
+            
             Active = true;
-            _widgetType = widgetType;
+            _resourceParent = parent;
             
-            if (!WidgetPrefabFound(widgetType)) return;
-
-            ClearToken();
-            _ctx = new CancellationTokenSource();
-            WaitToSpawn().Forget(); 
+            InitialiseSpawning();
         }
 
-        private bool WidgetPrefabFound(int widgetType)
+        private bool InitialiseTheResource()
         {
-            if (widgetPrefabs.widgets.Count == 0)
+            myResourceType = _resourceSource.ResourceType;
+            
+            if (myResourceType == null) 
+                return false;
+            
+            if (myResourceType.resourcePrefab == null)
             {
-                Debug.LogWarning("No widget prefabs found in the scriptable object");
+                Debug.LogWarning($"The resource prefab was not found on {myResourceType.name}. Please assign a prefab in the inspector.");
                 return false;
             }
             
-            widgetPrefab = widgetPrefabs.widgets[widgetType];
-            if (widgetPrefab == null)
-            {
-                Debug.LogWarning("Missing widget prefab");
-                Active = false;
-                return false;
-            }
-            
-            SimplePool.Preload(widgetPrefab, _widgetParent, poolPreLoadCount);
-            return true;
+            myResourceName = myResourceType.name;
+            _resourcePrefab = myResourceType.resourcePrefab;
+            return true; 
         }
-
-        private void ClearToken()
-        {
-            if (_ctx == null) return;
-            _ctx.Cancel();
-            _ctx.Dispose();
-            _ctx = null;
-        }
-
+        
         [Button]
-        public void Deactivate()
+        public void Deactivate() => Active = false;
+
+        private void InitialiseSpawning()
         {
-            Active = false;
+            SimplePool.Preload(_resourcePrefab, _resourceParent, poolPreLoadCount);
+            
+            CtsCtrl.Clear(ref _ctx);
+            _ctx = new CancellationTokenSource();
+            
+            WaitToSpawn().Forget();
         }
 
         private async UniTaskVoid WaitToSpawn()
@@ -126,11 +117,13 @@ namespace Engine.Construction.Belts
         {
             if (!isActiveAndEnabled) return;
 
-            GameObject widgetGo = SimplePool.Spawn(widgetPrefab, transform.position + spawnLocation, Quaternion.identity, _widgetParent);
+            if(!_resourceSource.TryExtract(1, out int extracted)) return;
+            
+            GameObject resourceGo = SimplePool.Spawn(_resourcePrefab, transform.position + spawnLocation, Quaternion.identity, _resourceParent);
 
-            if (widgetGo.TryGetComponent<Widget>(out Widget widget))
+            if (resourceGo.TryGetComponent<Resource>(out Resource resource))
             {
-                Occupant = widget;
+                Occupant = resource;
             }
         }
     }

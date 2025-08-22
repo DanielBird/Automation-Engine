@@ -31,15 +31,14 @@ namespace Engine.Construction.Placement
         
         private CancellationTokenSource _rightClickDragTokenSource;
         
-        protected override void Awake()
+        public RemovalManager(PlacementContext ctx) : base(ctx)
         {
-            base.Awake();
-            inputSettings.cancel.action.performed += RemoveNodes;
+            InputSettings.cancel.action.performed += RemoveNodes;
         }
 
-        private void OnDisable()
+        public void Disable()
         {
-            inputSettings.cancel.action.performed -= RemoveNodes; 
+            InputSettings.cancel.action.performed -= RemoveNodes; 
             ClearToken();
         }
 
@@ -60,7 +59,7 @@ namespace Engine.Construction.Placement
 
         private async UniTaskVoid DetectRightClickDown(CancellationToken token)
         {
-            await UniTask.WaitForSeconds(inputSettings.waitForInputTime, cancellationToken: token);
+            await UniTask.WaitForSeconds(InputSettings.waitForInputTime, cancellationToken: token);
 
             if (!TryGetGridCoordinate(out Vector3Int start))
             {
@@ -70,19 +69,19 @@ namespace Engine.Construction.Placement
 
             GridWorldCoordPair startingPair = new (start, WorldAlignedPosition(start));
             
-            if (!inputSettings.cancel.action.IsPressed())
+            if (!InputSettings.cancel.action.IsPressed())
             {
                 if (!NodeMap.TryGetNode(start.x, start.z, out Node node)) return;
                 RemoveSingleNode(startingPair, node);
                 return;
             }
 
-            visuals.Show(false);
+            Visuals.Show(false);
             
-            while (inputSettings.cancel.action.IsPressed())
+            while (InputSettings.cancel.action.IsPressed())
             {
                 _cellSelection = SelectCells(start, out Vector3Int endGridCoord);
-                _selectedPos = _cellSelection.GetGridWorldPairs(settings);
+                _selectedPos = _cellSelection.GetGridWorldPairs(Settings);
 
                 if (_selectedPos.Any())
                 {
@@ -104,7 +103,7 @@ namespace Engine.Construction.Placement
             }
             
             ProcessFinalHits();
-            visuals.Hide(false);
+            Visuals.Hide(false);
         }
         
         private void RemoveSingleNode(GridWorldCoordPair delete, Node node)
@@ -126,7 +125,7 @@ namespace Engine.Construction.Placement
         
         private CellSelection SelectCells(Vector3Int start, out Vector3Int end)
             // => CellSelector.SelectCellArea(start, mainCamera, settings.floorLayer, _cellHits, Map, settings, out end);
-             => CellSelector.SelectCellAreaWithNodes(start, mainCamera, settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, settings, 1), true, out end);
+             => CellSelector.SelectCellAreaWithNodes(start, MainCamera, Settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, Settings, 1), true, out end);
         
         private void UpdateHits()
         {
@@ -221,7 +220,7 @@ namespace Engine.Construction.Placement
         
         private Vector3 Offset(Node node)
         {
-            if(settings.FoundOffset(node.NodeType, out Vector3 offset))
+            if(Settings.FoundOffset(node.NodeType, out Vector3 offset))
                 return offset;
             
             return Vector3.zero;

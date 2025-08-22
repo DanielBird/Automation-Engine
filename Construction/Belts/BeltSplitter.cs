@@ -1,13 +1,12 @@
 ﻿using System;
-using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
-using Engine.Construction.Widgets;
+using Engine.Construction.Resources;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
 namespace Engine.Construction.Belts
 {
-    public class Splitter : ParentBelt
+    public class BeltSplitter : ParentBelt
     {
         [Header("Splitter")] [TextArea(5, 15)]
         public string explanation = "Splitters are made up of two belts. " +
@@ -20,10 +19,10 @@ namespace Engine.Construction.Belts
         [SerializeField] private int nextIndex;
 
         [Space] 
-        [SerializeField] private bool shipByWidgetType;
-        [SerializeField] private int widgetTypeOne = -1;
-        [SerializeField] private int widgetTypeTwo = -1;
-        private int lastWidgetSet; 
+        [SerializeField] private bool shipByResourceType;
+        [SerializeField] private int resourceTypeOne = -1;
+        [SerializeField] private int resourceTypeTwo = -1;
+        private int lastResourceSet; 
         
         private Vector2Int _forwardGridPosition;
 
@@ -34,11 +33,11 @@ namespace Engine.Construction.Belts
         }
 
         [Button]
-        public void ToggleShippingMethod() => shipByWidgetType = !shipByWidgetType;
+        public void ToggleShippingMethod() => shipByResourceType = !shipByResourceType;
         
-        public override bool ReadyToShip(out Belt target, out Widget widget)
+        public override bool ReadyToShip(out Belt target, out Resource resource)
         {
-            widget = null; 
+            resource = null; 
             target = null;
             
             // No widget found
@@ -49,13 +48,13 @@ namespace Engine.Construction.Belts
             }
             
             // Widget found but it is null
-            if (!CanShip(out widget)) 
+            if (!CanShip(out resource)) 
                 return false;
             
-            UpdateWidgetTypes(widget);
+            UpdateResourceTypes(resource);
 
             // No target belts found
-            if (!GetTarget(ref target, widget)) return false;
+            if (!GetTarget(ref target, resource)) return false;
 
             if (target == null || !target.CanReceive)
             {
@@ -69,12 +68,12 @@ namespace Engine.Construction.Belts
             return true;
         }
 
-        private bool GetTarget(ref Belt target, Widget currentWidget)
+        private bool GetTarget(ref Belt target, Resource currentResource)
         {
-            return shipByWidgetType ? GetTargetBasedOnWidget(ref target, currentWidget) : GetAlternatingTarget(ref target);
+            return shipByResourceType ? GetTargetBasedOnResource(ref target, currentResource) : GetAlternatingTarget(ref target);
         }
 
-        private bool GetTargetBasedOnWidget(ref Belt target, Widget currentWidget)
+        private bool GetTargetBasedOnResource(ref Belt target, Resource currentResource)
         { 
             SplitterNeighbourStatus status = TryGetTargetNodes(out Belt rightBelt);
 
@@ -89,7 +88,7 @@ namespace Engine.Construction.Belts
                     target = rightBelt;
                     break;
                 case SplitterNeighbourStatus.BothFound:
-                    if (currentWidget.widgetType == widgetTypeOne) target = rightBelt;
+                    if (currentResource.resourceType == resourceTypeOne) target = rightBelt;
                     else target = childBelt;
                     break;
                 default:
@@ -142,23 +141,23 @@ namespace Engine.Construction.Belts
             };
         }
 
-        private void UpdateWidgetTypes(Widget widget)
+        private void UpdateResourceTypes(Resource resource)
         {
-            int type = widget.widgetType; 
+            int type = resource.resourceType; 
             
             // Matches existing widgets
-            if(widgetTypeOne == type || widgetTypeTwo == type) return;
+            if(resourceTypeOne == type || resourceTypeTwo == type) return;
             
             // Doesn't match either type
-            if (lastWidgetSet == 0)
+            if (lastResourceSet == 0)
             {
-                widgetTypeOne = type;
-                lastWidgetSet = 1;
+                resourceTypeOne = type;
+                lastResourceSet = 1;
             }
             else
             {
-                widgetTypeTwo = type;
-                lastWidgetSet = 0;
+                resourceTypeTwo = type;
+                lastResourceSet = 0;
             }
         }
     }

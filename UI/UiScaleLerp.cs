@@ -81,7 +81,7 @@ namespace Engine.UI
 
             SetupCancellation();
             
-            RunTween(end, duration);
+            RunTween(end, duration).Forget();
         }
 
         private void SetupCancellation()

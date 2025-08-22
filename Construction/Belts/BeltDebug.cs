@@ -9,8 +9,8 @@ namespace Engine.Construction.Belts
         [Header("Belt debug")]
         [field: SerializeField] private Belt belt; 
         
-        public bool drawWidgetArrivalPoint;
-        public bool drawWidgetBezierHandle;
+        public bool drawResourceArrivalPoint;
+        public bool drawResourceBezierHandle;
         public bool drawBezierPathLeft;
         public bool drawBezierPathRight;
         
@@ -32,14 +32,14 @@ namespace Engine.Construction.Belts
                 Gizmos.DrawSphere(p.spawnLocation, 0.1f);
             }
             
-            if (drawWidgetArrivalPoint)
+            if (drawResourceArrivalPoint)
             {
                 Vector3 point = transform.TransformPoint(belt.arrivalPointVector);
                 Gizmos.color = Color.blue;
                 Gizmos.DrawWireSphere(point, 0.1f);
             }
 
-            if (drawWidgetBezierHandle)
+            if (drawResourceBezierHandle)
             {
                 Vector3 bezier = transform.TransformPoint(belt.bezierHandleVector);
                 Gizmos.color = Color.aquamarine;

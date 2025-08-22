@@ -36,7 +36,7 @@ namespace Engine.Construction.Placement.Factory
                 return null; 
             }
             
-            GameObject prefab = SimplePool.Spawn(prefabToSpawn, alignedWorldPosition, Quaternion.identity, PlacementManager.transform);
+            GameObject prefab = SimplePool.Spawn(prefabToSpawn, alignedWorldPosition, Quaternion.identity, PlacementManager.myTransform);
             return prefab;
         }
     }

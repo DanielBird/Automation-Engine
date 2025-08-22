@@ -1,5 +1,5 @@
 ﻿using System;
-using Engine.Construction.Widgets;
+using Engine.Construction.Resources;
 
 namespace Engine.Construction.Belts
 {
@@ -7,11 +7,11 @@ namespace Engine.Construction.Belts
     {
         public Belt Source;
         public Belt Target;
-        public Widget Widget;
+        public Resource Resource;
 
         public bool Equals(Move other)
         {
-            return Equals(Source, other.Source) && Equals(Target, other.Target) && Equals(Widget, other.Widget);
+            return Equals(Source, other.Source) && Equals(Target, other.Target) && Equals(Resource, other.Resource);
         }
 
         public override bool Equals(object obj)
@@ -21,7 +21,7 @@ namespace Engine.Construction.Belts
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Source, Target, Widget);
+            return HashCode.Combine(Source, Target, Resource);
         }
     }
 }

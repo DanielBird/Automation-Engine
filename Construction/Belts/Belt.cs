@@ -1,7 +1,7 @@
 ﻿using System;
 using Engine.Construction.Events;
 using Engine.Construction.Nodes;
-using Engine.Construction.Widgets;
+using Engine.Construction.Resources;
 using Engine.Utilities;
 using Engine.Utilities.Events;
 using UnityEngine;
@@ -11,29 +11,29 @@ namespace Engine.Construction.Belts
     public class Belt : Node
     {
         [Header("Transportation")]
-        [field: SerializeField] public Widget Occupant { get; protected set; }
+        [field: SerializeField] public Resource Occupant { get; protected set; }
         [field: SerializeField] public float TimeOfReceipt { get; protected set; }
         public bool IsOccupied => Occupant != null;
         public bool CanReceive => Occupant == null;
         
-        [Tooltip("Where should the widget be on arrival?")] public Vector3 arrivalPointVector; 
+        [Tooltip("Where should the resource be on arrival?")] public Vector3 arrivalPointVector; 
         [Tooltip("For corner nodes, where should the bezier handle be?")] public Vector3 bezierHandleVector;
-        public Vector3 WidgetArrivalPoint { get; private set; }
+        public Vector3 ResourceArrivalPoint { get; private set; }
         public Vector3 BezierHandle { get; private set; }
         
         [Header("Debug")] 
-        public bool logFailedWidgetReceipt;
+        public bool logFailedResourceReceipt;
         public bool logInabilityToShip; 
         
         public override void Initialise(NodeConfiguration config)
         {
             base.Initialise(config);
-            SetupWidgetMovement();
+            SetupResourceMovement();
         }
 
-        protected void SetupWidgetMovement()
+        protected void SetupResourceMovement()
         {
-            WidgetArrivalPoint = transform.TransformPoint(arrivalPointVector);
+            ResourceArrivalPoint = transform.TransformPoint(arrivalPointVector);
 
             if(NodeType != NodeType.LeftCorner && NodeType != NodeType.RightCorner) 
                 return;
@@ -41,21 +41,21 @@ namespace Engine.Construction.Belts
             BezierHandle = transform.TransformPoint(bezierHandleVector);
         }
 
-        public virtual void Receive(Belt sender, Widget widget)
+        public virtual void Receive(Belt sender, Resource resource)
         {
             if (!CanReceive)
             {
-                if (logFailedWidgetReceipt) Debug.Log($"Could not receive {widget.name} due to occupancy with {Occupant.name} at {Time.frameCount}.");
+                if (logFailedResourceReceipt) Debug.Log($"Could not receive {resource.name} due to occupancy with {Occupant.name} at {Time.frameCount}.");
                 return;
             }
             
-            Occupant = widget;
+            Occupant = resource;
             TimeOfReceipt = Time.time; 
         }
 
-        public virtual bool ReadyToShip(out Belt target, out Widget widget)
+        public virtual bool ReadyToShip(out Belt target, out Resource resource)
         {
-            widget = null; 
+            resource = null; 
             target = null;
             
             if(!HasForwardNode(out Node targetNode))
@@ -72,26 +72,26 @@ namespace Engine.Construction.Belts
                 return false;
             }
             
-            if (!CanShip(out widget)) 
+            if (!CanShip(out resource)) 
                 return false;
             
             return true;
         }
 
-        protected bool CanShip(out Widget widget)
+        protected bool CanShip(out Resource resource)
         {
-            widget = null;
+            resource = null;
             if(Occupant == null)
                 return false;
             
-            widget = Occupant;
+            resource = Occupant;
             return true;
         }
         
-        public virtual void Ship(Belt target, Widget widget)
+        public virtual void Ship(Belt target, Resource resource)
         {
-            target.Receive(this, widget);
-            widget.Move(GetMoveType(target), this, target);
+            target.Receive(this, resource);
+            resource.Move(GetMoveType(target), this, target);
             Occupant = null;
         }
 

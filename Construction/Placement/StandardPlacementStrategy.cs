@@ -18,23 +18,25 @@ namespace Engine.Construction.Placement
     {
         private readonly IMap _map;
         private readonly INodeMap _nodeMap;
+        private readonly IResourceMap _resourceMap;
         private readonly PlacementSettings _placementSettings;
         private readonly PlacementState _state;
         private readonly PlacementVisuals _visuals;
         private readonly NeighbourManager _neighbourManager;
-        private readonly Transform _widgetParent;
+        private readonly Transform _resourceParent;
 
         private CancellationTokenSource _cts; 
 
-        public StandardPlacementStrategy(PlacementContext ctx, NeighbourManager neighbourManager, Transform widgetParent)
+        public StandardPlacementStrategy(PlacementContext ctx, NeighbourManager neighbourManager, Transform resourceParent)
         {
             _map = ctx.Map;
             _nodeMap = ctx.NodeMap;
+            _resourceMap = ctx.ResourceMap;
             _placementSettings = ctx.PlacementSettings;
             _state = ctx.State;
             _visuals = ctx.Visuals;
             _neighbourManager = neighbourManager;
-            _widgetParent = widgetParent;
+            _resourceParent = resourceParent;
         }
 
         public bool CanHandle(IPlaceable placeable) => !placeable.Draggable;
@@ -49,7 +51,7 @@ namespace Engine.Construction.Placement
                 node.Initialise(config);
                 node.Visuals.HideArrows();
                 
-                if(node is Producer p) p.SetWidgetParent(_widgetParent); 
+                if(node is Producer p) p.Activate(_resourceMap, _resourceParent); 
             }
 
             _state.IsRunning = false;

@@ -6,20 +6,20 @@ using Engine.GameState;
 using Engine.Utilities;
 using UnityEngine;
 
-namespace Engine.Construction.Widgets
+namespace Engine.Construction.Resources
 {
-    public class BasicWidgetMove : IWidgetMover
+    public class BasicResourceMove : IResourceMover
     {
-        private readonly Widget _widget;
+        private readonly Resource resource;
         private readonly Transform _transform;
         private readonly Collider _collider;
         private readonly float _moveTime; 
         private readonly EasingFunctions.Function _easeFunc;
         private readonly Action _finaliseMovement;
 
-        public BasicWidgetMove(Widget widget, Transform transform, Collider collider, float moveTime, EasingFunctions.Function easeFunc, Action finaliseMovement)
+        public BasicResourceMove(Resource resource, Transform transform, Collider collider, float moveTime, EasingFunctions.Function easeFunc, Action finaliseMovement)
         {
-            _widget = widget;
+            this.resource = resource;
             _transform = transform;
             _collider = collider;
             _moveTime = moveTime;
@@ -29,15 +29,15 @@ namespace Engine.Construction.Widgets
         
         public Coroutine Move(Belt next, Direction direction = Direction.North)
         {
-            return _widget.StartCoroutine(MoveWidget(next.WidgetArrivalPoint, _moveTime)); 
+            return resource.StartCoroutine(MoveResource(next.ResourceArrivalPoint, _moveTime)); 
         }
 
-        private IEnumerator MoveWidget(Vector3 target, float moveTime)
+        private IEnumerator MoveResource(Vector3 target, float moveTime)
         {
             float t = 0;
             Vector3 start = _transform.position; 
 
-            _widget.SetMoving(true); 
+            resource.SetMoving(true); 
             while (t < moveTime)
             {
                 if (CoreGameState.Paused)
@@ -46,7 +46,7 @@ namespace Engine.Construction.Widgets
                     continue;
                 } 
                 
-                if(_widget.IsMoving == false || _widget.Status == WidgetStatus.Inactive) yield break;
+                if(resource.IsMoving == false || resource.Status == ResourceStatus.Inactive) yield break;
                 float f = _easeFunc(0, 1, t / moveTime); 
                 _transform.position =  Vector3.Lerp(start, target, f);
 
@@ -57,9 +57,9 @@ namespace Engine.Construction.Widgets
             _transform.position = target;
             _collider.isTrigger = true; 
             
-            _widget.SetMoving(false); 
+            resource.SetMoving(false); 
 
-            if(_widget.Status != WidgetStatus.Active) yield break; 
+            if(resource.Status != ResourceStatus.Active) yield break; 
             _finaliseMovement();
         }
     }

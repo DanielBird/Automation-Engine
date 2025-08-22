@@ -5,7 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Events;
 using Engine.Construction.Maps;
-using Engine.Construction.Widgets;
+using Engine.Construction.Resources;
 using Engine.GameState;
 using Engine.Utilities.Events;
 using Sirenix.OdinInspector;
@@ -14,11 +14,10 @@ using ZLinq;
 
 namespace Engine.Construction.Belts
 {
-    [RequireComponent(typeof(INodeMap))]
+    [RequireComponent(typeof(MapManager))]
     public class BeltManager : MonoBehaviour
     {
         [Header("Setup")]
-        private INodeMap _nodeMap;
         [Tooltip("Time between attempts to push all belts forwards")]
         public float tickForwardFrequency = 2f;
         public bool runOnStart = true; 
@@ -37,8 +36,6 @@ namespace Engine.Construction.Belts
         
         private void Awake()
         { 
-            _nodeMap = GetComponent<INodeMap>();
-            
             _onNodePlaced = new EventBinding<NodePlaced>(OnNodePlaced);
             _onNodeRemoved = new EventBinding<NodeRemoved>(OnNodeRemoved);
             _onNodeTargetChange = new EventBinding<NodeTargetEvent>(OnNodeTargetChange);
@@ -229,8 +226,8 @@ namespace Engine.Construction.Belts
 
             foreach (Belt belt in orderedBelts)
             {
-                if (!belt.ReadyToShip(out Belt target, out Widget widget)) continue;
-                Move move = new Move { Source = belt, Target = target, Widget = widget };
+                if (!belt.ReadyToShip(out Belt target, out Resource widget)) continue;
+                Move move = new Move { Source = belt, Target = target, Resource = widget };
 
                 if (!selectedMoves.TryGetValue(target, out Move best) || move.Source.TimeOfReceipt < best.Source.TimeOfReceipt)
                     selectedMoves[target] = move;
@@ -238,7 +235,7 @@ namespace Engine.Construction.Belts
 
             foreach (Move move in selectedMoves.Values)
             {
-                move.Source.Ship(move.Target, move.Widget);
+                move.Source.Ship(move.Target, move.Resource);
             }
         }
 

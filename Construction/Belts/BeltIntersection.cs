@@ -1,30 +1,30 @@
 ﻿using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
-using Engine.Construction.Widgets;
+using Engine.Construction.Resources;
 using UnityEngine;
 
 namespace Engine.Construction.Belts
 {
-    public class Intersection : Belt
+    public class BeltIntersection : Belt
     {
         private Direction currentShippingDirection;  
 
-        public override void Receive(Belt target, Widget widget)
+        public override void Receive(Belt target, Resource resource)
         {
             if (!CanReceive)
             {
-                if (logFailedWidgetReceipt) Debug.Log($"Could not receive {widget.name} due to occupancy with {Occupant.name} at {Time.frameCount}.");
+                if (logFailedResourceReceipt) Debug.Log($"Could not receive {resource.name} due to occupancy with {Occupant.name} at {Time.frameCount}.");
                 return;
             }
             
-            Occupant = widget;
+            Occupant = resource;
             TimeOfReceipt = Time.time;
             currentShippingDirection = target.Direction;
         }
         
-        public override bool ReadyToShip(out Belt target, out Widget widget)
+        public override bool ReadyToShip(out Belt target, out Resource resource)
         {
-            widget = null; 
+            resource = null; 
             target = null;
             
             if(!TryGetNeighbour(currentShippingDirection, out Node targetNode))
@@ -41,7 +41,7 @@ namespace Engine.Construction.Belts
                 return false;
             }
             
-            if (!CanShip(out widget)) 
+            if (!CanShip(out resource)) 
                 return false;
             
             return true;

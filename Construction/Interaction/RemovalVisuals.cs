@@ -7,34 +7,41 @@ using InputSettings = Engine.GameState.InputSettings;
 
 namespace Engine.Construction.Interaction
 {
-    [RequireComponent(typeof(RemovalManager))]
-    public class RemovalVisuals : MonoBehaviour
+    public class RemovalVisuals
     {
         private static readonly int HalfExtents = Shader.PropertyToID("_halfExtents");
-        [SerializeField] protected InputSettings inputSettings;
+        private readonly InputSettings _inputSettings;
         private CancellationTokenSource _rightClickDragTokenSource;
         
-        [SerializeField] private RemovalManager removalManager;
-        public Material material;  
+        private readonly RemovalManager _removalManager;
+        private readonly Material _destructionIndicatorMaterial;  
         
         private GameObject quad; 
         private MeshRenderer quadRenderer;
-        
-        [Space]
-        public float yOffset = 0.01f;  
-        public Vector2 gridOffset = new (0.5f, 0.5f);
-        public float lerpSpeed = 35f; 
-        
-        private void Awake()
-        {
-            removalManager = GetComponent<RemovalManager>();
-            quad = SpawnQuad(); 
-            inputSettings.cancel.action.performed += ShowVisuals;
-        }
 
-        private void OnDisable()
+        private readonly float _yOffset;  
+        private readonly Vector2 _gridOffset;
+        private readonly float _lerpSpeed;
+        private readonly Transform _transform;
+        
+        public RemovalVisuals(InputSettings inputSettings, RemovalManager removalManager, Material destructionIndicatorMaterial, float yOffset, float lerpSpeed, Vector2 gridOffset, Transform myTransform)
         {
-            inputSettings.cancel.action.performed -= ShowVisuals;
+            _inputSettings = inputSettings;
+            _removalManager = removalManager;
+            
+            _destructionIndicatorMaterial = destructionIndicatorMaterial;
+            _yOffset = yOffset;
+            _gridOffset = gridOffset;
+            _lerpSpeed = lerpSpeed;
+            _transform = myTransform;
+            
+            quad = SpawnQuad(); 
+            _inputSettings.cancel.action.performed += ShowVisuals;
+        }
+        
+        public void Disable()
+        {
+            _inputSettings.cancel.action.performed -= ShowVisuals;
             ClearToken();
         }
         
@@ -55,12 +62,12 @@ namespace Engine.Construction.Interaction
 
         private async UniTaskVoid DetectRightClickDown(CancellationToken token)
         {
-            await UniTask.WaitForSeconds(inputSettings.waitForInputTime, cancellationToken: token);
+            await UniTask.WaitForSeconds(_inputSettings.waitForInputTime, cancellationToken: token);
 
-            if (!inputSettings.cancel.action.IsPressed())
+            if (!_inputSettings.cancel.action.IsPressed())
                 return;
             
-            if (!removalManager.TryGetGridAlignedWorldPosition(out Vector3Int start))
+            if (!_removalManager.TryGetGridAlignedWorldPosition(out Vector3Int start))
             {
                 Debug.Log("Failed to detect grid coordinate");
                 return;
@@ -68,9 +75,9 @@ namespace Engine.Construction.Interaction
 
             SetupQuad(start);
             
-            while (inputSettings.cancel.action.IsPressed())
+            while (_inputSettings.cancel.action.IsPressed())
             {
-                if(removalManager.TryGetGridAlignedWorldPosition(out Vector3Int current))
+                if(_removalManager.TryGetGridAlignedWorldPosition(out Vector3Int current))
                     UpdateQuad(start, current);
                 
                 await UniTask.Yield(token);
@@ -96,19 +103,19 @@ namespace Engine.Construction.Interaction
             Vector2 a2 = new (a.x, a.z);
             Vector2 b2 = new (b.x, b.z);
 
-            Vector2 min = Vector2.Min(a2, b2) - gridOffset;
-            Vector2 max = Vector2.Max(a2, b2) + gridOffset;
+            Vector2 min = Vector2.Min(a2, b2) - _gridOffset;
+            Vector2 max = Vector2.Max(a2, b2) + _gridOffset;
             
             Vector2 size = max - min;
             Vector2 center2 = (min + max) * 0.5f;
 
-            Vector3 newPos = new Vector3(center2.x, a.y + yOffset, center2.y);
+            Vector3 newPos = new Vector3(center2.x, a.y + _yOffset, center2.y);
             Vector3 newScale = new Vector3(Mathf.Max(size.x, 0.001f), 1f, Mathf.Max(size.y, 0.001f));
             
-            t.position = Vector3.Lerp(pos, newPos, lerpSpeed * Time.deltaTime);
-            t.localScale = Vector3.Lerp(scale, newScale, lerpSpeed * Time.deltaTime);
+            t.position = Vector3.Lerp(pos, newPos, _lerpSpeed * Time.deltaTime);
+            t.localScale = Vector3.Lerp(scale, newScale, _lerpSpeed * Time.deltaTime);
             
-            material.SetVector(HalfExtents, new Vector4(size.x/2, size.y/2, 0, 0));
+            _destructionIndicatorMaterial.SetVector(HalfExtents, new Vector4(size.x/2, size.y/2, 0, 0));
         }
 
         private void CleanUpQuad()
@@ -123,17 +130,17 @@ namespace Engine.Construction.Interaction
             MeshFilter mf = g.GetComponent<MeshFilter>();
             mf.mesh = BuildUnitQuadXZ();
             EnsureMaterial(g);
-            g.transform.parent = transform;
+            g.transform.parent = _transform;
             return g;
         }
         
         private void EnsureMaterial(GameObject go)
         {
             quadRenderer = go.GetComponent<MeshRenderer>();
-            if (quadRenderer != null && material != null)
+            if (quadRenderer != null && _destructionIndicatorMaterial != null)
             {
                 quadRenderer.enabled = false;
-                quadRenderer.sharedMaterial = material;
+                quadRenderer.sharedMaterial = _destructionIndicatorMaterial;
             }
         }
         

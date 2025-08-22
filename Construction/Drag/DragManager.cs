@@ -32,7 +32,7 @@ namespace Engine.Construction.Drag
             _visuals = ctx.Visuals;
             _nodeMap = ctx.NodeMap;
             _neighbourManager = neighbourManager;
-            _floorDecal = ctx.Visuals.floorDecal;
+            _floorDecal = ctx.Visuals.FloorDecal;
             _state = ctx.State;
             _settings = ctx.PlacementSettings;
             

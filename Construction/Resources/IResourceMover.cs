@@ -2,9 +2,9 @@
 using Engine.Construction.Placement;
 using UnityEngine;
 
-namespace Engine.Construction.Widgets
+namespace Engine.Construction.Resources
 {
-    public interface IWidgetMover
+    public interface IResourceMover
     {
         Coroutine Move(
             Belt next,

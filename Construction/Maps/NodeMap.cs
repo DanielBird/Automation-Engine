@@ -6,15 +6,14 @@ using UnityEngine;
 
 namespace Engine.Construction.Maps
 {
-    [RequireComponent(typeof(Map))]
-    public class NodeMap : MonoBehaviour, INodeMap
+    public class NodeMap : INodeMap
     {
         private Node[,] _nodeGrid;
-        public Map map;
+        public IMap Map { get; private set; }
 
-        private void Awake()
+        public NodeMap(IMap map)
         {
-            if (map == null) map = GetComponent<Map>();
+            Map = map;
             _nodeGrid = new Node[map.MapWidth, map.MapHeight];
         }
 
@@ -33,8 +32,7 @@ namespace Engine.Construction.Maps
                 }
             }
         }
-        
-        [Button]
+
         public void DeregisterNode(Node node)
         {
             int x = node.GridCoord.x;
@@ -53,14 +51,7 @@ namespace Engine.Construction.Maps
                 }
             }
         }
-
-        [Button]
-        public void CheckNode(int x, int z)
-        {
-            string s = TryGetNode(x, z, out Node node) ? $"{node.name} was found" : $"no node found at {x} _ {z}";
-            Debug.Log(s);
-        }
-
+        
         public bool TryGetNode(int x, int z, out Node node)
         {
             if (_nodeGrid[x, z] == null)

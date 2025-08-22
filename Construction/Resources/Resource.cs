@@ -6,9 +6,9 @@ using Engine.Utilities;
 using UnityEngine;
 using Grid = Engine.Construction.Utilities.Grid;
 
-namespace Engine.Construction.Widgets
+namespace Engine.Construction.Resources
 {
-    public enum WidgetStatus
+    public enum ResourceStatus
     {
         Active,          
         Inactive  
@@ -23,11 +23,11 @@ namespace Engine.Construction.Widgets
     }
     
     [RequireComponent(typeof(Collider))]
-    public class Widget : MonoBehaviour
+    public class Resource : MonoBehaviour
     {
         public int ID { get; private set; }
-        public int widgetType;
-        public WidgetStatus Status { get; private set; }
+        public int resourceType;
+        public ResourceStatus Status { get; private set; }
         
         [SerializeField] private PlacementSettings settings;
         
@@ -40,7 +40,7 @@ namespace Engine.Construction.Widgets
         private EasingFunctions.Function _easeFunc;
         
         private Collider _collider;
-        private Dictionary<MoveType, IWidgetMover> _movementStrategies;
+        private Dictionary<MoveType, IResourceMover> _movementStrategies;
         private Coroutine _moveCoroutine;
 
         private void Awake()
@@ -51,11 +51,11 @@ namespace Engine.Construction.Widgets
             
             _easeFunc = EasingFunctions.GetEasingFunction(ease);
             
-            _movementStrategies = new Dictionary<MoveType, IWidgetMover>
+            _movementStrategies = new Dictionary<MoveType, IResourceMover>
             {
-                { MoveType.Forward, new BasicWidgetMove(this, transform, _collider, standardMoveTime, _easeFunc, FinalizeMovement) },
-                { MoveType.Right, new CornerWidgetMove(this, MoveType.Right, transform, _collider, cornerMoveTime, _easeFunc, FinalizeMovement) },
-                { MoveType.Left, new CornerWidgetMove(this, MoveType.Left, transform, _collider, cornerMoveTime, _easeFunc, FinalizeMovement) },
+                { MoveType.Forward, new BasicResourceMove(this, transform, _collider, standardMoveTime, _easeFunc, FinalizeMovement) },
+                { MoveType.Right, new CornerResourceMove(this, MoveType.Right, transform, _collider, cornerMoveTime, _easeFunc, FinalizeMovement) },
+                { MoveType.Left, new CornerResourceMove(this, MoveType.Left, transform, _collider, cornerMoveTime, _easeFunc, FinalizeMovement) },
             };
         }
 
@@ -64,7 +64,7 @@ namespace Engine.Construction.Widgets
             if(_moveCoroutine != null) StopCoroutine(_moveCoroutine);
         }
 
-        public Widget(int id)
+        public Resource(int id)
         {
             ID = id;
         }

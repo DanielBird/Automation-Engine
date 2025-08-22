@@ -9,9 +9,7 @@ namespace Engine.Construction.Maps
         public void RegisterNode(Node node);
 
         public void DeregisterNode(Node node);
-
-        public void CheckNode(int x, int z);
-
+        
         public bool TryGetNode(int x, int z, out Node node);
         
         public bool HasNode(int x, int z);

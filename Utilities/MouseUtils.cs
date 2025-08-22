@@ -1,10 +1,28 @@
-﻿using Engine.Construction.Placement;
+﻿using System.Collections.Generic;
+using Engine.Construction.Placement;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
-namespace Engine.Construction.Utilities
+namespace Engine.Utilities
 {
-    public static class MouseCoordinates
+    public static class MouseUtils
     {
+        public static bool IsOverUI()
+        {
+            Vector2 mousePos = Mouse.current.position.ReadValue();
+            
+            PointerEventData eventData = new PointerEventData(EventSystem.current)
+            {
+                position = mousePos
+            };
+
+            List<RaycastResult> results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(eventData, results);
+            
+            return results.Count > 0;
+        }
+        
         private static readonly Vector2[] Directions = new Vector2[]
         {
             new Vector2(-1,1),   // north
@@ -13,7 +31,7 @@ namespace Engine.Construction.Utilities
             new Vector2(-1,-1),  // west
         };
         
-        public static Direction RelativeCardinalDirectionOfMouse(Vector3 start, UnityEngine.Camera camera, float deadzoneRadius = 0.1f, Direction defaultDirection = Direction.South)
+        public static Direction RelativeCardinalDirectionOfMouse(Vector3 start, Camera camera, float deadzoneRadius = 0.1f, Direction defaultDirection = Direction.South)
         {
             int directionAsInt = CalculateCoordinate(start, camera, deadzoneRadius, defaultDirection);
 
@@ -27,7 +45,7 @@ namespace Engine.Construction.Utilities
             };
         }
         
-        private static int CalculateCoordinate(Vector3 start, UnityEngine.Camera camera, float deadzoneRadius, Direction defaultDirection)
+        private static int CalculateCoordinate(Vector3 start, Camera camera, float deadzoneRadius, Direction defaultDirection)
         {
             Vector3 position = camera.WorldToScreenPoint(start);
             Vector3 mouse = Input.mousePosition;

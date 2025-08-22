@@ -1,5 +1,5 @@
 ﻿using Engine.Construction.Events;
-using Engine.Construction.Widgets;
+using Engine.Construction.Resources;
 using Engine.Utilities;
 using Engine.Utilities.Events;
 
@@ -13,31 +13,31 @@ namespace Engine.Construction.Belts
     public class Consumer : Belt
     {
         // Consumers can ship if they have an occupant
-        public override bool ReadyToShip(out Belt target, out Widget widget)
+        public override bool ReadyToShip(out Belt target, out Resource resource)
         {
             target = this; 
-            widget = null;
+            resource = null;
             
             if (!IsOccupied)
             {
                 return false;
             }
             
-            if (!CanShip(out widget)) 
+            if (!CanShip(out resource)) 
                 return false;
             
             return true; 
         }
         
         // Ship = despawn occupant
-        public override void Ship(Belt target, Widget widget)
+        public override void Ship(Belt target, Resource resource)
         {
-            if(widget == null)
+            if(resource == null)
                 return;
             
-            EventBus<WidgetCollected>.Raise(new WidgetCollected(widget.widgetType));
+            EventBus<ResourceCollected>.Raise(new ResourceCollected(resource.resourceType));
             
-            SimplePool.Despawn(widget.gameObject);
+            SimplePool.Despawn(resource.gameObject);
             Occupant = null;
         }
     }

@@ -6,6 +6,7 @@ using Engine.Construction.Events;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement.Factory;
 using Engine.Construction.Visuals;
+using Engine.Utilities;
 using Engine.Utilities.Events;
 using Sirenix.OdinInspector;
 using UnityEngine;
@@ -15,64 +16,47 @@ using Grid = Engine.Construction.Utilities.Grid;
 
 namespace Engine.Construction.Placement
 {
-    [RequireComponent(typeof(PlacementVisuals))]
     public class PlacementManager : ConstructionManager
     {
-        public NeighbourManager NeighbourManager; 
-        private PlacementCoordinator _placementCoordinator;
-        
-        private Dictionary<NodeType, IPlaceableFactory> _factories;
+        private readonly PlacementCoordinator _placementCoordinator;
+        private readonly Dictionary<NodeType, IPlaceableFactory> _factories;
 
-        [Header("State")] 
-        [SerializeField] private PlacementState state = new();
-        
+        private readonly PlacementState state;
         private Coroutine _drag;
-        private DragManager _dragManager;
-
+        public Transform myTransform;
+        private Transform resourceParent; 
+        
         private CancellationTokenSource _disableCancellation = new CancellationTokenSource();
         private CancellationTokenSource _waitTokenSource = new CancellationTokenSource();
 
         private float _timeOfLastClick;
-
-        [Header("Widgets")] public Transform widgetParent; 
         
         // EVENTS
         private EventBinding<ConstructionUiButtonClick> _onButtonClick; 
         private EventBinding<BeltClickEvent> _onBeltClick;
-
-        protected override void Awake()
+        
+        public PlacementManager(PlacementContext ctx, Transform transform, Transform resourceParent) : base(ctx)
         {
-            base.Awake();
-            
-            PlacementContext ctx = new PlacementContext(
-                Map,
-                NodeMap,
-                inputSettings,
-                settings,
-                state,
-                visuals,
-                mainCamera
-            );
-            
-            NeighbourManager = new NeighbourManager(ctx, transform);
-            
-            _dragManager = new DragManager(ctx, NeighbourManager);
-            _placementCoordinator = new PlacementCoordinator(ctx, _dragManager, NeighbourManager, widgetParent);
+            state = ctx.State;
+            myTransform = transform;
+            NeighbourManager neighbourManager = new(ctx, transform);
+            DragManager dragManager = new(ctx, neighbourManager);
+            _placementCoordinator = new PlacementCoordinator(ctx, dragManager, neighbourManager, resourceParent);
             
             _factories = new Dictionary<NodeType, IPlaceableFactory>
             {
-                { NodeType.GenericBelt, new GenericFactory(this, settings, NodeType.Straight)},
-                { NodeType.Straight, new GenericFactory(this, settings, NodeType.Straight)},
-                { NodeType.Producer, new GenericFactory(this, settings, NodeType.Producer)},
-                { NodeType.Consumer, new GenericFactory(this, settings, NodeType.Consumer)},
-                { NodeType.Splitter, new GenericFactory(this, settings, NodeType.Splitter)}, 
-                { NodeType.Combiner, new GenericFactory(this, settings, NodeType.Combiner)},
+                { NodeType.GenericBelt, new GenericFactory(this, Settings, NodeType.Straight)},
+                { NodeType.Straight, new GenericFactory(this, Settings, NodeType.Straight)},
+                { NodeType.Producer, new GenericFactory(this, Settings, NodeType.Producer)},
+                { NodeType.Consumer, new GenericFactory(this, Settings, NodeType.Consumer)},
+                { NodeType.Splitter, new GenericFactory(this, Settings, NodeType.Splitter)}, 
+                { NodeType.Combiner, new GenericFactory(this, Settings, NodeType.Combiner)},
             };
             
             RegisterEvents();
         }
         
-        private void OnDisable()
+        public void Disable()
         {
             ClearTokenSource(ref _disableCancellation);
             ClearTokenSource(ref _waitTokenSource);
@@ -82,9 +66,9 @@ namespace Engine.Construction.Placement
 
         private void RegisterEvents()
         {            
-            inputSettings.place.action.performed += ConfirmPlacement;
-            inputSettings.rotate.action.performed += Rotate;
-            inputSettings.cancel.action.performed += CancelPlacement; 
+            InputSettings.place.action.performed += ConfirmPlacement;
+            InputSettings.rotate.action.performed += Rotate;
+            InputSettings.cancel.action.performed += CancelPlacement; 
             
             _onButtonClick = new EventBinding<ConstructionUiButtonClick>(RequestPlacement);
             _onBeltClick = new EventBinding<BeltClickEvent>(RequestDrag); 
@@ -95,9 +79,9 @@ namespace Engine.Construction.Placement
 
         private void UnRegisterEvents()
         {
-            inputSettings.place.action.performed -= ConfirmPlacement;
-            inputSettings.rotate.action.performed -= Rotate;
-            inputSettings.cancel.action.performed -= CancelPlacement; 
+            InputSettings.place.action.performed -= ConfirmPlacement;
+            InputSettings.rotate.action.performed -= Rotate;
+            InputSettings.cancel.action.performed -= CancelPlacement; 
             
             EventBus<ConstructionUiButtonClick>.Deregister(_onButtonClick);
             EventBus<BeltClickEvent>.Deregister(_onBeltClick);
@@ -133,7 +117,7 @@ namespace Engine.Construction.Placement
             if(!_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory)) return;
             
             Vector3Int gridCoordinate = e.GridCoord;
-            Vector3Int worldPosition = Grid.GridToWorldPosition(gridCoordinate, settings.mapOrigin, settings.cellSize);
+            Vector3Int worldPosition = Grid.GridToWorldPosition(gridCoordinate, Settings.mapOrigin, Settings.cellSize);
             
             state.IsRunning = false; 
             state.TargetGridCoordinate = gridCoordinate;
@@ -145,9 +129,10 @@ namespace Engine.Construction.Placement
                 node.RotateInstant(e.RequestingNode.Direction);
             
             SpawnOccupant(worldPosition, build);
+            _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetGridCoordinate);
         }
 
-        private void Update()
+        public void Tick()
         {
             if (!state.IsRunning) return;
             
@@ -162,8 +147,8 @@ namespace Engine.Construction.Placement
             
             LerpPosition(state.CurrentObject, state.WorldAlignedPosition);
             
-            visuals.Place(state.CurrentObject);
-            visuals.SetFloorDecalPos(state.WorldAlignedPosition); 
+            Visuals.Place(state.CurrentObject);
+            Visuals.SetFloorDecalPos(state.WorldAlignedPosition); 
         }
 
         private bool Arrived(GameObject obj, Vector3 targetPos, float threshold = 0.02f)
@@ -176,7 +161,7 @@ namespace Engine.Construction.Placement
         private void LerpPosition(GameObject obj, Vector3Int targetPos)
         {
             Transform t = obj.transform; 
-            t.position = Vector3.Lerp(t.position, targetPos, settings.moveSpeed * Time.deltaTime);
+            t.position = Vector3.Lerp(t.position, targetPos, Settings.moveSpeed * Time.deltaTime);
         }
         
         private void SpawnOccupant(Vector3Int alignedPosition, GameObject occupant)
@@ -192,18 +177,18 @@ namespace Engine.Construction.Placement
                 if(state.MainPlaceable is Node node) node.Visuals.ShowArrows();
             }
             
-            visuals.Place(state.CurrentObject);
-            visuals.Show();
-            visuals.SetFloorDecalPos(alignedPosition); 
+            Visuals.Place(state.CurrentObject);
+            Visuals.Show();
+            Visuals.SetFloorDecalPos(alignedPosition); 
         }
 
         private void ConfirmPlacement(InputAction.CallbackContext ctx)
         {
             // Return if the cursor is over a UI element
-            if (EventSystem.current.IsPointerOverGameObject()) return;
+            if(MouseUtils.IsOverUI()) return;
 
             // Return if this is the second click of a double click
-            if(Time.time < _timeOfLastClick + inputSettings.minTimeBetweenClicks) return;
+            if(Time.time < _timeOfLastClick + InputSettings.minTimeBetweenClicks) return;
             _timeOfLastClick = Time.time; 
             
             if (!state.IsRunning) return;
@@ -224,8 +209,5 @@ namespace Engine.Construction.Placement
             if (state.IsRunning && state.PlaceableFound)
                 _placementCoordinator.CancelPlacement(state.MainPlaceable);
         }
-
-        [Button]
-        private void ShowGridAndDecal() => visuals.Show();
     }
 }

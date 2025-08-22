@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Engine.Construction.Belts
 {
-    public class Combiner : ParentBelt
+    public class BeltCombiner : ParentBelt
     {
         [Header("Combiner")] [TextArea(5, 15)]
         public string explanation = "Combiners are made up of two belts. " +

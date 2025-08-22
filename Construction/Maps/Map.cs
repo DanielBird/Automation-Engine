@@ -1,6 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Engine.Construction.Events;
 using Engine.Construction.Placement;
-using Sirenix.OdinInspector;
+using Engine.Construction.Utilities;
+using Engine.Utilities.Events;
 using UnityEngine;
 
 namespace Engine.Construction.Maps
@@ -11,19 +14,18 @@ namespace Engine.Construction.Maps
         Occupied,
     }
     
-    public class Map : MonoBehaviour, IMap
+    public class Map : IMap
     {
-        public PlacementSettings settings; 
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
-        
         public Vector3Int MapOrigin { get; set; }
-        
         public CellStatus[,] Grid { get; private set; }
 
         private int[,] _mark;
         private int _generation; 
         private Queue<Vector2Int> _queue = new();
+
+        private GridParams gridParams; 
         
         private static readonly Vector2Int[] Directions = {
             new Vector2Int(-1,  0),  // left
@@ -32,7 +34,9 @@ namespace Engine.Construction.Maps
             new Vector2Int( 0,  1)   // up
         };
 
-        private void Awake()
+        private EventBinding<RegisterOccupantEvent> _onRequestOccupation; 
+
+        public Map(PlacementSettings settings)
         {
             if (settings == null)
             {
@@ -44,8 +48,28 @@ namespace Engine.Construction.Maps
             MapHeight = settings.mapHeight;
             MapOrigin = settings.mapOrigin;
             
+            gridParams = new GridParams(MapOrigin, MapWidth, MapHeight, settings.cellSize);
+            
             Grid = new CellStatus[MapWidth, MapHeight];
             _mark = new int[MapWidth, MapHeight];
+
+            _onRequestOccupation = new EventBinding<RegisterOccupantEvent>(OnRequestOccupation); 
+            EventBus<RegisterOccupantEvent>.Register(_onRequestOccupation);
+        }
+
+        public void Disable()
+        {
+            EventBus<RegisterOccupantEvent>.Deregister(_onRequestOccupation);
+        }
+
+        private void OnRequestOccupation(RegisterOccupantEvent ev)
+        {
+            Vector3Int gridCoord = Utilities.Grid.WorldToGridCoordinate(ev.WorldPosition, gridParams);
+
+            if (!RegisterOccupant(gridCoord.x, gridCoord.z, ev.GridWidth, ev.GridHeight))
+            {
+                Debug.LogWarning($"Failed to register occupant: {ev.Occupant.name}");
+            }
         }
         
         public bool RegisterOccupant(int x, int z, int width, int height)
@@ -73,13 +97,6 @@ namespace Engine.Construction.Maps
                 }
             }
         }
-                
-        [Button]
-        public void CheckSpace(int x, int z, int width, int height)
-        {
-            string s = VacantSpace(x, z, width, height) ? "Space Empty" : "Space Occupied";
-            Debug.Log(s);
-        }
         
         public bool VacantSpace(int x, int z, int width, int height)
         {
@@ -96,13 +113,6 @@ namespace Engine.Construction.Maps
             }
 
             return true; 
-        }
-        
-        [Button]
-        public void CheckCell(int x, int z)
-        {
-            string s = VacantCell(x, z) ? "Cell Empty" : "Cell Occupied";
-            Debug.Log(s);
         }
         
         public bool VacantCell(int x, int z)

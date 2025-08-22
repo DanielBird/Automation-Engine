@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 
 namespace Engine.Utilities
 {
@@ -44,7 +44,7 @@ namespace Engine.Utilities
         private void OnMouseClick(InputAction.CallbackContext obj)
         {
             // Return if the cursor is over a UI element
-            if (EventSystem.current.IsPointerOverGameObject()) return;
+            if(MouseUtils.IsOverUI()) return;
             
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
             int hits = Physics.RaycastNonAlloc(ray, _results, maxRaycastDistance, buildingLayer);

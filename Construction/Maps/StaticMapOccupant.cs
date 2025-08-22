@@ -1,6 +1,6 @@
-﻿using Engine.Construction.Utilities;
+﻿using Engine.Construction.Events;
+using Engine.Utilities.Events;
 using UnityEngine;
-using Grid = Engine.Construction.Utilities.Grid;
 
 namespace Engine.Construction.Maps
 {
@@ -13,22 +13,12 @@ namespace Engine.Construction.Maps
     {
         public int gridWidth = 1; 
         public int gridHeight = 1;
-        public Map map;
         
         private void Start()
         {
-            if (map == null)
-                map = GetComponentInParent<Map>();
-
-            if (map == null)
-            {
-                Debug.LogError("Unable to find map on " + name);
-                return;
-            }
-            
-            Vector3Int gridCoord = Grid.WorldToGridCoordinate(transform.position, new GridParams(map.MapOrigin, map.MapWidth, map.MapHeight, map.settings.cellSize));
-            
-            map.RegisterOccupant(gridCoord.x, gridCoord.z, gridWidth, gridHeight);
+            EventBus<RegisterOccupantEvent>.Raise(
+                new RegisterOccupantEvent(transform.position, gridWidth, gridHeight, gameObject)
+            );
         }
     }
 }

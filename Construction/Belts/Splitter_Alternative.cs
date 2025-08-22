@@ -2,8 +2,8 @@
 using Engine.Construction.Events;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
+using Engine.Construction.Resources;
 using Engine.Construction.Utilities;
-using Engine.Construction.Widgets;
 using Engine.Utilities.Events;
 using UnityEngine;
 
@@ -42,9 +42,9 @@ namespace Engine.Construction.Belts
             _forwardLeftGridPosition = PositionByDirection.GetForwardPosition(forwardPosV3, countClockwiseDirection, stepSize);
         }
         
-        public override bool ReadyToShip(out Belt target, out Widget widget)
+        public override bool ReadyToShip(out Belt target, out Resource resource)
         {
-            widget = null; 
+            resource = null; 
             target = null;
             
             // No widget found
@@ -55,7 +55,7 @@ namespace Engine.Construction.Belts
             }
             
             // Widget found but it is null
-            if (!CanShip(out widget)) 
+            if (!CanShip(out resource)) 
                 return false;
 
             // No target belts found

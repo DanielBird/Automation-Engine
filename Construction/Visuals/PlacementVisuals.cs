@@ -1,28 +1,26 @@
 ﻿using System.Collections;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Engine.Construction.Placement;
 using Engine.Utilities;
 using UnityEngine;
 
 namespace Engine.Construction.Visuals
 {
-    public class PlacementVisuals : MonoBehaviour
+    public class PlacementVisuals
     {
-        public GameObject floorDecal;
+        private readonly ConstructionEngine _engine; 
+        public readonly GameObject FloorDecal;
         
-        [Space]
-        public float placementTime = 0.5f;
-        public Vector3 startingScale = new Vector3(0, 0, 0);
-        public Vector3 endScale = new Vector3(1, 1, 1); 
+        private readonly float _placementTime;
+        private readonly Vector3 _startingScale;
+        private readonly Vector3 _endScale; 
         
-        [Space] private EasingFunctions.Function _scaleUpEasing; 
-        public EasingFunctions.Ease scaleEasingFunction = EasingFunctions.Ease.EaseOutSine;
-        
-        [Space] private EasingFunctions.Function _scaleDownEasing; 
-        public EasingFunctions.Ease scaleDownEasingFunction = EasingFunctions.Ease.EaseOutSine;
+        private readonly EasingFunctions.Function _scaleUpEasing; 
+        private EasingFunctions.Function _scaleDownEasing; 
 
-        [Space] public Material floorMaterial;
-        public float lerpAlphaTime = 1f; 
+        private readonly Material _floorMaterial;
+        private readonly float _lerpAlphaTime; 
         
         private static readonly int GridAlpha = Shader.PropertyToID("_gridAlpha");
         private Coroutine _alphaRoutine;
@@ -31,39 +29,46 @@ namespace Engine.Construction.Visuals
         private bool _scalingUp; 
         private CancellationTokenSource _scaleCts; 
         private CancellationTokenSource _alphaCts;
-
-        private void Awake()
+        
+        public PlacementVisuals(ConstructionEngine engine, GameObject floorDecal, float placementTime, Vector3 startingScale, Vector3 endScale, 
+            EasingFunctions.Function scaleUp, EasingFunctions.Function scaleDown,
+            Material floorMaterial, float lerpAlphaTime)
         {
-            _scaleUpEasing = EasingFunctions.GetEasingFunction(scaleEasingFunction);
-            _scaleDownEasing = EasingFunctions.GetEasingFunction(scaleDownEasingFunction);
-
-            if (floorMaterial == null)
-            {
-                Debug.LogError("Missing floor material");
-                return;
-            }
+            _engine = engine;
+            FloorDecal = floorDecal;
+            FloorDecal.SetActive(false);
             
-            floorMaterial.SetFloat(GridAlpha, 0);
-            floorDecal.SetActive(false);
+            _placementTime = placementTime;
+            _startingScale = startingScale;
+            _endScale = endScale;
+            
+            _scaleUpEasing = scaleUp;
+            _scaleDownEasing = scaleDown;
+            
+            _floorMaterial = floorMaterial;
+            _floorMaterial.SetFloat(GridAlpha, 0);
+            
+            _lerpAlphaTime = lerpAlphaTime;
         }
 
-        private void OnDisable()
+        public void Disable()
         {
-            StopAllCoroutines();
-            
             CtsCtrl.Clear(ref _scaleCts);
             CtsCtrl.Clear(ref _alphaCts);
+            
+            if(_alphaRoutine != null) _engine.StopCoroutine(_alphaRoutine);
+            if(_scaleRoutine != null) _engine.StopCoroutine(_scaleRoutine);
         }
 
         public void Place(GameObject go)
         {
             #if UNITASK
             if (_scalingUp) return;
-            LerpScaleUni(go, startingScale, endScale, placementTime, _scaleUpEasing).Forget();
+            LerpScaleUni(go, _startingScale, _endScale, _placementTime, _scaleUpEasing).Forget();
             
             #else
-            if(_scaleRount != null) return;
-            _scaleRountine = StartCoroutine(LerpScale(go, startingScale, endScale, placementTime, _scaleUpEasing));
+            if(_scaleRoutine != null) return;
+            _scaleRoutine = _engine.StartCoroutine(LerpScale(go, _startingScale, _endScale, _placementTime, _scaleUpEasing));
             
             #endif
         }
@@ -109,69 +114,69 @@ namespace Engine.Construction.Visuals
         public void Show(bool showDecal = true)
         {
             #if UNITASK
-            LerpGridAlphaUni(1, lerpAlphaTime/3).Forget();
+            LerpGridAlphaUni(1, _lerpAlphaTime/3).Forget();
             
             #else
-            if(_alphaRoutine != null) StopCoroutine(_alphaRoutine);
-           _alphaRoutine = StartCoroutine(LerpGridAlpha(1, lerpAlphaTime/3)); 
+            if(_alphaRoutine != null) _engine.StopCoroutine(_alphaRoutine);
+           _alphaRoutine = _engine.StartCoroutine(LerpGridAlpha(1, _lerpAlphaTime/3)); 
             
             #endif
             
-            if(showDecal) floorDecal.SetActive(true);
+            if(showDecal) FloorDecal.SetActive(true);
         }
         
         public void Hide(bool hideDecal = true)
         {
             # if UNITASK
-            LerpGridAlphaUni(0, lerpAlphaTime).Forget();
+            LerpGridAlphaUni(0, _lerpAlphaTime).Forget();
             
             #else
             if(_alphaRoutine != null) StopCoroutine(_alphaRoutine);
             _alphaRoutine = StartCoroutine(LerpGridAlpha(0, lerpAlphaTime));
             
             #endif
-            if(hideDecal) floorDecal.SetActive(false);
+            if(hideDecal) FloorDecal.SetActive(false);
         }
 
         private IEnumerator LerpGridAlpha(float end, float lerpTime)
         {
-            float start = floorMaterial.GetFloat(GridAlpha);
+            float start = _floorMaterial.GetFloat(GridAlpha);
             
             float t = 0;
             while (t < lerpTime)
             {
                 float alpha = Mathf.Lerp(start, end, t / lerpTime);
-                floorMaterial.SetFloat(GridAlpha, alpha);
+                _floorMaterial.SetFloat(GridAlpha, alpha);
                 
                 t += Time.unscaledDeltaTime;
                 yield return null;
             }
             
-            floorMaterial.SetFloat(GridAlpha, end);
+            _floorMaterial.SetFloat(GridAlpha, end);
         }
 
         private async UniTaskVoid LerpGridAlphaUni(float end, float lerpTime)
         {
             _alphaCts = new CancellationTokenSource();
             
-            float start = floorMaterial.GetFloat(GridAlpha);
+            float start = _floorMaterial.GetFloat(GridAlpha);
             
             float t = 0;
             while (t < lerpTime)
             {
                 float alpha = Mathf.Lerp(start, end, t / lerpTime);
-                floorMaterial.SetFloat(GridAlpha, alpha);
+                _floorMaterial.SetFloat(GridAlpha, alpha);
                 
                 t += Time.unscaledDeltaTime;
                 await UniTask.Yield(cancellationToken: _alphaCts.Token);
             }
             
-            floorMaterial.SetFloat(GridAlpha, end);
+            _floorMaterial.SetFloat(GridAlpha, end);
             CtsCtrl.Clear(ref _alphaCts);
         }
         
-        public void SetFloorDecalPos(Vector3Int pos) => floorDecal.transform.position = pos;
+        public void SetFloorDecalPos(Vector3Int pos) => FloorDecal.transform.position = pos;
         
-        public void DeactivateFloorDecal() => floorDecal.SetActive(false);
+        public void DeactivateFloorDecal() => FloorDecal.SetActive(false);
     }
 }

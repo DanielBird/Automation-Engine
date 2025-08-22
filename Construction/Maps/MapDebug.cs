@@ -6,7 +6,9 @@ namespace Engine.Construction.Maps
 {
     public class MapDebug : MonoBehaviour
     {
-        public Map map;
+        public MapManager mapManager;
+        private Map map; 
+        
         public PlacementSettings placementSettings;
         public int tileSize = 2;
 
@@ -16,8 +18,8 @@ namespace Engine.Construction.Maps
         {
             _cubeSize = new Vector3(tileSize, tileSize, tileSize);
             
-            if(map == null)
-                Debug.LogError("MapDebug: map is null");
+            if(mapManager == null)
+                Debug.LogError("MapDebug: the Map Manager is null");
             
             if(placementSettings == null)
                 Debug.LogError("MapDebug: placementSettings is null");
@@ -41,7 +43,6 @@ namespace Engine.Construction.Maps
                     Gizmos.DrawWireCube(pos, _cubeSize);
                 }
             }
-
         }
     }
 }

@@ -6,11 +6,11 @@ using Engine.GameState;
 using Engine.Utilities;
 using UnityEngine;
 
-namespace Engine.Construction.Widgets
+namespace Engine.Construction.Resources
 {
-    public class CornerWidgetMove : IWidgetMover
+    public class CornerResourceMove : IResourceMover
     {
-        private readonly Widget _widget;
+        private readonly Resource resource;
         private readonly MoveType _moveType;         // Should be either Left or Right
         private readonly Transform _transform;
         private readonly Collider _collider;
@@ -18,9 +18,9 @@ namespace Engine.Construction.Widgets
         private readonly EasingFunctions.Function _easeFunc;
         private readonly Action _finaliseMovement;
 
-        public CornerWidgetMove(Widget widget, MoveType moveType, Transform transform, Collider collider, float moveTime, EasingFunctions.Function easeFunc, Action finaliseMovement)
+        public CornerResourceMove(Resource resource, MoveType moveType, Transform transform, Collider collider, float moveTime, EasingFunctions.Function easeFunc, Action finaliseMovement)
         {
-            _widget = widget;
+            this.resource = resource;
             _moveType = moveType;
             _transform = transform;
             _collider = collider;
@@ -29,31 +29,31 @@ namespace Engine.Construction.Widgets
             _finaliseMovement = finaliseMovement;
             
             if(_moveType != MoveType.Right || _moveType != MoveType.Left)
-                Debug.LogWarning("A Corner Widget Moved has been created without a move type not set to left or right");
+                Debug.LogWarning("A Corner Widget Move has been created with a move type not set to left or right");
         }
         
         public Coroutine Move(Belt next, Direction direction = Direction.North)
         {
-            return _widget.StartCoroutine(MoveWidget(next, _moveTime));
+            return resource.StartCoroutine(MoveResource(next, _moveTime));
         }
 
-        private IEnumerator MoveWidget(Belt nextBelt, float moveTime)
+        private IEnumerator MoveResource(Belt nextBelt, float moveTime)
         {
-            _widget.SetMoving(true);
+            resource.SetMoving(true);
 
             yield return LerpToCurveMiddle(moveTime, nextBelt);
 
             _collider.isTrigger = true; 
-            _widget.SetMoving(false);
+            resource.SetMoving(false);
             
-            if(_widget.Status != WidgetStatus.Active) yield break; 
+            if(resource.Status != ResourceStatus.Active) yield break; 
             _finaliseMovement();
         }
 
         private IEnumerator LerpToCurveMiddle(float moveTime, Belt nextBelt)
         {
             Vector3 start = _transform.position;
-            Vector3 widgetEnd = nextBelt.WidgetArrivalPoint;
+            Vector3 widgetEnd = nextBelt.ResourceArrivalPoint;
             Vector3 handle = nextBelt.BezierHandle;
             
             float t = 0;
@@ -66,7 +66,7 @@ namespace Engine.Construction.Widgets
                     continue;
                 } 
                 
-                if(_widget.IsMoving == false || _widget.Status == WidgetStatus.Inactive) 
+                if(resource.IsMoving == false || resource.Status == ResourceStatus.Inactive) 
                     yield break;
                 
                 float f = _easeFunc(0, 1, t / moveTime);

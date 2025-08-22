@@ -36,7 +36,7 @@ namespace Engine.Construction.Drag
         
         private RaycastHit[] _cellHits = new RaycastHit[1];
         private Cell _cornerCell;
-        private Corner _corner = Corner.None;
+        // private Corner _corner = Corner.None;
         
         private CancellationTokenSource _disableCancellation = new();
         
@@ -48,7 +48,7 @@ namespace Engine.Construction.Drag
             _nodeMap = ctx.NodeMap;
             _visuals = ctx.Visuals;
             _mainCamera = ctx.MainCamera;
-            _floorDecal = ctx.Visuals.floorDecal;
+            _floorDecal = ctx.Visuals.FloorDecal;
             _state = ctx.State;
         }
         

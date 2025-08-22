@@ -12,41 +12,28 @@ namespace Engine.Construction.Placement
     /// <summary>
     /// Abstract parent class to Placement Manager and Removal Manager 
     /// </summary>
-    [RequireComponent(typeof(IMap))]
-    [RequireComponent(typeof(INodeMap))]
-    public abstract class ConstructionManager : MonoBehaviour
+    public abstract class ConstructionManager
     {
-        protected IMap Map;
-        protected INodeMap NodeMap;
+        protected readonly IMap Map;
+        protected readonly INodeMap NodeMap;
+        protected readonly IResourceMap ResourceMap;
         
-        [Header("Settings")]
-        [SerializeField] protected PlacementSettings settings;
-        [SerializeField] protected InputSettings inputSettings;
+        protected readonly PlacementSettings Settings;
+        protected readonly InputSettings InputSettings;
+        protected readonly PlacementVisuals Visuals;
+        protected readonly Camera MainCamera;
         
-        [Header("Visuals")] 
-        public PlacementVisuals visuals;
-        
-        [Header("Camera")]
-        public Camera mainCamera;
-
-        protected virtual void Awake()
+        public ConstructionManager(PlacementContext ctx)
         {
-            Map = GetComponent(typeof(IMap)) as IMap;
-            NodeMap = GetComponent<INodeMap>();
-            if (visuals == null) visuals = GetComponent<PlacementVisuals>();
-
-            if (settings == null)
-            {
-                Debug.LogWarning("Missing placement settings");
-                settings = ScriptableObject.CreateInstance<PlacementSettings>();
-            }
-
-            if (inputSettings == null)
-            {
-                Debug.LogWarning("Missing input settings");
-                inputSettings = ScriptableObject.CreateInstance<InputSettings>();
-            }
+            Map = ctx.Map;
+            NodeMap = ctx.NodeMap;
+            ResourceMap = ctx.ResourceMap;
+            Settings = ctx.PlacementSettings;
+            InputSettings = ctx.InputSettings; 
+            Visuals = ctx.Visuals;
+            MainCamera = ctx.MainCamera;
         }
+        
         
         /// <summary>
         /// Try to find a position aligned to the grid from a raycast intersection with the floor layer 
@@ -55,11 +42,11 @@ namespace Engine.Construction.Placement
         {
             alignedPosition = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            alignedPosition = Grid.GridAlignedWorldPosition(position, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.cellSize));
+            alignedPosition = Grid.GridAlignedWorldPosition(position, new GridParams(Settings.mapOrigin, Map.MapWidth, Map.MapHeight, Settings.cellSize));
             return true;
         }
 
-        public Vector3Int WorldAlignedPosition(Vector3Int gridCoord) => Grid.GridToWorldPosition(gridCoord, settings.mapOrigin, settings.cellSize);
+        public Vector3Int WorldAlignedPosition(Vector3Int gridCoord) => Grid.GridToWorldPosition(gridCoord, Settings.mapOrigin, Settings.cellSize);
         
         /// <summary>
         /// Try to find a grid coordinate from a raycast intersection with the floor layer 
@@ -68,7 +55,7 @@ namespace Engine.Construction.Placement
         {
             gridCoordinate = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            gridCoordinate = Grid.WorldToGridCoordinate(position, new GridParams(settings.mapOrigin, Map.MapWidth, Map.MapHeight, settings.cellSize));
+            gridCoordinate = Grid.WorldToGridCoordinate(position, new GridParams(Settings.mapOrigin, Map.MapWidth, Map.MapHeight, Settings.cellSize));
             return true;
         }
         
@@ -77,7 +64,7 @@ namespace Engine.Construction.Placement
         /// </summary>
         public bool TryGetWorldPosition(out Vector3 position)
         {
-            bool positionFound = FloorPosition.Get(mainCamera, settings.raycastDistance, settings, out Vector3 foundPosition);
+            bool positionFound = FloorPosition.Get(MainCamera, Settings.raycastDistance, Settings, out Vector3 foundPosition);
             position = foundPosition; 
             return positionFound;
         }
