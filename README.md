@@ -37,12 +37,13 @@ Monobehaviour scripts required in the scene:
 
 | Monobehavior         | Function  
 |----------            |----------|
-| Map                  | maintains a "base" grid, recording which cells are occupied |
-| Node Map             | mainatins a "Node" grid, recordidng where Nodes have been placed on the grid | 
-| Placement Manager    | coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations |
-| Placement Visuals    | manages visual aspects of game object placement | 
+| MapManager           | Initialises Map - which cells are occupied?. |
+|                      | Initialises Node map - which cells have nodes? |
+|                      | And initialises Resource Map - which cells have which resources? |
+| Construction Engine  | Initialises Placement Manager which coordinates game object placement on the grid, and creates Drag Sessions for click and drag operations. |
+|                      | Initialises Placement Visuals which manages visual aspects of game object placement | 
+|                      | Initialises Removal Managercoordinates game object removal via right mouse click and hold and Removal visuals | 
 | Belt Manager         | coordinates a belt graph, triggering widget movement | 
-| Removal Manager      | coordinates game object removal via right mouse click and hold |
 | Player Click Manager | casts a raycast on left mouse down and any class implementing IClickable will be notified if hit |
 
 
@@ -66,14 +67,14 @@ Nodes
 
 
 
-Widgets
+Resources
 
 
 | Class          | Function                                                                                                                                    | Parents and Interfaces
 |----------      |----------                                                                                                                                   |----------|
 | Node           | Any object you would want to place on the map that have a direction and a target                                                            | Monobehaviour, IPlaceable, IRotatable, IClickable |
 | Belt           | A type of Node that can ship widgets to one another - managed by Belt Manager                                                               | Node |
-| Widget         | Deliveries handled by belts. They manage their own movement logic and implement a strategy pattern for handling different movement styles   | Monobehaviour |
+| Resouces       | Deliveries handled by belts. They manage their own movement logic and implement a strategy pattern for handling different movement styles   | Monobehaviour |
 | Producer       | A type of Belt that spawns new widgets                                                                                                      | Belt |
 | Consumer       | A type of Belt that despawns existing widgets upon arrival                                                                                  | Belt |
 | Intersection   | A type of Belt that ships Widgets to different target Nodes based on which Node they recieved the Widget from                               | Belt |
