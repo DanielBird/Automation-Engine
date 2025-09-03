@@ -57,16 +57,13 @@ namespace Engine.Utilities
         
         private void ClickClosest(int hits)
         {
-            if (hits == 0)
+            if (clickable != null)
             {
-                if (clickable != null)
-                {
-                    clickable.OnPlayerDeselect();
-                    clickable = null;
-                }
-
-                return;
+                clickable.OnPlayerDeselect();
+                clickable = null;
             }
+            
+            if (hits == 0) return;
 
             IClickable closest = null; 
             float closestDistance = float.MaxValue;
@@ -94,12 +91,10 @@ namespace Engine.Utilities
 
         private void ClickEverythingHit(int hits)
         {
-            if (hits == 0)
-            {
-                foreach (IClickable c in clickables) c.OnPlayerDeselect();
-                clickables.Clear();
-                return;
-            }
+            foreach (IClickable c in clickables) c.OnPlayerDeselect();
+            clickables.Clear();
+
+            if (hits == 0) return; 
 
             HashSet<IClickable> newHits = new ();
             for (int i = 0; i < hits; i++)

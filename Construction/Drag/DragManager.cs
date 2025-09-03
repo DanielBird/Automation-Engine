@@ -54,6 +54,7 @@ namespace Engine.Construction.Drag
         private void InitialiseDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord, out Cell startingCell)
         {
             _spawned.Clear();
+
             startingCell = new Cell(startingGridCoord, _state.CurrentDirection, NodeType.Straight, _settings);
             _spawned.Add(startingCell, new TempNode(initialObject, startingNode));
             _state.SetAxis(Axis.XAxis);

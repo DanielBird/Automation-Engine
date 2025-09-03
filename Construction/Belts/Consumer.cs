@@ -2,6 +2,7 @@
 using Engine.Construction.Resources;
 using Engine.Utilities;
 using Engine.Utilities.Events;
+using UnityEngine.Events;
 
 namespace Engine.Construction.Belts
 {
@@ -12,6 +13,8 @@ namespace Engine.Construction.Belts
     /// </summary>
     public class Consumer : Belt
     {
+        public UnityEvent<ResourceTypeSo> onConsumed;
+        
         // Consumers can ship if they have an occupant
         public override bool ReadyToShip(out Belt target, out Resource resource)
         {
@@ -35,7 +38,8 @@ namespace Engine.Construction.Belts
             if(resource == null)
                 return;
             
-            EventBus<ResourceCollected>.Raise(new ResourceCollected(resource.resourceType));
+            EventBus<ResourceCollected>.Raise(new ResourceCollected(resource.ResourceIndex));
+            onConsumed?.Invoke(resource.ResourceType);
             
             SimplePool.Despawn(resource.gameObject);
             Occupant = null;

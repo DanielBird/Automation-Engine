@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
 using Engine.Construction.Utilities;
 using Engine.Construction.Visuals;
 using Engine.GameState;
@@ -33,7 +34,6 @@ namespace Engine.Construction.Placement
             Visuals = ctx.Visuals;
             MainCamera = ctx.MainCamera;
         }
-        
         
         /// <summary>
         /// Try to find a position aligned to the grid from a raycast intersection with the floor layer 
@@ -70,5 +70,20 @@ namespace Engine.Construction.Placement
         }
 
         protected void ClearTokenSource(ref CancellationTokenSource tokenSource) => CtsCtrl.Clear(ref tokenSource);
+
+        protected void RemoveNode(Node node, Vector3Int gridCoord)
+        {
+            if (!node.isRemovable)
+            {
+                if(node.ParentNode == null) return;
+                gridCoord = node.ParentNode.GridCoord;
+                node = node.ParentNode;
+            }
+            
+            node.OnRemoval();
+            Map.DeregisterOccupant(gridCoord.x, gridCoord.z, node.GridWidth, node.GridHeight);
+            NodeMap.DeregisterNode(node);
+            SimplePool.Despawn(node.gameObject);
+        }
     }
 }

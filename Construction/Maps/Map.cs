@@ -19,7 +19,7 @@ namespace Engine.Construction.Maps
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         public Vector3Int MapOrigin { get; set; }
-        public CellStatus[,] Grid { get; private set; }
+        public CellStatus[,] Grid { get; set; }
 
         private int[,] _mark;
         private int _generation; 

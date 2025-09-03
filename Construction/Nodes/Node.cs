@@ -27,7 +27,9 @@ namespace Engine.Construction.Nodes
         [field: SerializeField] public int GridWidth { get; set; }
         [field: SerializeField] public int GridHeight { get; set; }
         [field: SerializeField] public bool Draggable { get; set; }
-        [field: SerializeField] public NodeType NodeType { get; private set; } 
+        [field: SerializeField] public NodeType NodeType { get; private set; }
+        
+        [field: SerializeField] public bool ReplaceOnPlacement { get; private set; }
         
         [Header("Position & Rotation")] 
         [SerializeField] private Direction myDirection; 

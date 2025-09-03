@@ -12,11 +12,13 @@ namespace Engine.GameState
         public InputActionReference cancel;
         
         [Header("Directional Input And Rotation")]
-        [Tooltip("How long to wait to confirm that a button click is being held?")]
-        public float waitForInputTime = 0.03f;
-        public float deadZoneRadius = 10;
-        public float sphereCastRadius = 0.1f;
-
+        [Tooltip("How long to wait to confirm that a mouse click should be considered a drag? Recommended: 0.1 - 0.2")]
+        [Range(0.05f, 0.5f)]
+        public float waitForInputTime = 0.1f;
+        [Tooltip("How far away should the mouse be from the original click location to be considered a drag? Recommended: 5 - 10")]
+        [Range(1, 20)]
+        public float dragThreshold = 5f; 
+        
         [Header("Placement")] 
         public float minTimeBetweenClicks = 0.1f;
 

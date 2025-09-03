@@ -25,8 +25,9 @@ namespace Engine.Construction.Resources
     [RequireComponent(typeof(Collider))]
     public class Resource : MonoBehaviour
     {
+        public ResourceTypeSo ResourceType { get; private set; }
         public int ID { get; private set; }
-        public int resourceType;
+        public int ResourceIndex { get; private set; }
         public ResourceStatus Status { get; private set; }
         
         [SerializeField] private PlacementSettings settings;
@@ -46,6 +47,7 @@ namespace Engine.Construction.Resources
         private void Awake()
         {
             _collider = GetComponent<Collider>();
+            
             if(_collider == null)
                 Debug.LogError("Missing Collider");
             
@@ -64,10 +66,13 @@ namespace Engine.Construction.Resources
             if(_moveCoroutine != null) StopCoroutine(_moveCoroutine);
         }
 
-        public Resource(int id)
+        public Resource(int id) => ID = id;
+
+        public void SetResourceType(ResourceTypeSo rType)
         {
-            ID = id;
-        }
+            ResourceType = rType;
+            ResourceIndex = ResourceType.index;
+        } 
 
         public void Move(MoveType moveType, Belt current, Belt next)
         {

@@ -22,6 +22,8 @@ namespace Engine.Construction.Placement
         private readonly Dictionary<NodeType, IPlaceableFactory> _factories;
 
         private readonly PlacementState state;
+        private bool _viablePlacement; 
+        
         private Coroutine _drag;
         public Transform myTransform;
         private Transform resourceParent; 
@@ -140,7 +142,20 @@ namespace Engine.Construction.Placement
             state.TargetGridCoordinate = gridCoord;
             state.WorldAlignedPosition = WorldAlignedPosition(gridCoord);
             
-            if (!Map.VacantCell(state.TargetGridCoordinate.x, state.TargetGridCoordinate.z)) return;
+            Visuals.SetFloorDecalPos(state.WorldAlignedPosition);
+
+            int x = state.TargetGridCoordinate.x;
+            int z = state.TargetGridCoordinate.z;
+            
+            _viablePlacement = Map.VacantCell(x, z);
+            
+            // If the game object is allowed to replace an existing node, continue
+            if (!_viablePlacement)
+            {
+                if(!NodeMap.HasNode(x, z)) return;
+                if(!state.PlaceableReplacesNodes) return;
+                _viablePlacement = true; // reset bool
+            }
             
             // If the current object is roughly at the target grid coordinate, then return
             if (Arrived(state.CurrentObject, state.WorldAlignedPosition)) return;
@@ -148,7 +163,6 @@ namespace Engine.Construction.Placement
             LerpPosition(state.CurrentObject, state.WorldAlignedPosition);
             
             Visuals.Place(state.CurrentObject);
-            Visuals.SetFloorDecalPos(state.WorldAlignedPosition); 
         }
 
         private bool Arrived(GameObject obj, Vector3 targetPos, float threshold = 0.02f)
@@ -186,6 +200,7 @@ namespace Engine.Construction.Placement
         {
             // Return if the cursor is over a UI element
             if(MouseUtils.IsOverUI()) return;
+            if(!_viablePlacement) return;
 
             // Return if this is the second click of a double click
             if(Time.time < _timeOfLastClick + InputSettings.minTimeBetweenClicks) return;
@@ -194,7 +209,28 @@ namespace Engine.Construction.Placement
             if (!state.IsRunning) return;
             if (!state.PlaceableFound) return;
             
+            if(state.PlaceableIsNode && state.PlaceableReplacesNodes) 
+                ReplaceNode();
+            
             _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetGridCoordinate);
+        }
+
+        private void ReplaceNode()
+        {
+            int x = state.TargetGridCoordinate.x;
+            int z = state.TargetGridCoordinate.z;
+
+            if(Map.VacantCell(x, z)) 
+                return;
+            
+            if(!NodeMap.TryGetNode(x, z, out Node node))
+                return;
+
+            Direction d = node.Direction; 
+            if(state.PlaceableNode.Direction != d)
+                state.PlaceableNode.RotateInstant(d);
+            
+            RemoveNode(node, state.TargetGridCoordinate);
         }
         
         private void Rotate(InputAction.CallbackContext ctx)

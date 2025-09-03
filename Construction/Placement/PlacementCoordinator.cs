@@ -15,10 +15,13 @@ namespace Engine.Construction.Placement
 
         public PlacementCoordinator(PlacementContext placementContext, DragManager dragManager, NeighbourManager neighbourManager, Transform widgetParent)
         {
+            StandardPlacementStrategy standard = new StandardPlacementStrategy(placementContext, neighbourManager, widgetParent);
+            DraggablePlacementStrategy draggable = new DraggablePlacementStrategy(placementContext, dragManager, standard); 
+            
             _strategies = new List<IPlacementStrategy>
             {
-                new DraggablePlacementStrategy(placementContext, dragManager),
-                new StandardPlacementStrategy(placementContext, neighbourManager, widgetParent)
+                draggable,
+                standard
             };
 
             _state = placementContext.State; 

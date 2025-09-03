@@ -13,6 +13,12 @@ namespace Engine.Construction.Maps
     {
         private readonly Dictionary<Vector3Int, IResourceSource> _sources = new Dictionary<Vector3Int, IResourceSource>();
 
+        public Dictionary<Vector3Int, IResourceSource> Sources
+        {
+            get => _sources;
+            set => throw new System.NotImplementedException();
+        }
+
         private GridParams gridParams; 
         private readonly EventBinding<RegisterResourceEvent> _onRegisterResourceRequest; 
 
@@ -38,14 +44,21 @@ namespace Engine.Construction.Maps
 
         public void Register(IResourceSource src, Vector3Int gridCoord)
         {
-            int x = gridCoord.x; 
-            int z = gridCoord.z;
             int width = src.GridWidth;
             int height = src.GridHeight;
+
+            if (width % 2 == 0)
+                width--; 
             
-            for (int i = x; i < x + width; i++)
+            if (height % 2 == 0)
+                height--;
+            
+            int startX = gridCoord.x -(width / 2);
+            int startZ = gridCoord.z - (height / 2);
+            
+            for (int i = startX; i < startX + width; i++)
             {
-                for (int j = z; j < z + height; j++)
+                for (int j = startZ; j < startZ + height; j++)
                 {
                     _sources[new Vector3Int(i, 0, j)] = src;
                 }

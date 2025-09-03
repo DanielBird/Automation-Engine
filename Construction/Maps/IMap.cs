@@ -7,6 +7,8 @@ namespace Engine.Construction.Maps
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
         
+        public CellStatus[,] Grid { get; set; }
+        
         public bool RegisterOccupant(int x, int z, int width, int height);
 
         public void DeregisterOccupant(int x, int z, int width, int height);

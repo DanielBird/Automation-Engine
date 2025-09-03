@@ -106,23 +106,8 @@ namespace Engine.Construction.Placement
             Visuals.Hide(false);
         }
         
-        private void RemoveSingleNode(GridWorldCoordPair delete, Node node)
-        {
-            Vector3Int gridCoord = delete.GridCoordinate;
+        private void RemoveSingleNode(GridWorldCoordPair delete, Node node) => RemoveNode(node, delete.GridCoordinate);
 
-            if (!node.isRemovable)
-            {
-                if(node.ParentNode == null) return;
-                gridCoord = node.ParentNode.GridCoord;
-                node = node.ParentNode;
-            }
-            
-            node.OnRemoval();
-            Map.DeregisterOccupant(gridCoord.x, gridCoord.z, node.GridWidth, node.GridHeight);
-            NodeMap.DeregisterNode(node);
-            SimplePool.Despawn(node.gameObject);
-        }
-        
         private CellSelection SelectCells(Vector3Int start, out Vector3Int end)
             // => CellSelector.SelectCellArea(start, mainCamera, settings.floorLayer, _cellHits, Map, settings, out end);
              => CellSelector.SelectCellAreaWithNodes(start, MainCamera, Settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, Settings, 1), true, out end);

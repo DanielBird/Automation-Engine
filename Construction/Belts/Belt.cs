@@ -29,6 +29,7 @@ namespace Engine.Construction.Belts
         {
             base.Initialise(config);
             SetupResourceMovement();
+            IsSelected = false;
         }
 
         protected void SetupResourceMovement()
@@ -97,11 +98,10 @@ namespace Engine.Construction.Belts
 
         private MoveType GetMoveType(Belt target) => target.NodeType switch
         {
-            NodeType.Straight or NodeType.GenericBelt => MoveType.Forward,
             NodeType.LeftCorner => MoveType.Left,
             NodeType.RightCorner => MoveType.Right,
-            NodeType.Intersection or NodeType.Producer or NodeType.Splitter or NodeType.Combiner => MoveType.Forward,
-            _ => throw new ArgumentOutOfRangeException()
+
+            _ => MoveType.Forward
         };
 
         public override void OnPlayerSelect()
@@ -127,7 +127,7 @@ namespace Engine.Construction.Belts
             Occupant.CancelMovement();
             SimplePool.Despawn(Occupant.gameObject);
             Occupant = null;
-            
+
             if(!transform.parent.TryGetComponent(out Node parentNode)) return;
         }
 

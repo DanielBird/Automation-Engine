@@ -36,9 +36,8 @@ namespace Engine.Construction.Drag
         
         private RaycastHit[] _cellHits = new RaycastHit[1];
         private Cell _cornerCell;
-        // private Corner _corner = Corner.None;
         
-        private CancellationTokenSource _disableCancellation = new();
+        private CancellationTokenSource _cts = new();
         
         public DragSession(PlacementContext ctx)
         {
@@ -54,7 +53,7 @@ namespace Engine.Construction.Drag
         
         public void Disable()
         {
-            CtsCtrl.Clear(ref _disableCancellation);
+            CtsCtrl.Clear(ref _cts);
         }
         
         /// <summary>
@@ -67,8 +66,8 @@ namespace Engine.Construction.Drag
             var direction = _state.CurrentDirection;
             int stepSize = startingNode.GridWidth;
 
-            _disableCancellation = new CancellationTokenSource();
-            await UniTask.WaitForSeconds(_inputSettings.waitForInputTime, cancellationToken: _disableCancellation.Token);
+            CtsCtrl.Clear(ref _cts);
+            _cts = new CancellationTokenSource();
             
             while (_inputSettings.place.action.IsPressed())
             {
@@ -92,12 +91,12 @@ namespace Engine.Construction.Drag
                     UpdateFloorDecalPosition();
                 }
                 
-                await UniTask.Yield(_disableCancellation.Token);
+                await UniTask.Yield(_cts.Token);
             }
             
             _cellSelection.Clear();
             CleanUpAfterIntersections();
-            CtsCtrl.Clear(ref _disableCancellation);
+            CtsCtrl.Clear(ref _cts);
         }
         
         /// <summary>

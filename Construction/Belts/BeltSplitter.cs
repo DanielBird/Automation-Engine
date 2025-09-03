@@ -88,7 +88,7 @@ namespace Engine.Construction.Belts
                     target = rightBelt;
                     break;
                 case SplitterNeighbourStatus.BothFound:
-                    if (currentResource.resourceType == resourceTypeOne) target = rightBelt;
+                    if (currentResource.ResourceIndex == resourceTypeOne) target = rightBelt;
                     else target = childBelt;
                     break;
                 default:
@@ -143,7 +143,7 @@ namespace Engine.Construction.Belts
 
         private void UpdateResourceTypes(Resource resource)
         {
-            int type = resource.resourceType; 
+            int type = resource.ResourceIndex; 
             
             // Matches existing widgets
             if(resourceTypeOne == type || resourceTypeTwo == type) return;

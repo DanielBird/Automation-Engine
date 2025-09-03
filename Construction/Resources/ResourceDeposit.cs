@@ -2,6 +2,7 @@
 using Engine.Construction.Events;
 using Engine.Utilities.Events;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Engine.Construction.Resources
 {
@@ -15,7 +16,9 @@ namespace Engine.Construction.Resources
         [Tooltip("The available supply of the resource")]
         [SerializeField] private int amount = 1000; 
         [SerializeField] private Vector3Int gridCoord;
+        [Tooltip("Grid Width should be an odd number. Even numbers will be treated as odd")]
         [SerializeField] private int gridWidth;
+        [Tooltip("Grid Height should be an odd number. Even numbers will be treated as odd")]
         [SerializeField] private int gridHeight;
         
         public ResourceTypeSo ResourceType => resource;
@@ -25,6 +28,8 @@ namespace Engine.Construction.Resources
 
         public event Action<IResourceSource> OnDepleted;
         public bool IsDepleted => amount == 0;
+        
+        public UnityEvent OnProducerPlaced;
 
         private void Awake()
         {
@@ -54,6 +59,8 @@ namespace Engine.Construction.Resources
             return extracted > 0;
         }
 
+        public void RegisterProducerPlaced() => OnProducerPlaced?.Invoke();
+        
         private void OnDrawGizmosSelected()
         {
             // Currently ignores grid -> world conversion

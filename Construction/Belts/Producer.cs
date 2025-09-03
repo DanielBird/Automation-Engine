@@ -44,7 +44,11 @@ namespace Engine.Construction.Belts
         
         public void Activate(IResourceMap resourceMap, Transform parent)
         {
-            if (!resourceMap.TryGetResourceSourceAt(GridCoord, out _resourceSource)) return;
+            if (!resourceMap.TryGetResourceSourceAt(GridCoord, out _resourceSource))
+            {
+                Debug.Log("Resource source not found by " + name);
+                return;
+            }
 
             if (!InitialiseTheResource())
             {
@@ -73,6 +77,7 @@ namespace Engine.Construction.Belts
             
             myResourceName = myResourceType.name;
             _resourcePrefab = myResourceType.resourcePrefab;
+            _resourceSource.RegisterProducerPlaced();
             return true; 
         }
         
@@ -124,6 +129,11 @@ namespace Engine.Construction.Belts
             if (resourceGo.TryGetComponent<Resource>(out Resource resource))
             {
                 Occupant = resource;
+                resource.SetResourceType(myResourceType);
+            }
+            else
+            {
+                Debug.Log("Failed to find resource class on " + resourceGo.name);
             }
         }
     }

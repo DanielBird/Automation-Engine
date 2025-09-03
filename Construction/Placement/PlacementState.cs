@@ -1,4 +1,5 @@
 using Engine.Construction.Interfaces;
+using Engine.Construction.Nodes;
 using UnityEngine;
 
 namespace Engine.Construction.Placement
@@ -15,6 +16,11 @@ namespace Engine.Construction.Placement
         
         public bool PlaceableFound { get; private set; }
         public IPlaceable MainPlaceable { get; private set; }
+        public bool PlaceableIsNode { get;  private set; }
+        public Node PlaceableNode { get; private set; }
+        public bool PlaceableReplacesNodes { get;  private set; }
+        
+        
         
         public bool RotatableFound { get; private set; }
         public IRotatable MainRotatable { get; private set; }
@@ -35,6 +41,18 @@ namespace Engine.Construction.Placement
         {
             MainPlaceable = placeable;
             PlaceableFound = true;
+
+            if (MainPlaceable is Node node)
+            {
+                PlaceableIsNode = true;
+                PlaceableNode = node;
+                PlaceableReplacesNodes = node.ReplaceOnPlacement; 
+            }
+            else
+            {
+                PlaceableIsNode = false;
+                PlaceableReplacesNodes = false;
+            }
         }
         
         private void SetRotatable(IRotatable rotatable)

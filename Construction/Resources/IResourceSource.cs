@@ -15,5 +15,7 @@ namespace Engine.Construction.Resources
         
         void SetGridCoord(Vector3Int coord);
         bool TryExtract(int amount, out int extracted);
+
+        void RegisterProducerPlaced();
     }
 }

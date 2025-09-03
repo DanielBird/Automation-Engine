@@ -177,6 +177,7 @@ namespace Engine.Construction.Drag.Selection
             );
         }
         
+        // Determine the type of node to be spawned at the start and end of a path
         public static void AddStartEndCell(HashSet<Cell> cells, Vector3Int gridCoord, Direction direction, CellSelectionParams selectionParams, bool end)
         {
             if (selectionParams.Intersections.Contains(gridCoord))
@@ -185,70 +186,11 @@ namespace Engine.Construction.Drag.Selection
                 return;
             }
             
-            // Check if the left or right neighbouring cells are occupied by another node
-
-            int stepSize = selectionParams.StepSize;
-            stepSize = Mathf.Abs(stepSize); // step should always be positive for this method
-            
-            Direction rightDirection = DirectionUtils.Increment(direction);
-            Direction leftDirection = DirectionUtils.Decrement(direction);
-            
-            Vector2Int rightPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, rightDirection, stepSize);
-            Vector2Int leftPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, leftDirection, stepSize);
-
-            // Found a node
-            bool rightFound = selectionParams.NodeMap.GetNeighbourAt(rightPos, out Node rightN);
-            bool leftFound  = selectionParams.NodeMap.GetNeighbourAt(leftPos, out Node leftN);
-            
-            // Found a node and it is facing the right direction for this node to connect to it
-            bool right = rightFound && DirectionIsGood(end, rightN, rightDirection, leftDirection);
-            bool left = leftFound && DirectionIsGood(end, leftN, leftDirection, rightDirection);
-
-            // Avoid connecting if it leads to a loop
-            if (right || left)
-            {
-                HashSet<Vector3Int> positions = cells.Select(c => c.GridCoordinate).ToHashSet();
-                if (right && rightN.LoopDetected(positions)) right = false;
-                if (left && leftN.LoopDetected(positions)) left = false;
-            }
-            
-            // Debug.Log($"Right direction is {rightDirection} and left direction is {leftDirection}");
-            // Debug.Log($"Right Position is {rightPos} and Left is {leftPos}");
-            // Debug.Log($"Right is found is {rightFound} and it is facing the correct direction is {right}. Left is found is {leftFound} and it is facing the correct direction is {left}");
-            
-            NodeType nodeType = (left, right) switch
-            {
-                (true,  true)  => NodeType.Intersection,
-                (true,  false) => NodeType.LeftCorner,
-                (false, true)  => NodeType.RightCorner,
-                _              => NodeType.Straight
-            };
-
-            Direction finalDirection = (left, right) switch
-            {
-                (false,  false) => direction,
-                (true,  false) => end ? leftDirection : direction,
-                (false, true)  => end ? rightDirection : direction,
-                _              => direction
-            };
+            NodeType nodeType = CellDefinition.DefineCell(cells, gridCoord, direction, selectionParams, end, out Direction finalDirection);
 
             cells.Add(new Cell(gridCoord, finalDirection, nodeType, selectionParams.Settings));
         }
-
-        private static bool DirectionIsGood(bool end, Node neighbour, Direction directionOne, Direction directionTwo)
-        {
-            if (end)
-            {
-                // Ends don't connect to Producers
-                if (neighbour.NodeType == NodeType.Producer) return false;
-                
-                // Ends don't connect to corners
-                if (neighbour.NodeType is NodeType.LeftCorner or NodeType.RightCorner) return false;
-            }
-            
-            return neighbour.Direction == (end ? directionOne : directionTwo);
-        }
-
+        
         public static bool IsLeftTurn(Vector3Int start, Vector3Int corner, Vector3Int end)
         {
             // Calculate direction vectors

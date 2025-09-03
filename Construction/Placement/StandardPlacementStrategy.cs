@@ -2,6 +2,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Belts;
 using Engine.Construction.Drag;
+using Engine.Construction.Drag.Selection;
 using Engine.Construction.Interfaces;
 using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
@@ -41,17 +42,15 @@ namespace Engine.Construction.Placement
 
         public bool CanHandle(IPlaceable placeable) => !placeable.Draggable;
 
+        // NOTE: Draggable nodes never reach this method
+        // (see can handle logic)
         public void HandlePlacement(IPlaceable placeable, Vector3Int gridCoordinate)
         {
             if (!Place(gridCoordinate, placeable)) return;
             
             if (placeable is Node node)
             {
-                NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, NodeType.Straight); 
-                node.Initialise(config);
-                node.Visuals.HideArrows();
-                
-                if(node is Producer p) p.Activate(_resourceMap, _resourceParent); 
+                SetupNode(node, gridCoordinate);
             }
 
             _state.IsRunning = false;
@@ -59,6 +58,19 @@ namespace Engine.Construction.Placement
             _visuals.Hide();
             
             FinalisePosition(_state.CurrentObject, _state.WorldAlignedPosition, _placementSettings.moveSpeed).Forget();
+        }
+
+        private void SetupNode(Node node, Vector3Int gridCoordinate)
+        {
+            CellSelectionParams selectionParams = new CellSelectionParams(_map, _nodeMap, _placementSettings, node.GridWidth); 
+            NodeType nodeType = CellDefinition.DefineUnknownCell(gridCoordinate, node.Direction, selectionParams, out Direction finalDirection);
+            node.RotateInstant(finalDirection);
+            
+            NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, nodeType); 
+            node.Initialise(config);
+            node.Visuals.HideArrows();
+                
+            if(node is Producer p) p.Activate(_resourceMap, _resourceParent);
         }
 
         public void CancelPlacement(IPlaceable placeable)
@@ -91,6 +103,7 @@ namespace Engine.Construction.Placement
             }
             
             go.transform.position = finalPosition;
+            CtsCtrl.Clear(ref _cts);
         }
         
         private bool DistanceAboveThreshold(GameObject obj, Vector3 targetPos, float threshold = 0.001f)
