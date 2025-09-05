@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Engine.Construction.Drag;
 using Engine.Construction.Interfaces;
 using Engine.Construction.Maps;
+using Engine.Construction.Placement.Strategies;
 using Engine.Construction.Visuals;
 using UnityEngine;
 
@@ -34,7 +35,7 @@ namespace Engine.Construction.Placement
             {
                 if (!strategy.CanHandle(placeable)) continue;
                 
-                _state.IsRunning = false;
+                _state.StopRunning();
                 strategy.HandlePlacement(placeable, gridCoordinate);
                 _visuals.DeactivateFloorDecal();
                 return;

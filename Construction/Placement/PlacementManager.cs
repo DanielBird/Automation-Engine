@@ -5,12 +5,9 @@ using Engine.Construction.Drag;
 using Engine.Construction.Events;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement.Factory;
-using Engine.Construction.Visuals;
 using Engine.Utilities;
 using Engine.Utilities.Events;
-using Sirenix.OdinInspector;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using Grid = Engine.Construction.Utilities.Grid;
 
@@ -22,6 +19,7 @@ namespace Engine.Construction.Placement
         private readonly Dictionary<NodeType, IPlaceableFactory> _factories;
 
         private readonly PlacementState state;
+        private readonly NeighbourManager neighbourManager;
         private bool _viablePlacement; 
         
         private Coroutine _drag;
@@ -31,6 +29,7 @@ namespace Engine.Construction.Placement
         private CancellationTokenSource _disableCancellation = new CancellationTokenSource();
         private CancellationTokenSource _waitTokenSource = new CancellationTokenSource();
 
+        private bool _newGridCell; 
         private float _timeOfLastClick;
         
         // EVENTS
@@ -41,7 +40,7 @@ namespace Engine.Construction.Placement
         {
             state = ctx.State;
             myTransform = transform;
-            NeighbourManager neighbourManager = new(ctx, transform);
+            neighbourManager = new NeighbourManager(ctx, transform);
             DragManager dragManager = new(ctx, neighbourManager);
             _placementCoordinator = new PlacementCoordinator(ctx, dragManager, neighbourManager, resourceParent);
             
@@ -49,6 +48,8 @@ namespace Engine.Construction.Placement
             {
                 { NodeType.GenericBelt, new GenericFactory(this, Settings, NodeType.Straight)},
                 { NodeType.Straight, new GenericFactory(this, Settings, NodeType.Straight)},
+                { NodeType.LeftCorner, new GenericFactory(this, Settings, NodeType.LeftCorner)},
+                { NodeType.RightCorner, new GenericFactory(this, Settings, NodeType.RightCorner)},
                 { NodeType.Producer, new GenericFactory(this, Settings, NodeType.Producer)},
                 { NodeType.Consumer, new GenericFactory(this, Settings, NodeType.Consumer)},
                 { NodeType.Splitter, new GenericFactory(this, Settings, NodeType.Splitter)}, 
@@ -121,7 +122,7 @@ namespace Engine.Construction.Placement
             Vector3Int gridCoordinate = e.GridCoord;
             Vector3Int worldPosition = Grid.GridToWorldPosition(gridCoordinate, Settings.mapOrigin, Settings.cellSize);
             
-            state.IsRunning = false; 
+            state.StopRunning(); 
             state.TargetGridCoordinate = gridCoordinate;
             state.WorldAlignedPosition = worldPosition; 
             
@@ -158,10 +159,15 @@ namespace Engine.Construction.Placement
             }
             
             // If the current object is roughly at the target grid coordinate, then return
-            if (Arrived(state.CurrentObject, state.WorldAlignedPosition)) return;
+            if (Arrived(state.CurrentObject, state.WorldAlignedPosition))
+            {
+                if (_newGridCell) UpdateState();
+                _newGridCell = false;
+                return;
+            }
             
+            _newGridCell = true;
             LerpPosition(state.CurrentObject, state.WorldAlignedPosition);
-            
             Visuals.Place(state.CurrentObject);
         }
 
@@ -177,6 +183,30 @@ namespace Engine.Construction.Placement
             Transform t = obj.transform; 
             t.position = Vector3.Lerp(t.position, targetPos, Settings.moveSpeed * Time.deltaTime);
         }
+
+        private void UpdateState()
+        {
+            if(!state.UpdateState(Map, NodeMap, Settings, out NodeType newNodeType, out Direction newDirection))
+                return;
+            
+            if (!_factories.TryGetValue(newNodeType, out IPlaceableFactory factory))
+                return;
+            
+            SimplePool.Despawn(state.CurrentObject);
+
+            if(!factory.Create(out GameObject newGameObject, out Vector3Int alignedPosition)) return;
+            
+            state.SetGameObject(newGameObject);
+            
+            if (!state.PlaceableFound) return;
+            state.MainPlaceable.Reset();
+            
+            if (state.MainPlaceable is Node node)
+            {
+                node.Visuals.ShowArrows();
+                node.RotateInstant(newDirection);
+            }
+        }
         
         private void SpawnOccupant(Vector3Int alignedPosition, GameObject occupant)
         {
@@ -188,14 +218,19 @@ namespace Engine.Construction.Placement
             if (state.PlaceableFound)
             {
                 state.MainPlaceable.Reset();
-                if(state.MainPlaceable is Node node) node.Visuals.ShowArrows();
+                
+                if(state.MainPlaceable is Node node)
+                {
+                    node.Visuals.ShowArrows();
+                }
             }
             
             Visuals.Place(state.CurrentObject);
             Visuals.Show();
             Visuals.SetFloorDecalPos(alignedPosition); 
         }
-
+        
+        // Triggered by the left mouse down input action
         private void ConfirmPlacement(InputAction.CallbackContext ctx)
         {
             // Return if the cursor is over a UI element
@@ -211,7 +246,7 @@ namespace Engine.Construction.Placement
             
             if(state.PlaceableIsNode && state.PlaceableReplacesNodes) 
                 ReplaceNode();
-            
+
             _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetGridCoordinate);
         }
 
@@ -227,8 +262,8 @@ namespace Engine.Construction.Placement
                 return;
 
             Direction d = node.Direction; 
-            if(state.PlaceableNode.Direction != d)
-                state.PlaceableNode.RotateInstant(d);
+            if(state.Node.Direction != d)
+                state.Node.RotateInstant(d);
             
             RemoveNode(node, state.TargetGridCoordinate);
         }

@@ -1,5 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using Engine.Utilities.Events;
+using Engine.Utilities.Events.Types;
+using JetBrains.Annotations;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -9,6 +13,7 @@ namespace Engine.Utilities
 {
     public class PlayerClickManager : MonoBehaviour
     {
+        [SerializeField] private bool canClick = true; 
         [SerializeField] private LayerMask buildingLayer;
         [SerializeField] private Camera mainCamera;
         
@@ -16,7 +21,7 @@ namespace Engine.Utilities
         public bool clickClosestHits = true; 
         
         [SerializeField] private float maxRaycastDistance = 100f;
-        private IClickable clickable; 
+        [CanBeNull] private IClickable clickable; 
         private List<IClickable> clickables = new List<IClickable>();
 
         [Header("Debug")]
@@ -24,7 +29,9 @@ namespace Engine.Utilities
         public Vector3 gizmoScale = Vector3.one;
         private Transform closestHit; 
         
-        RaycastHit[] _results = new RaycastHit[5];   
+        RaycastHit[] _results = new RaycastHit[5];
+
+        private EventBinding<PlayerDragEvent> _onPlayerDrag; 
         
         private void Awake()
         {
@@ -32,17 +39,33 @@ namespace Engine.Utilities
                 mainCamera = Camera.main;
             
             if(mouseClick != null)
-                mouseClick.action.performed += OnMouseClick; 
+                mouseClick.action.performed += OnMouseClick;
+
+            _onPlayerDrag = new EventBinding<PlayerDragEvent>(OnPlayerDragEvent); 
+            EventBus<PlayerDragEvent>.Register(_onPlayerDrag);
         }
         
         private void OnDisable()
         {
             if(mouseClick != null)
                 mouseClick.action.performed -= OnMouseClick; 
+            
+            EventBus<PlayerDragEvent>.Deregister(_onPlayerDrag);
+        }
+        
+        private void OnPlayerDragEvent(PlayerDragEvent e)
+        {
+            if(e.Started)
+                canClick = false;
+            else
+                canClick = true;
         }
 
         private void OnMouseClick(InputAction.CallbackContext obj)
         {
+            if(!canClick)
+                return;
+            
             // Return if the cursor is over a UI element
             if(MouseUtils.IsOverUI()) return;
             
@@ -53,6 +76,8 @@ namespace Engine.Utilities
                 ClickClosest(hits);
             else
                 ClickEverythingHit(hits);
+            
+            Array.Clear(_results, 0, _results.Length); 
         }
         
         private void ClickClosest(int hits)
@@ -81,6 +106,7 @@ namespace Engine.Utilities
                     closestDistance = d;
                     closest = c;
                     closestHit = t;
+                    //Debug.Log("Closest hit is " + t.gameObject.name);
                 }
             }
 

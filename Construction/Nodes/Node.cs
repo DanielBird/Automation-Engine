@@ -109,7 +109,6 @@ namespace Engine.Construction.Nodes
             if (config.UpdateDirection) Direction = config.Direction;
             if (config.UpdateRotation) RotateInstant(config.Direction, false);
             
-            // NodeType = config.NodeType;
             UpdateTargetNode();
             Initialised = true;
             
@@ -237,7 +236,7 @@ namespace Engine.Construction.Nodes
 
         public virtual void OnPlayerDeselect()
         {
-            if(!IsSelected || !IsEnabled) return;
+            if(!IsSelected) return;
             IsSelected = false;
         }
 

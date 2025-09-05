@@ -219,7 +219,8 @@ namespace Engine.Construction.Drag
             foreach (Cell c in _oldCells)
             {
                 if (!spawnedCells.TryGetValue(c, out TempNode temp)) continue;
-                RemovePrefab(spawnedCells, temp.Prefab, c);
+                temp.Node.OnRemoval();
+                RemovePrefab(spawnedCells, temp.Prefab, c); 
             }
         }
 

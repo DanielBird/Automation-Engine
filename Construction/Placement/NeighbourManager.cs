@@ -22,7 +22,7 @@ namespace Engine.Construction.Placement
             _map = ctx.Map;
             _nodeMap = ctx.NodeMap;
             PlacementSettings settings = ctx.PlacementSettings;
-            _cornerCreator = new CornerCreator(_map, _nodeMap, settings, transform);
+            _cornerCreator = new CornerCreator(_map, _nodeMap, ctx.State, settings, transform);
         }
         
         public bool UpdateToCorner(IPlaceable occupant, Vector3Int position, DragPos dragPosition)
@@ -84,7 +84,7 @@ namespace Engine.Construction.Placement
                 if (turn is 0 or 2) return false; 
                 // Backward connections ignore looping issues - leave that concern to the end node of a drag
                 if (target == Target.Forward && LoopDetected(currentNode, neighbourNode)) return false;
-                _cornerCreator.ReplaceNeighbourWithCorner(neighbourNode, currentNode, target);
+                _cornerCreator.Replace(neighbourNode, currentNode, target);
                 return true;
             }
             
@@ -93,7 +93,7 @@ namespace Engine.Construction.Placement
             {
                 if (turn is 0 or 2) return false; 
                 if (LoopDetected(currentNode, neighbourNode)) return false; 
-                _cornerCreator.ReplaceWithCorner(currentNode, neighbourNode, target, dragPosition);
+                _cornerCreator.Replace(currentNode, neighbourNode, target, dragPosition);
                 return true;
             }
 

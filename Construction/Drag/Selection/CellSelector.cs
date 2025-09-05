@@ -186,8 +186,7 @@ namespace Engine.Construction.Drag.Selection
                 return;
             }
             
-            NodeType nodeType = CellDefinition.DefineCell(cells, gridCoord, direction, selectionParams, end, out Direction finalDirection);
-
+            NodeType nodeType = CellDefinition.DefinePathCell(cells, gridCoord, direction, selectionParams, end, out Direction finalDirection);
             cells.Add(new Cell(gridCoord, finalDirection, nodeType, selectionParams.Settings));
         }
         

@@ -109,6 +109,11 @@ namespace Engine.Construction.Belts
             if(IsSelected || !IsEnabled ) return;
             IsSelected = true;
             
+            // Debug.Log("Player select : " + name + " at " + Time.frameCount);
+            
+            if(NodeType == NodeType.LeftCorner || NodeType == NodeType.RightCorner)
+                return;
+            
             // Allow the player to start a new drag session by clicking on this belt 
             Vector2Int forwardGridPos = PositionByDirection.GetForwardPosition(GridCoord, Direction, GridWidth);
             if (!NodeMap.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
