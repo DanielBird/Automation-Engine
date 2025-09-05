@@ -54,7 +54,6 @@ namespace Engine.Construction.Nodes
         protected NodeConnections NodeConnections;
         private StringBuilder _nameBuilder = new(64);
         
-        // Player Selection
         public bool IsEnabled { get; set; }
         public bool IsSelected { get; set; }
         public bool isRemovable = true; 
@@ -101,18 +100,15 @@ namespace Engine.Construction.Nodes
         
         public virtual void Initialise(NodeConfiguration config)
         {
+            WorldPosition = Vector3Int.RoundToInt(transform.position);
+            if (config.UpdateDirection) Direction = config.Direction;
+            if (config.UpdateRotation) RotateInstant(config.Direction);
+            
             NodeMap = config.NodeMap; 
             NodeMap.RegisterNode(this);
             NodeConnections.UpdateMap(NodeMap);
-            
-            WorldPosition = Vector3Int.RoundToInt(transform.position);
-            if (config.UpdateDirection) Direction = config.Direction;
-            if (config.UpdateRotation) RotateInstant(config.Direction, false);
-            
-            UpdateTargetNode();
+
             Initialised = true;
-            
-            EventBus<NodePlaced>.Raise(new NodePlaced(this));
             IsEnabled = true;
             
             SetGameObjectName(GridCoord);
@@ -143,27 +139,29 @@ namespace Engine.Construction.Nodes
         public void SetDirection(Direction direction) => Direction = direction; 
         
         [Button]
-        public void Rotate(bool updateTarget = true)
+        public void Rotate()
         {
             NodeRotation.Rotate();
-            if(updateTarget) UpdateTargetNode();
         }
         
-        public void Rotate(Direction direction, bool updateTarget = true)
+        public void Rotate(Direction direction)
         {
             NodeRotation.Rotate(direction);
-            if(updateTarget) UpdateTargetNode();
         }
 
-        public void RotateInstant(Direction direction, bool updateTarget = true)
+        public void RotateInstant(Direction direction)
         {
             NodeRotation.RotateInstant(direction);
-            if(updateTarget) UpdateTargetNode();
         }
 
         public virtual void OnRemoval()
         {
             IsEnabled = false;
+            Visuals.EnableRenderer();
+            
+            if(Initialised == false) return;
+            if(NodeMap == null) return;
+            NodeMap.DeregisterNode(this);
         }
         
         public Vector2Int GetSize() => Direction switch
@@ -174,20 +172,7 @@ namespace Engine.Construction.Nodes
             Direction.West => new Vector2Int(GridHeight, GridWidth),
             _ => new Vector2Int(GridWidth, GridHeight),
         };
-
-        public void UpdateTargetNode()
-        {
-            // DURING A DRAG
-            // Trying to get forward node will fail, as the node hasn't been placed yet
-            // Setting up target nodes during a drag relies on the node in front updating this node 
-            
-            if (TryGetForwardNode(out Node forwardNode))
-                AddTargetNode(forwardNode);
-            
-            if (TryGetBackwardNode(out Node backwardNode))
-                backwardNode.AddTargetNode(this);
-        }
-
+        
         public bool HasForwardNode(out Node forwardNode)
         {
             if (TryGetForwardNode(out forwardNode))
@@ -201,15 +186,19 @@ namespace Engine.Construction.Nodes
         
         // TO DO: Review how the list of Target Nodes should be managed
         // What should happen here when Target Nodes Count > 0? 
-        public void AddTargetNode(Node node)
+        public bool AddTargetNode(Node node)
         {
-            if (LoopDetected(node)) return; 
-            
-            if(TargetNodes.Contains(node)) return;
-            
+            if (LoopDetected(node)) return false; 
+            if(TargetNodes.Contains(node)) return false;
             TargetNodes.Add(node);
-            
             EventBus<NodeTargetEvent>.Raise(new NodeTargetEvent(this, node));
+            return true;
+        }
+
+        public void RemoveTargetNode(Node node)
+        {
+            if(!TargetNodes.Contains(node)) return;
+            TargetNodes.Remove(node);
         }
         
         public bool IsConnected() => NodeConnections.IsConnected();

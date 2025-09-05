@@ -37,11 +37,6 @@ namespace Engine.Construction.Belts
             CtsCtrl.Clear(ref _ctx);
         }
         
-        public override void Initialise(NodeConfiguration config)
-        {
-            base.Initialise(config);
-        }
-        
         public void Activate(IResourceMap resourceMap, Transform parent)
         {
             if (!resourceMap.TryGetResourceSourceAt(GridCoord, out _resourceSource))

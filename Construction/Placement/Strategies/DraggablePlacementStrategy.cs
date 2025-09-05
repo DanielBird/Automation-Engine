@@ -73,7 +73,6 @@ namespace Engine.Construction.Placement.Strategies
         public void CancelPlacement(IPlaceable placeable)
         {
             _dragManager.DespawnAll();
-            _visuals.Hide();
         }
 
         public void CleanUpOnDisable()

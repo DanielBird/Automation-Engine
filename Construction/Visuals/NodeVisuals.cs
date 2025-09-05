@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Engine.Construction.Visuals
 {
-    public enum ConnectionType {InputOutput, InputOnly, OutputOnly}
+    public enum ConnectionType {None, InputOutput, InputOnly, OutputOnly}
     
     public class NodeVisuals : MonoBehaviour
     {
@@ -51,39 +51,45 @@ namespace Engine.Construction.Visuals
             }
                 
             
-            HideArrows();
+            // HideArrows();
         }
         
         public void ShowArrows()
         {
+            // Debug.Log("ShowArrows on " + gameObject.name);
             if (connectionType is ConnectionType.InputOutput or ConnectionType.OutputOnly) ShowOutputArrow();
             if (connectionType is ConnectionType.InputOutput or ConnectionType.InputOnly) ShowInputArrow();
         }
 
-        public void ShowOutputArrow()
+        private void ShowOutputArrow()
         {
-            if(_outputMatFound) outputArrowMat.SetFloat(Alpha, 1);
+            if(!_outputMatFound) return;
+            outputArrowMat.SetFloat(Alpha, 1);
         }
-        
-        public void ShowInputArrow()
+
+        private void ShowInputArrow()
         {
-            if(_inputMatFound) inputArrowMat.SetFloat(Alpha, 1);
+            if(!_inputMatFound) return;
+            inputArrowMat.SetFloat(Alpha, 1);
         }
         
         public void HideArrows()
         {
+            // Debug.Log("HideArrows on " + gameObject.name);
             if (connectionType is ConnectionType.InputOutput or ConnectionType.OutputOnly) HideOutputArrow();
             if (connectionType is ConnectionType.InputOutput or ConnectionType.InputOnly) HideInputArrow();
         }
 
-        public void HideOutputArrow()
+        private void HideOutputArrow()
         {
-            if(_outputMatFound) outputArrowMat.SetFloat(Alpha, 0);
+            if(!_outputMatFound) return; 
+            outputArrowMat.SetFloat(Alpha, 0);
         }
 
-        public void HideInputArrow()
+        private void HideInputArrow()
         {
-            if(_inputMatFound) inputArrowMat.SetFloat(Alpha, 0);
+            if(!_inputMatFound) return;
+            inputArrowMat.SetFloat(Alpha, 0);
         }
 
         public void DisableRenderer()
@@ -95,7 +101,8 @@ namespace Engine.Construction.Visuals
         public void EnableRenderer()
         {
             if(!_rendererSet) return;
-            mainMeshRenderer.enabled = true;
+            if(mainMeshRenderer != null)
+                mainMeshRenderer.enabled = true;
         }
     }
 }

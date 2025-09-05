@@ -76,7 +76,7 @@ namespace Engine.Construction.Placement
                 return;
             }
 
-            Visuals.Show(false);
+            Visuals.ShowGridAndDecal(false);
             
             while (InputSettings.cancel.action.IsPressed())
             {
@@ -103,7 +103,7 @@ namespace Engine.Construction.Placement
             }
             
             ProcessFinalHits();
-            Visuals.Hide(false);
+            Visuals.HideGidAndDecal(false);
         }
         
         private void RemoveSingleNode(GridWorldCoordPair delete, Node node) => RemoveNode(node, delete.GridCoordinate);

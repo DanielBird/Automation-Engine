@@ -1,4 +1,5 @@
-﻿using Engine.Construction.Nodes;
+﻿using System.Collections.Generic;
+using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using UnityEngine;
 
@@ -6,7 +7,9 @@ namespace Engine.Construction.Maps
 {
     public interface INodeMap
     {
-        public void RegisterNode(Node node);
+        public HashSet<Node> GetNodes(); 
+        
+        public bool RegisterNode(Node node);
 
         public void DeregisterNode(Node node);
         

@@ -14,7 +14,7 @@ namespace Engine.Construction.Maps
         Occupied,
     }
     
-    public class Map : IMap
+    public class  Map : IMap
     {
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }

@@ -77,7 +77,7 @@ namespace Engine.Construction.Drag
                 if (_state.CurrentDirection != direction)
                 {
                     direction = _state.CurrentDirection; 
-                    startingNode.Rotate(direction, false);
+                    startingNode.Rotate(direction);
                 }
                 
                 UpdateHits(spawnedCells);
@@ -159,10 +159,7 @@ namespace Engine.Construction.Drag
             {
                 Vector3Int pos = kvp.Key;
                 Node node = kvp.Value;
-                _map.DeregisterOccupant(pos.x, pos.z, node.GridWidth, node.GridHeight);
-                _nodeMap.DeregisterNode(node);
-                SimplePool.Despawn(node.gameObject);
-                node.Visuals.EnableRenderer();
+                RemoveNode(node, pos);
             }
             
             _replacedByIntersections.Clear();
@@ -202,14 +199,14 @@ namespace Engine.Construction.Drag
             {
                 foreach ((Cell cell, TempNode tempNode) in spawnedPos)
                 {
-                    tempNode.Node.RotateInstant(_cellSelection.DirectionFromHit(cell.GridCoordinate, direction), false);
+                    tempNode.Node.RotateInstant(_cellSelection.DirectionFromHit(cell.GridCoordinate, direction));
                 }
             }
             else
             {
                 foreach ((Cell cell, TempNode tempNode) in spawnedPos)
                 {
-                    tempNode.Node.RotateInstant(direction, false);
+                    tempNode.Node.RotateInstant(direction);
                 }
             }
         }
@@ -219,20 +216,19 @@ namespace Engine.Construction.Drag
             foreach (Cell c in _oldCells)
             {
                 if (!spawnedCells.TryGetValue(c, out TempNode temp)) continue;
-                temp.Node.OnRemoval();
-                RemovePrefab(spawnedCells, temp.Prefab, c); 
+
+                RemoveNode(temp.Node, c.GridCoordinate); 
+                spawnedCells.Remove(c);
             }
         }
 
-        private static void RemovePrefab(Dictionary<Cell, TempNode> spawnedCells, GameObject go, Cell cell)
-        {
-            SimplePool.Despawn(go);
-            spawnedCells.Remove(cell);
-        }
+        private void RemoveNode(Node node, Vector3Int gridCoord) 
+            => Cleanup.RemoveNode(node, gridCoord, _map);
         
         private void UpdateFloorDecalPosition()
         {
             if (!TryGetFloorPosition(out Vector3 position)) return;
+            
             _state.TargetGridCoordinate = GridAlignedWorldPosition(position);
             _floorDecal.transform.position = _state.TargetGridCoordinate;
         }

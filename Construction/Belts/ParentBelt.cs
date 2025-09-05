@@ -1,7 +1,9 @@
-﻿using Engine.Construction.Maps;
+﻿using Engine.Construction.Events;
+using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using Engine.Construction.Utilities;
+using Engine.Utilities.Events;
 using UnityEngine;
 
 namespace Engine.Construction.Belts
@@ -59,7 +61,7 @@ namespace Engine.Construction.Belts
             
             childBelt.SetParent(this);
             childBelt.Initialise(nodeConfig);
-            childBelt.UpdateTargetNode();
+            EventBus<NodePlaced>.Raise(new NodePlaced(childBelt));
         }
 
         protected virtual NodeConfiguration GetChildNodeConfiguration(NodeConfiguration config)

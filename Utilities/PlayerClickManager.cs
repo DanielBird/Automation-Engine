@@ -24,7 +24,8 @@ namespace Engine.Utilities
         [CanBeNull] private IClickable clickable; 
         private List<IClickable> clickables = new List<IClickable>();
 
-        [Header("Debug")]
+        [Header("Debug")] 
+        public bool logClicks; 
         public bool showClosestHit = true;
         public Vector3 gizmoScale = Vector3.one;
         private Transform closestHit; 
@@ -43,6 +44,8 @@ namespace Engine.Utilities
 
             _onPlayerDrag = new EventBinding<PlayerDragEvent>(OnPlayerDragEvent); 
             EventBus<PlayerDragEvent>.Register(_onPlayerDrag);
+            
+            canClick = true;
         }
         
         private void OnDisable()
@@ -71,6 +74,9 @@ namespace Engine.Utilities
             
             Ray ray = mainCamera.ScreenPointToRay(Input.mousePosition);
             int hits = Physics.RaycastNonAlloc(ray, _results, maxRaycastDistance, buildingLayer);
+            
+            if(logClicks)
+                Debug.Log("Hit Count during last click: " + hits);
 
             if(clickClosestHits)
                 ClickClosest(hits);
@@ -106,7 +112,8 @@ namespace Engine.Utilities
                     closestDistance = d;
                     closest = c;
                     closestHit = t;
-                    //Debug.Log("Closest hit is " + t.gameObject.name);
+                    if (logClicks)
+                        Debug.Log("Closest hit is " + t.gameObject.name);
                 }
             }
 

@@ -1,6 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Engine.Construction.Events;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
+using Engine.Utilities.Events;
 using Sirenix.OdinInspector;
 using UnityEngine;
 
@@ -9,6 +13,7 @@ namespace Engine.Construction.Maps
     public class NodeMap : INodeMap
     {
         private Node[,] _nodeGrid;
+        private HashSet<Node> _nodeHashSet = new();
         public IMap Map { get; private set; }
 
         public NodeMap(IMap map)
@@ -16,9 +21,14 @@ namespace Engine.Construction.Maps
             Map = map;
             _nodeGrid = new Node[map.MapWidth, map.MapHeight];
         }
-
-        public void RegisterNode(Node node)
+        
+        public HashSet<Node> GetNodes() => _nodeHashSet;
+        
+        public bool RegisterNode(Node node)
         {
+            if (!_nodeHashSet.Add(node))
+                return false;
+            
             int x = node.GridCoord.x;
             int z = node.GridCoord.z;
             int width = node.GridWidth;
@@ -31,12 +41,24 @@ namespace Engine.Construction.Maps
                     _nodeGrid[i, j] = node; 
                 }
             }
+            
+            return true;
         }
 
         public void DeregisterNode(Node node)
         {
+            if (!_nodeHashSet.Remove(node))
+                return;
+            
             int x = node.GridCoord.x;
             int z = node.GridCoord.z;
+
+            if (_nodeGrid[x, z] != node)
+            {
+                Debug.Log("Attempted to deregister a node that doesn't belong at its recorded location on the grid!");
+                return;
+            }
+            
             int width = node.GridWidth;
             int height = node.GridHeight; 
             
@@ -50,6 +72,8 @@ namespace Engine.Construction.Maps
                     }
                 }
             }
+            
+            EventBus<NodeRemoved>.Raise(new NodeRemoved(node));
         }
         
         public bool TryGetNode(int x, int z, out Node node)

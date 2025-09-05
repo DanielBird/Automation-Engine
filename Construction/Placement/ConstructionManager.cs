@@ -71,19 +71,7 @@ namespace Engine.Construction.Placement
 
         protected void ClearTokenSource(ref CancellationTokenSource tokenSource) => CtsCtrl.Clear(ref tokenSource);
 
-        protected void RemoveNode(Node node, Vector3Int gridCoord)
-        {
-            if (!node.isRemovable)
-            {
-                if(node.ParentNode == null) return;
-                gridCoord = node.ParentNode.GridCoord;
-                node = node.ParentNode;
-            }
-            
-            node.OnRemoval();
-            Map.DeregisterOccupant(gridCoord.x, gridCoord.z, node.GridWidth, node.GridHeight);
-            NodeMap.DeregisterNode(node);
-            SimplePool.Despawn(node.gameObject);
-        }
+        protected void RemoveNode(Node node, Vector3Int gridCoord) 
+            => Cleanup.RemoveNode(node, gridCoord, Map);
     }
 }

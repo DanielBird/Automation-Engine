@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection.Emit;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Drag.Selection;
+using Engine.Construction.Events;
 using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
@@ -21,21 +22,17 @@ namespace Engine.Construction.Drag
         private readonly IMap _map;
         private readonly PlacementVisuals _visuals;
         private readonly INodeMap _nodeMap;
-        private readonly NeighbourManager _neighbourManager;
-        private readonly GameObject _floorDecal;
         private readonly PlacementState _state;
         private readonly PlacementSettings _settings;
 
         private readonly Dictionary<Cell, TempNode> _spawned = new();
         private readonly DragSession _dragSession;
 
-        public DragManager(PlacementContext ctx, NeighbourManager neighbourManager)
+        public DragManager(PlacementContext ctx)
         {
             _map = ctx.Map;
             _visuals = ctx.Visuals;
             _nodeMap = ctx.NodeMap;
-            _neighbourManager = neighbourManager;
-            _floorDecal = ctx.Visuals.FloorDecal;
             _state = ctx.State;
             _settings = ctx.PlacementSettings;
             _dragSession = new DragSession(ctx); 
@@ -66,10 +63,12 @@ namespace Engine.Construction.Drag
         
         private void FinaliseDrag(Cell startingCell)
         {
+            HashSet<Node> newNodes = new();
+            
             // Register the start node of the drag
             if (_spawned.TryGetValue(startingCell, out TempNode value))
             {
-                RegisterDraggedOccupant(startingCell.GridCoordinate, startingCell, value.Node, DragPos.Start, true);
+                InitialiseNode(startingCell.GridCoordinate, startingCell, value.Node, newNodes);
             }
             
             List<Cell> allCells = _spawned.Keys.ToList();
@@ -81,69 +80,72 @@ namespace Engine.Construction.Drag
             Vector3Int endGridCoord = VectorUtils.FurthestFrom(gridPositions, startingCell.GridCoordinate);
             Cell endCell = allCells.First(cell => cell.GridCoordinate == endGridCoord);
             
-            // Get middle pairs (exclude start and end)
-            List<Cell> middlePairs = allCells
+            List<Cell> orderedMiddleCells = allCells
                 .Where(pair => pair != startingCell && pair != endCell)
                 .ToList();
-
-            // Register the middle nodes of the drag
-            foreach (Cell cell in middlePairs)
+            
+            // Register the middle nodes of the drag in correct order
+            foreach (Cell cell in orderedMiddleCells)
             {
-                RegisterDraggedOccupant(cell.GridCoordinate, cell, _spawned[cell].Node, DragPos.Middle);
+                InitialiseNode(cell.GridCoordinate, cell, _spawned[cell].Node, newNodes);
             }
             
             // Register the end node of the drag -  must come last
             if (_spawned.TryGetValue(endCell, out TempNode endValue))
             {
                 if(startingCell.GridCoordinate != endCell.GridCoordinate) 
-                    RegisterDraggedOccupant(endCell.GridCoordinate, endCell, endValue.Node, DragPos.End);
+                    InitialiseNode(endCell.GridCoordinate, endCell, endValue.Node, newNodes);
             }
             
+            RegisterNodes(newNodes);
             CleanupDrag();
         }
-
-        private void RegisterDraggedOccupant(Vector3Int gridCoord, Cell cell, Node node, DragPos dragPos , bool manageNeighbours = false)
+        
+        private void InitialiseNode(Vector3Int gridCoord, Cell cell, Node node, HashSet<Node> newNodes)
         {
             Vector2Int size = node.GetSize();
-            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y)) node.FailedPlacement(gridCoord);
+            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y)) 
+                node.FailedPlacement(gridCoord);
             else
             {
                 node.Place(gridCoord, _nodeMap);
                 node.Visuals.HideArrows();
-
                 NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, cell.NodeType); 
                 node.Initialise(config);
+                newNodes.Add(node);
+            }
+        }
 
-                /* if (!manageNeighbours) return;
-                if (_neighbourManager.UpdateToCorner(node, gridCoord, dragPos))
-                    _nodeMap.DeregisterNode(node);*/
+        // ALl the nodes in the path need to be added to the Node Map (via node.Initialise()). 
+        // Before raising the event that flags that a new node has been placed. 
+        private void RegisterNodes(HashSet<Node> nodes)
+        {
+            foreach (Node node in nodes)
+            {
+                EventBus<NodePlaced>.Raise(new NodePlaced(node));
             }
         }
         
         private void CleanupDrag()
         {
             _spawned.Clear();
-            _floorDecal.SetActive(false);
-            _visuals.Hide();
+            _visuals.HidePlacementVisuals();
         }
 
         public void DespawnAll()
         {
             if (_spawned.Count > 1)
             {
-                List<TempNode> spawned = _spawned.Values.ToList();
-                foreach (TempNode tn in spawned)
+                foreach (KeyValuePair<Cell, TempNode> pair in _spawned)
                 {
-                    tn.Node.OnRemoval();
-                    SimplePool.Despawn(tn.Prefab);
+                    Node node = pair.Value.Node;
+                    Vector3Int gridCoord = pair.Key.GridCoordinate; 
+                    Cleanup.RemoveNode(node, gridCoord, _map);
                 }
             }
             else if (_state.CurrentObject != null)
             {
-                if(_state.CurrentObject.TryGetComponent(out Node node))
-                    node.OnRemoval();
-                
-                SimplePool.Despawn(_state.CurrentObject);
+                Cleanup.RemovePlaceable(_state, _map);
             }
         }
     }

@@ -1,6 +1,8 @@
 ﻿using System.Collections;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using Engine.Utilities;
 using UnityEngine;
@@ -9,7 +11,8 @@ namespace Engine.Construction.Visuals
 {
     public class PlacementVisuals
     {
-        private readonly ConstructionEngine _engine; 
+        private readonly ConstructionEngine _engine;
+        private readonly INodeMap _nodeMap;
         public readonly GameObject FloorDecal;
         
         private readonly float _placementTime;
@@ -23,6 +26,9 @@ namespace Engine.Construction.Visuals
         private readonly float _lerpAlphaTime; 
         
         private static readonly int GridAlpha = Shader.PropertyToID("_gridAlpha");
+        private readonly float minAlpha; 
+        private readonly float maxAlpha;
+        
         private Coroutine _alphaRoutine;
         private Coroutine _scaleRoutine;
 
@@ -30,11 +36,13 @@ namespace Engine.Construction.Visuals
         private CancellationTokenSource _scaleCts; 
         private CancellationTokenSource _alphaCts;
         
-        public PlacementVisuals(ConstructionEngine engine, GameObject floorDecal, float placementTime, Vector3 startingScale, Vector3 endScale, 
+        public PlacementVisuals(ConstructionEngine engine, INodeMap nodeMap, GameObject floorDecal, float placementTime, Vector3 startingScale, Vector3 endScale, 
             EasingFunctions.Function scaleUp, EasingFunctions.Function scaleDown,
-            Material floorMaterial, float lerpAlphaTime)
+            Material floorMaterial, float lerpAlphaTime, float minGridAlpha, float maxGridAlpha)
         {
             _engine = engine;
+            _nodeMap = nodeMap;
+            
             FloorDecal = floorDecal;
             FloorDecal.SetActive(false);
             
@@ -46,7 +54,9 @@ namespace Engine.Construction.Visuals
             _scaleDownEasing = scaleDown;
             
             _floorMaterial = floorMaterial;
-            _floorMaterial.SetFloat(GridAlpha, 0);
+            _floorMaterial.SetFloat(GridAlpha, minGridAlpha);
+            minAlpha = minGridAlpha;
+            maxAlpha = maxGridAlpha;
             
             _lerpAlphaTime = lerpAlphaTime;
         }
@@ -111,10 +121,22 @@ namespace Engine.Construction.Visuals
             CtsCtrl.Clear(ref _scaleCts);
         }
 
-        public void Show(bool showDecal = true)
+        public void ShowPlacementVisuals()
+        {
+            ShowGridAndDecal();
+            ShowALlNodeArrows();
+        }
+
+        public void HidePlacementVisuals()
+        {
+            HideGidAndDecal();
+            HideAllNodeArrows();
+        }
+        
+        public void ShowGridAndDecal(bool showDecal = true)
         {
             #if UNITASK
-            LerpGridAlphaUni(1, _lerpAlphaTime/3).Forget();
+            LerpGridAlphaUni(maxAlpha, _lerpAlphaTime).Forget();
             
             #else
             if(_alphaRoutine != null) _engine.StopCoroutine(_alphaRoutine);
@@ -125,10 +147,10 @@ namespace Engine.Construction.Visuals
             if(showDecal) FloorDecal.SetActive(true);
         }
         
-        public void Hide(bool hideDecal = true)
+        public void HideGidAndDecal(bool hideDecal = true)
         {
             # if UNITASK
-            LerpGridAlphaUni(0, _lerpAlphaTime).Forget();
+            LerpGridAlphaUni(minAlpha, _lerpAlphaTime).Forget();
             
             #else
             if(_alphaRoutine != null) StopCoroutine(_alphaRoutine);
@@ -157,6 +179,7 @@ namespace Engine.Construction.Visuals
 
         private async UniTaskVoid LerpGridAlphaUni(float end, float lerpTime)
         {
+            CtsCtrl.Clear(ref _alphaCts);
             _alphaCts = new CancellationTokenSource();
             
             float start = _floorMaterial.GetFloat(GridAlpha);
@@ -178,5 +201,24 @@ namespace Engine.Construction.Visuals
         public void SetFloorDecalPos(Vector3Int pos) => FloorDecal.transform.position = pos;
         
         public void DeactivateFloorDecal() => FloorDecal.SetActive(false);
+
+        public void ShowALlNodeArrows()
+        {
+            foreach (Node node in _nodeMap.GetNodes())
+            {
+                if(node == null) continue;
+                node.Visuals.ShowArrows();
+            }
+        }
+        
+        public void HideAllNodeArrows()
+        {
+            foreach (Node node in _nodeMap.GetNodes())
+            {
+                if (node == null) continue;
+                node.Visuals.HideArrows();
+            }
+            
+        }
     }
 }

@@ -69,6 +69,7 @@ namespace Engine.Construction.Placement
             newNodeType = Node.NodeType;
             
             if(!PlaceableIsNode) return false;
+            if(!Node.Draggable) return false;
             
             CellSelectionParams selectionParams = new CellSelectionParams(map, nodeMap, settings, Node.GridWidth);
             newNodeType = CellDefinition.DefineCell(TargetGridCoordinate, Node.Direction, selectionParams, out newDirection);

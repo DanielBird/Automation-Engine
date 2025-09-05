@@ -109,8 +109,6 @@ namespace Engine.Construction.Belts
             if(IsSelected || !IsEnabled ) return;
             IsSelected = true;
             
-            // Debug.Log("Player select : " + name + " at " + Time.frameCount);
-            
             if(NodeType == NodeType.LeftCorner || NodeType == NodeType.RightCorner)
                 return;
             
@@ -128,12 +126,11 @@ namespace Engine.Construction.Belts
         {
             base.OnRemoval();
             
+            // Despawn any resources that this belt is currently handling
             if(!IsOccupied) return;
             Occupant.CancelMovement();
             SimplePool.Despawn(Occupant.gameObject);
             Occupant = null;
-
-            if(!transform.parent.TryGetComponent(out Node parentNode)) return;
         }
 
         public void SetParent(Belt parent)

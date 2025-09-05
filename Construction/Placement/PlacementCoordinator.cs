@@ -14,9 +14,9 @@ namespace Engine.Construction.Placement
         private PlacementState _state;
         private PlacementVisuals _visuals; 
 
-        public PlacementCoordinator(PlacementContext placementContext, DragManager dragManager, NeighbourManager neighbourManager, Transform widgetParent)
+        public PlacementCoordinator(PlacementContext placementContext, DragManager dragManager, Transform widgetParent)
         {
-            StandardPlacementStrategy standard = new StandardPlacementStrategy(placementContext, neighbourManager, widgetParent);
+            StandardPlacementStrategy standard = new StandardPlacementStrategy(placementContext, widgetParent);
             DraggablePlacementStrategy draggable = new DraggablePlacementStrategy(placementContext, dragManager, standard); 
             
             _strategies = new List<IPlacementStrategy>
@@ -49,7 +49,6 @@ namespace Engine.Construction.Placement
                 if (!strategy.CanHandle(placeable)) continue;
                 
                 strategy.CancelPlacement(placeable);
-                _visuals.DeactivateFloorDecal();
                 return;
             }
         }

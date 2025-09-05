@@ -19,7 +19,6 @@ namespace Engine.Construction.Placement
         private readonly Dictionary<NodeType, IPlaceableFactory> _factories;
 
         private readonly PlacementState state;
-        private readonly NeighbourManager neighbourManager;
         private bool _viablePlacement; 
         
         private Coroutine _drag;
@@ -40,9 +39,9 @@ namespace Engine.Construction.Placement
         {
             state = ctx.State;
             myTransform = transform;
-            neighbourManager = new NeighbourManager(ctx, transform);
-            DragManager dragManager = new(ctx, neighbourManager);
-            _placementCoordinator = new PlacementCoordinator(ctx, dragManager, neighbourManager, resourceParent);
+
+            DragManager dragManager = new(ctx);
+            _placementCoordinator = new PlacementCoordinator(ctx, dragManager, resourceParent);
             
             _factories = new Dictionary<NodeType, IPlaceableFactory>
             {
@@ -192,8 +191,8 @@ namespace Engine.Construction.Placement
             if (!_factories.TryGetValue(newNodeType, out IPlaceableFactory factory))
                 return;
             
-            SimplePool.Despawn(state.CurrentObject);
-
+            Cleanup.RemovePlaceable(state, Map);
+            
             if(!factory.Create(out GameObject newGameObject, out Vector3Int alignedPosition)) return;
             
             state.SetGameObject(newGameObject);
@@ -226,8 +225,8 @@ namespace Engine.Construction.Placement
             }
             
             Visuals.Place(state.CurrentObject);
-            Visuals.Show();
-            Visuals.SetFloorDecalPos(alignedPosition); 
+            Visuals.SetFloorDecalPos(alignedPosition);
+            Visuals.ShowPlacementVisuals();
         }
         
         // Triggered by the left mouse down input action
@@ -279,6 +278,8 @@ namespace Engine.Construction.Placement
         {
             if (state.IsRunning && state.PlaceableFound)
                 _placementCoordinator.CancelPlacement(state.MainPlaceable);
+            
+            Visuals.HidePlacementVisuals();
         }
     }
 }

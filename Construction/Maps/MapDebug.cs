@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using Engine.Construction.Resources;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using Grid = Engine.Construction.Utilities.Grid;
 
@@ -10,6 +12,7 @@ namespace Engine.Construction.Maps
     {
         public MapManager mapManager;
         private IMap map; 
+        private INodeMap nodeMap;
         private IResourceMap resourceMap;
         
         public PlacementSettings placementSettings;
@@ -38,6 +41,7 @@ namespace Engine.Construction.Maps
             }
 
             map = mapManager.Map; 
+            nodeMap = mapManager.NodeMap;
             resourceMap = mapManager.ResourceMap;
         }
         
@@ -79,6 +83,18 @@ namespace Engine.Construction.Maps
                 Vector3Int pos = Grid.GridToWorldPosition(pair.Key, placementSettings.mapOrigin, placementSettings.cellSize);
                 Gizmos.DrawWireCube(pos, _cubeSize);
             }
+        }
+
+        [Button]
+        private void CheckForNullNodes()
+        {
+            int nullNodes = 0;
+            foreach (Node n in nodeMap.GetNodes())
+            {
+                if (n == null) nullNodes++;
+            }
+            
+            Debug.Log("Null nodes found: " + nullNodes);
         }
     }
 }

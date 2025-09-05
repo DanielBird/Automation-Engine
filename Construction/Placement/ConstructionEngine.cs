@@ -39,7 +39,9 @@ namespace Engine.Construction.Placement
         
         [Header("Visuals - Floor Material")]
         public Material floorMaterial;
-        public float lerpAlphaTime = 1f; 
+        public float lerpAlphaTime = 1f;
+        public float minGridAlpha = 0; 
+        public float maxGridAlpha = 1;
         
         [Header("Visuals - Removal")]
         public Material destructionIndicatorMaterial;
@@ -97,9 +99,10 @@ namespace Engine.Construction.Placement
             {
                 Debug.LogError("Missing floor material");
             }
-            
+
             _placementVisuals = new PlacementVisuals(
-                this, 
+                this,
+                NodeMap,
                 floorDecal, 
                 placementTime, 
                 startingScale, 
@@ -107,7 +110,9 @@ namespace Engine.Construction.Placement
                 _scaleUpEasing, 
                 _scaleDownEasing, 
                 floorMaterial, 
-                lerpAlphaTime);
+                lerpAlphaTime,
+                minGridAlpha,
+                maxGridAlpha);
         }
         
         private void CreatePlacementContext()
@@ -159,6 +164,9 @@ namespace Engine.Construction.Placement
         }
         
         [Button]
-        private void ShowGridAndDecal() => _placementVisuals.Show();
+        private void ShowPlacementVisuals() => _placementVisuals.ShowPlacementVisuals();
+        
+        [Button]
+        private void HidePlacementVisuals() => _placementVisuals.HidePlacementVisuals();
     }
 }
