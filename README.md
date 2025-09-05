@@ -15,6 +15,10 @@ A belt graph that handles deliveries.
 
 ![Demo](Media/BeltTest.gif)
 
+Automated detection of surrounding belts during placement by the player
+
+![Demo](Media/BeltDetection.gif)
+
 Intersections - allowing two distinct paths to cross. 
 
 ![Demo](Media/IntersectionGif.gif)
