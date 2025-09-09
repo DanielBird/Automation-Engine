@@ -22,6 +22,7 @@ namespace Engine.Construction.Placement
         public bool PlaceableReplacesNodes { get;  private set; }
         public bool RotatableFound { get; private set; }
         public IRotatable MainRotatable { get; private set; }
+        public int PathId { get; private set; }
 
         public void SetGameObject(GameObject gameObject)
         {
@@ -69,7 +70,7 @@ namespace Engine.Construction.Placement
             newNodeType = Node.NodeType;
             
             if(!PlaceableIsNode) return false;
-            if(!Node.Draggable) return false;
+            if(!Node.nodeTypeSo.draggable) return false;
             
             CellSelectionParams selectionParams = new CellSelectionParams(map, nodeMap, settings, Node.GridWidth);
             newNodeType = CellDefinition.DefineCell(TargetGridCoordinate, Node.Direction, selectionParams, out newDirection);
@@ -78,5 +79,7 @@ namespace Engine.Construction.Placement
         }
         
         public void SetAxis(Axis axis) => CurrentAxis = axis;
+        public void SetPathId(int id) => PathId = id;
+        public void ClearPathId() => PathId = -1;
     }
 } 

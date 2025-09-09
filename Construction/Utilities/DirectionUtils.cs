@@ -65,5 +65,13 @@ namespace Engine.Construction.Utilities
             if ((int)newDirection < 0) newDirection = (Direction)3;
             return newDirection; 
         }
+        
+        public static Direction DirectionBetween(Vector3Int a, Vector3Int b)
+        {
+            if (b.x > a.x) return Direction.East;
+            if (b.x < a.x) return Direction.West;
+            if (b.z > a.z) return Direction.North;
+            return Direction.South;
+        }
     }
 }

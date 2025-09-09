@@ -3,6 +3,7 @@ using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using Engine.Construction.Resources;
 using Sirenix.OdinInspector;
+using UnityEditor;
 using UnityEngine;
 using Grid = Engine.Construction.Utilities.Grid;
 
@@ -23,6 +24,7 @@ namespace Engine.Construction.Maps
         [Header("Debug")]
         public bool showOccupancy;
         public bool showResources;
+        public bool showPaths;
         
         private void Awake()
         {
@@ -47,9 +49,12 @@ namespace Engine.Construction.Maps
         
         private void OnDrawGizmosSelected()
         {
-            if (!isActiveAndEnabled) return;
+            #if UNITY_EDITOR
+            if (!Application.isPlaying) return;
             ShowOccupancy();
             ShowResources();
+            ShowPaths();
+            #endif
         }
 
         private void ShowOccupancy()
@@ -82,6 +87,20 @@ namespace Engine.Construction.Maps
             {
                 Vector3Int pos = Grid.GridToWorldPosition(pair.Key, placementSettings.mapOrigin, placementSettings.cellSize);
                 Gizmos.DrawWireCube(pos, _cubeSize);
+            }
+        }
+
+        private void ShowPaths()
+        {
+            if (!showPaths) return;
+            if (nodeMap == null) return; 
+            
+            GUIStyle style = new() { normal = { textColor = Color.magenta } };
+            Vector3Int offset = new Vector3Int(0, 1, 0);
+            
+            foreach (Node node in nodeMap.GetNodes())
+            {
+                Handles.Label(node.transform.position + offset, node.PathId.ToString(), style);
             }
         }
 

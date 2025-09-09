@@ -65,5 +65,20 @@ namespace Engine.Construction.Utilities
         {
             return a.x == b.x || a.z == b.z;
         }
+        
+        /// <summary>
+        /// Get 4 cardinal neighbors within map bounds
+        /// </summary>
+        public static IEnumerable<Vector3Int> GetNeighbours(Vector3Int c, int step, int mapWidth, int mapHeight)
+        {
+            // 4-connected moves by step
+            int nx;
+            nx = c.x + step; if (nx >= 0 && nx < mapWidth) yield return new Vector3Int(nx, 0, c.z);
+            nx = c.x - step; if (nx >= 0 && nx < mapWidth) yield return new Vector3Int(nx, 0, c.z);
+
+            int nz;
+            nz = c.z + step; if (nz >= 0 && nz < mapHeight) yield return new Vector3Int(c.x, 0, nz);
+            nz = c.z - step; if (nz >= 0 && nz < mapHeight) yield return new Vector3Int(c.x, 0, nz);
+        }
     }
 }

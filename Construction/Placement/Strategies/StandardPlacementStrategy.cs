@@ -71,6 +71,10 @@ namespace Engine.Construction.Placement.Strategies
         public void CancelPlacement(IPlaceable placeable)
         {
             Cleanup.RemovePlaceable(_state, _map);
+            
+            _state.StopRunning();
+            _visuals.HideAllNodeArrows();
+            _visuals.DeactivateFloorDecal();
         }
 
         private bool Place(Vector3Int gridCoord, IPlaceable placeable)
@@ -134,6 +138,7 @@ namespace Engine.Construction.Placement.Strategies
             
             _state.StopRunning();
             _visuals.HideAllNodeArrows();
+            _visuals.DeactivateFloorDecal();
         }
 
         public void CleanUpOnDisable() => CtsCtrl.Clear(ref _cts);

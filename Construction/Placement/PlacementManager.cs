@@ -124,6 +124,7 @@ namespace Engine.Construction.Placement
             state.StopRunning(); 
             state.TargetGridCoordinate = gridCoordinate;
             state.WorldAlignedPosition = worldPosition; 
+            state.SetPathId(e.RequestingNode.PathId);
             
             GameObject build = factory.CreateAt(worldPosition); 
             
@@ -213,6 +214,7 @@ namespace Engine.Construction.Placement
             alignedPosition = new Vector3Int(empty.x, 0, empty.y);
 
             state.SetGameObject(occupant);
+            state.ClearPathId();
 
             if (state.PlaceableFound)
             {

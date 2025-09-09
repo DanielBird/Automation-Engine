@@ -5,6 +5,7 @@ using System.Threading;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Events;
 using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
 using Engine.Construction.Resources;
 using Engine.GameState;
 using Engine.Utilities.Events;
@@ -28,6 +29,7 @@ namespace Engine.Construction.Belts
         private Dictionary<Belt, List<Belt>> _graph = new();
 
         private EventBinding<NodePlaced> _onNodePlaced;
+        private EventBinding<NodeGroupPlaced> _onNodeGroupPlaced;
         private EventBinding<NodeRemoved> _onNodeRemoved;
         private EventBinding<NodeTargetEvent> _onNodeTargetChange;
 
@@ -37,10 +39,12 @@ namespace Engine.Construction.Belts
         private void Awake()
         { 
             _onNodePlaced = new EventBinding<NodePlaced>(OnNodePlaced);
+            _onNodeGroupPlaced = new EventBinding<NodeGroupPlaced>(OnNodeGroupPlaced);
             _onNodeRemoved = new EventBinding<NodeRemoved>(OnNodeRemoved);
             _onNodeTargetChange = new EventBinding<NodeTargetEvent>(OnNodeTargetChange);
             
             EventBus<NodePlaced>.Register(_onNodePlaced);
+            EventBus<NodeGroupPlaced>.Register(_onNodeGroupPlaced);
             EventBus<NodeRemoved>.Register(_onNodeRemoved);
             EventBus<NodeTargetEvent>.Register(_onNodeTargetChange);
         }
@@ -48,6 +52,7 @@ namespace Engine.Construction.Belts
         private void OnDisable()
         {
             EventBus<NodePlaced>.Deregister(_onNodePlaced);
+            EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
             EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
             EventBus<NodeTargetEvent>.Deregister(_onNodeTargetChange);
 
@@ -65,6 +70,15 @@ namespace Engine.Construction.Belts
             _tickTokenSource = null;
         }
 
+        private void OnNodeGroupPlaced(NodeGroupPlaced e)
+        {
+            foreach (Node node in e.NodeGroup)
+            {
+                if(node is Belt b)
+                    RegisterBelt(b);
+            }
+        }
+        
         private void OnNodePlaced(NodePlaced placedEvent)
         {
             if (placedEvent.Node is Belt b)

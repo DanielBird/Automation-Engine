@@ -44,5 +44,11 @@ namespace Engine.Construction.Belts
             SimplePool.Despawn(resource.gameObject);
             Occupant = null;
         }
+        
+        public override void OnPlayerSelect()
+        {
+            // Do nothing.
+            // Consumers don't have paths of nodes leading away from them.
+        }
     }
 }

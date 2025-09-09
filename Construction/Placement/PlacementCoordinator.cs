@@ -37,7 +37,6 @@ namespace Engine.Construction.Placement
                 
                 _state.StopRunning();
                 strategy.HandlePlacement(placeable, gridCoordinate);
-                _visuals.DeactivateFloorDecal();
                 return;
             }
         }

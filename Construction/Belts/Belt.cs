@@ -117,7 +117,7 @@ namespace Engine.Construction.Belts
             if (!NodeMap.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
             
             // If there is a belt in front, do not continue
-            if (NodeMap.GetNeighbourAt(forwardGridPos, out Node forwardNode)) return;
+            if (NodeMap.HasNode(forwardGridPos.x,forwardGridPos.y)) return;
             
             EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), NodeType.GenericBelt, this));
         }

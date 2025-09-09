@@ -1,6 +1,7 @@
 ﻿using System;
 using Engine.Construction.Interaction;
 using Engine.Construction.Maps;
+using Engine.Construction.Nodes;
 using Engine.Construction.Visuals;
 using Engine.GameState;
 using Engine.Utilities;
@@ -58,6 +59,8 @@ namespace Engine.Construction.Placement
         private PlacementContext _context; 
         private PlacementManager _placementManager;
         private RemovalManager _removalManager;
+        private NodeRelationshipManager _relationshipManager;
+        private NodePathManager _pathManager;
 
         private void Awake()
         {
@@ -135,6 +138,8 @@ namespace Engine.Construction.Placement
         {
             _placementManager = new PlacementManager(_context, transform, resourceParent); 
             _removalManager = new RemovalManager(_context);
+            _relationshipManager = new NodeRelationshipManager(); 
+            _pathManager = new NodePathManager(_relationshipManager);
         }
 
         private void CreateRemovalVisuals()
@@ -161,6 +166,8 @@ namespace Engine.Construction.Placement
             _removalManager.Disable();
             _placementVisuals.Disable();
             _removalVisuals.Disable();
+            _relationshipManager.Disable();
+            _pathManager.Disable();
         }
         
         [Button]

@@ -22,5 +22,6 @@ namespace Engine.Construction.Maps
         public bool GetNeighbourAt(Vector2Int position, out Node node);
         
         public bool InBounds(int x, int y);
+        public Vector2Int MapDimensions();
     }
 }

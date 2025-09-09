@@ -3,6 +3,7 @@ using Engine.Utilities.Events;
 
 namespace Engine.Construction.Events
 {
+    // Called when the player places a single node
     public class NodePlaced : IEvent 
     {
         public Node Node { get; private set; }

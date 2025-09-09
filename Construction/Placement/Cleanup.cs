@@ -9,10 +9,22 @@ namespace Engine.Construction.Placement
     {
         public static void RemovePlaceable(PlacementState state, IMap map)
         {
-            if(state.PlaceableIsNode)
+            if (state.PlaceableIsNode)
+            {
                 RemoveNode(state.Node, state.TargetGridCoordinate, map);
+            }
             else
-                SimplePool.Despawn(state.CurrentObject);
+            {
+                // Double check that the Placeable is not a node
+                if (state.CurrentObject.TryGetComponent(out Node node))
+                {
+                    RemoveNode(node, node.GridCoord, map);
+                }
+                else
+                {
+                    SimplePool.Despawn(state.CurrentObject);
+                }
+            }
         }
         
         public static void RemoveNode(Node node, Vector3Int gridCoord, IMap map)

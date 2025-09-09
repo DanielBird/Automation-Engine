@@ -120,8 +120,46 @@ namespace Engine.Construction.Maps
             if (!InBounds(x, z)) return false;
             return Grid[x, z] == CellStatus.Empty; 
         }
-
+        
         public Vector2Int NearestVacantCell(Vector2Int start)
+        {
+            if (!InBounds(start.x, start.y)) return new Vector2Int(-1, -1);
+            if (Grid[start.x, start.y] == CellStatus.Empty) return start;
+        
+            _generation++; 
+            _mark[start.x, start.y] = _generation;
+            
+            _queue.Clear();
+            _queue.Enqueue(start);
+        
+            while (_queue.Count > 0)
+            {
+                Vector2Int current = _queue.Dequeue();
+        
+                // Use Grid.GetNeighbours instead of a manual directions array
+                Vector3Int currentV3 = new Vector3Int(current.x, 0, current.y);
+                foreach (Vector3Int neighborV3 in Utilities.Grid.GetNeighbours(currentV3, 1, MapWidth, MapHeight))
+                {
+                    int nx = neighborV3.x;
+                    int ny = neighborV3.z;
+                    
+                    if (_mark[nx, ny] == _generation) 
+                        continue;
+                    
+                    _mark[nx, ny] = _generation;
+                        
+                    if (Grid[nx, ny] == CellStatus.Empty)
+                        return new Vector2Int(nx, ny);
+        
+                    _queue.Enqueue(new Vector2Int(nx, ny));
+                }
+            }
+            
+            // No vacant cell found
+            return new Vector2Int(-1, -1); 
+        }
+
+        public Vector2Int NearestVacantCell_Legacy(Vector2Int start)
         {
             if (!InBounds(start.x, start.y)) return new Vector2Int(-1, -1);
             if (Grid[start.x, start.y] == CellStatus.Empty) return start;

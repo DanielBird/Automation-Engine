@@ -6,60 +6,81 @@ using UnityEngine;
 
 namespace Engine.Construction.Nodes
 {
-    public class NodeRelationshipManager : MonoBehaviour
+    public class NodeRelationshipManager
     {        
         private EventBinding<NodePlaced> _onNodePlaced;
+        private EventBinding<NodeGroupPlaced> _onNodeGroupPlaced;
         private EventBinding<NodeRemoved> _onNodeRemoved;
-        private EventBinding<NodeTargetEvent> _onNodeTargetChange;
-
+        
         // Which nodes (Value) does each node (Key) target?
         private Dictionary<Node, HashSet<Node>> _nodeTargets = new();
         // Which nodes (Value) target this node (Key)? 
         private Dictionary<Node, HashSet<Node>> _nodeSources = new();
         
-        private void Awake()
+        public NodeRelationshipManager()
         {
             _onNodePlaced = new EventBinding<NodePlaced>(OnNodePlaced);
+            _onNodeGroupPlaced = new EventBinding<NodeGroupPlaced>(OnNodeGroupPlaced); 
             _onNodeRemoved = new EventBinding<NodeRemoved>(OnNodeRemoved);
-            _onNodeTargetChange = new EventBinding<NodeTargetEvent>(OnNodeTargetChange);
             
             EventBus<NodePlaced>.Register(_onNodePlaced);
+            EventBus<NodeGroupPlaced>.Register(_onNodeGroupPlaced);
             EventBus<NodeRemoved>.Register(_onNodeRemoved);
-            EventBus<NodeTargetEvent>.Register(_onNodeTargetChange);
         }
 
-        private void OnDisable()
+        public void Disable()
         {
             EventBus<NodePlaced>.Deregister(_onNodePlaced);
+            EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
             EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
-            EventBus<NodeTargetEvent>.Deregister(_onNodeTargetChange);
         }
 
         private void OnNodePlaced(NodePlaced placedEvent)
         {
             Node node = placedEvent.Node;
+            AddForwardRelationship(node);
+        }
+
+        private void OnNodeGroupPlaced(NodeGroupPlaced e)
+        {
+            // Try to add the backward relationship for the start node
+            AddBackwardRelationship(e.StartNode);
             
-            // Handle forward relationship (this node -> forward node)
-            if (node.TryGetForwardNode(out Node forwardNode))
+            // Try to add the forward relationship for all the nodes
+            foreach (Node node in e.NodeGroup)
             {
-                AddRelationship(node, forwardNode);
-            }
-            
-            // Handle backward relationship (backward node -> this node)
-            if (node.TryGetBackwardNode(out Node backwardNode))
-            {
-                AddRelationship(backwardNode, node);
+                AddForwardRelationship(node);
             }
         }
+
+        private void AddForwardRelationship(Node node)
+        {
+            // Handle forward relationship (this node -> forward node)
+            if (node.TryGetForwardNode(out Node forwardNode))
+                AddRelationship(node, forwardNode);
+        }
         
+        private void AddBackwardRelationship(Node node)
+        {
+            // Handle backward relationship (backward node -> this node)
+            if (node.TryGetBackwardNode(out Node backwardNode))
+                AddRelationship(backwardNode, node);
+            
+            // string log = backwardNode != null ? $"Found a backward node ({backwardNode.name}) to add {node.name} to" : $"{node.name} failed to find a backward node";
+            // Debug.Log(log);
+        }
+
         private void AddRelationship(Node shippingNode, Node targetNode)
         {
             EnsureNodeExists(shippingNode);
             EnsureNodeExists(targetNode);
             
-            // Don't add the relationship if it can't be formed, e.g., due to loops
-            if (!shippingNode.AddTargetNode(targetNode)) return;
-
+            // Don't add the relationship if it already exists or can't be formed
+            if (!shippingNode.AddTargetNode(targetNode))
+                return;
+            
+            // Debug.Log($"Added {targetNode.name} to {shippingNode.name}");
+            
             _nodeTargets[shippingNode].Add(targetNode);
             _nodeSources[targetNode].Add(shippingNode);
         }
@@ -113,10 +134,10 @@ namespace Engine.Construction.Nodes
             _nodeSources.Remove(node);
         }
 
-        private void OnNodeTargetChange(NodeTargetEvent targetEvent)
-        {
-            
-        }
+        // Which nodes does this node target?
+        public bool GetNodeTargets(Node node, out HashSet<Node> targets) =>  _nodeTargets.TryGetValue(node, out targets);
         
+        // Which nodes target this node?
+        public bool GetNodeSource(Node node, out HashSet<Node> sources) =>  _nodeSources.TryGetValue(node, out sources);
     }
 }

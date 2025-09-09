@@ -38,7 +38,7 @@ namespace Engine.Construction.Drag.Selection
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-
+            
             return selection;
         }
 

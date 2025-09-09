@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -33,9 +34,11 @@ namespace Engine.Construction.Drag
         private List<Cell> _newCells = new();
         private List<Cell> _oldCells = new();
         private Dictionary<Vector3Int, Node> _replacedByIntersections = new();
+        private Dictionary<Vector3Int, Node> _restoreAfterIntersection = new();
         
         private RaycastHit[] _cellHits = new RaycastHit[1];
         private Cell _cornerCell;
+        private Vector3Int _currentGridCoord;
         
         private CancellationTokenSource _cts = new();
         
@@ -57,21 +60,29 @@ namespace Engine.Construction.Drag
         }
         
         /// <summary>
-        /// Handles the drag operation for placing objects in the grid
-        /// Does not support placement of rectangular game objects
-        /// SpawnedPos is a dictionary of Cells and Temporary Nodes
+        /// Handles the drag operation for placing objects on the grid
+        /// Does not support placement of rectangular game objects - square only!
         /// </summary>
         public async UniTask RunDrag(GameObject initialObject, Node startingNode, Vector3Int startGridCoord, Dictionary<Cell, TempNode> spawnedCells)
         {
-            var direction = _state.CurrentDirection;
+            Direction direction = _state.CurrentDirection;
             int stepSize = startingNode.GridWidth;
+            int pathId = StartingPath(startingNode, startGridCoord);
+
+            _currentGridCoord = startGridCoord; 
 
             CtsCtrl.Clear(ref _cts);
             _cts = new CancellationTokenSource();
             
             while (_inputSettings.place.action.IsPressed())
             {
-                _cellSelection = SelectCells(startGridCoord, stepSize);
+                if (SameGridPos())
+                {
+                    await UniTask.Yield(_cts.Token);
+                    continue;
+                }
+                
+                _cellSelection = SelectCells(startGridCoord, stepSize, pathId);
                 _selectedCells = _cellSelection.HitCells; 
 
                 if (_state.CurrentDirection != direction)
@@ -87,6 +98,7 @@ namespace Engine.Construction.Drag
                     ManageIntersections();
                     ProcessNewHits(initialObject, spawnedCells);
                     RemoveOldHits(spawnedCells);
+                    RestoreAfterIntersection();
                     UpdateRotations(spawnedCells);
                     UpdateFloorDecalPosition();
                 }
@@ -98,13 +110,60 @@ namespace Engine.Construction.Drag
             CleanUpAfterIntersections();
             CtsCtrl.Clear(ref _cts);
         }
+
+        /// <summary>
+        /// Checks whether grid coord hit by the mouse has changed 
+        /// </summary>
+        private bool SameGridPos()
+        {
+            if (!CellSelector.TryGetCurrentGridCoord(_mainCamera, _settings.floorLayer, _cellHits, _map, _settings, out Vector3Int gridCoord))
+                return true; 
+            
+            if (gridCoord == _currentGridCoord)
+                return true;
+            
+            _currentGridCoord = gridCoord;
+            return false;
+        }
+
+        private int StartingPath(Node startingNode, Vector3Int startGridCoord)
+        {
+            // If the player clicks an existing node to start a drag,
+            // The Placement State is updated with that node's pathId 
+            if(_state.PathId != -1)
+                return _state.PathId;
+
+            // The starting node's grid coord has not yet been set.
+            // So we recreate node.TryGetBackwardNode here. 
+            int width = startingNode.nodeTypeSo.width;
+            int x = startGridCoord.x; 
+            int z = startGridCoord.z;
+            Direction inputDirection = startingNode.InputDirection();
+
+            Vector2Int backwardPosition = inputDirection switch
+            {
+                Direction.North => new Vector2Int(x, z + width),
+                Direction.East => new Vector2Int(x + width, z),
+                Direction.South => new Vector2Int(x, z - width),
+                Direction.West => new Vector2Int(x - width, z),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+
+            if (_nodeMap.GetNeighbourAt(backwardPosition, out Node backwardNode))
+            {
+                _state.SetPathId(backwardNode.PathId);
+                return _state.PathId;
+            }
+            
+            return -1;
+        }
         
         /// <summary>
         /// Generates a CellSelection which holds a HashSet of Cells hit during the current drag
         /// </summary>
-        private CellSelection SelectCells(Vector3Int startGridCoord, int stepSize)
+        private CellSelection SelectCells(Vector3Int startGridCoord, int stepSize, int pathId)
         {
-            _cellSelectionParams = new CellSelectionParams(_map, _nodeMap, _settings, stepSize); 
+            _cellSelectionParams = new CellSelectionParams(_map, _nodeMap, _settings, stepSize, pathId); 
             CellSelection selection = CellSelector.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, _cellSelectionParams);
             _state.SetAxis(selection.Axis);
             _state.SetDirection(selection.Direction);
@@ -148,6 +207,7 @@ namespace Engine.Construction.Drag
                 Node node = kvp.Value;
                 node.Visuals.EnableRenderer();
                 _replacedByIntersections.Remove(kvp.Key);
+                _restoreAfterIntersection.Add(kvp.Key, node);
             }
             
             _cellSelectionParams.ClearIntersections();
@@ -211,12 +271,13 @@ namespace Engine.Construction.Drag
             }
         }
 
+        // Disables and deregisters nodes that have been spawned during this drag operation
         private void RemoveOldHits(Dictionary<Cell, TempNode> spawnedCells)
         {
             foreach (Cell c in _oldCells)
             {
                 if (!spawnedCells.TryGetValue(c, out TempNode temp)) continue;
-
+                
                 RemoveNode(temp.Node, c.GridCoordinate); 
                 spawnedCells.Remove(c);
             }
@@ -224,6 +285,21 @@ namespace Engine.Construction.Drag
 
         private void RemoveNode(Node node, Vector3Int gridCoord) 
             => Cleanup.RemoveNode(node, gridCoord, _map);
+
+        // After removing an old hit that is an intersection... 
+        // The Map for that cell will be set to vacant. 
+        // We need to restore map occupancy. 
+        private void RestoreAfterIntersection()
+        {
+            foreach (KeyValuePair<Vector3Int, Node> pair in _restoreAfterIntersection)
+            {
+                NodeTypeSo nodeType = pair.Value.nodeTypeSo; 
+                Vector3Int pos = pair.Key;
+                _map.RegisterOccupant(pos.x,pos.z, nodeType.width, nodeType.height);
+            }
+            
+            _restoreAfterIntersection.Clear();
+        }
         
         private void UpdateFloorDecalPosition()
         {

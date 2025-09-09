@@ -35,6 +35,18 @@ namespace Engine.Construction.Maps
         }
 
         [Button]
+        public void RegisterOccupant(int x, int z, int width, int height)
+        {
+            Map.RegisterOccupant(x, z, width, height);
+        }
+        
+        [Button]
+        public void DeregisterOccupant(int x, int z, int width, int height)
+        {
+            Map.DeregisterOccupant(x, z, width, height);
+        }
+        
+        [Button]
         public void CheckMapOccupancy(int x, int z, int width, int height)
         {
             string s = Map.VacantSpace(x, z, width, height) ? "Space Empty" : "Space Occupied";

@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Emit;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Drag.Selection;
 using Engine.Construction.Events;
@@ -8,7 +7,6 @@ using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using Engine.Construction.Visuals;
-using Engine.GameState;
 using Engine.Utilities;
 using Engine.Utilities.Events;
 using Engine.Utilities.Events.Types;
@@ -28,6 +26,8 @@ namespace Engine.Construction.Drag
         private readonly Dictionary<Cell, TempNode> _spawned = new();
         private readonly DragSession _dragSession;
 
+        private Vector3Int _startingGridCoord; 
+        
         public DragManager(PlacementContext ctx)
         {
             _map = ctx.Map;
@@ -45,31 +45,38 @@ namespace Engine.Construction.Drag
         
         public async UniTaskVoid HandleDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord)
         {
+            _startingGridCoord = startingGridCoord;
             EventBus<PlayerDragEvent>.Raise(new PlayerDragEvent(true));
             InitialiseDrag(initialObject, startingNode, startingGridCoord, out Cell startingCell);
+            
             await _dragSession.RunDrag(initialObject, startingNode, startingGridCoord, _spawned); 
-            FinaliseDrag(startingCell);
+            
+            FinaliseDrag();
             EventBus<PlayerDragEvent>.Raise(new PlayerDragEvent(false));
         }
         
         private void InitialiseDrag(GameObject initialObject, Node startingNode, Vector3Int startingGridCoord, out Cell startingCell)
         {
             _spawned.Clear();
-
             startingCell = new Cell(startingGridCoord, _state.CurrentDirection, NodeType.Straight, _settings);
             _spawned.Add(startingCell, new TempNode(initialObject, startingNode));
             _state.SetAxis(Axis.XAxis);
         }
         
-        private void FinaliseDrag(Cell startingCell)
+        private void FinaliseDrag()
         {
-            HashSet<Node> newNodes = new();
-            
-            // Register the start node of the drag
-            if (_spawned.TryGetValue(startingCell, out TempNode value))
+            if (_spawned.All(pair => pair.Key.GridCoordinate != _startingGridCoord))
             {
-                InitialiseNode(startingCell.GridCoordinate, startingCell, value.Node, newNodes);
+                Debug.LogError("Failed to find a cell that matches the starting grid coordinate of the drag. Bail.");
+                CleanupDrag();
+                return;
             }
+            
+            Cell startingCell = _spawned.First(pair => pair.Key.GridCoordinate == _startingGridCoord).Key;
+                
+            HashSet<Node> newNodes = new();
+            Node startNode = null;
+            Node endNode = null; 
             
             List<Cell> allCells = _spawned.Keys.ToList();
             List<Vector3Int> gridPositions = allCells
@@ -83,7 +90,18 @@ namespace Engine.Construction.Drag
             List<Cell> orderedMiddleCells = allCells
                 .Where(pair => pair != startingCell && pair != endCell)
                 .ToList();
-            
+
+            // Register the start node of the drag
+            if (_spawned.TryGetValue(startingCell, out TempNode value))
+            {
+                startNode = value.Node;
+                InitialiseNode(startingCell.GridCoordinate, startingCell, startNode, newNodes);
+            }
+            else
+            {
+                Debug.Log("Failed to find the starting cell in the dictionary");
+            }
+
             // Register the middle nodes of the drag in correct order
             foreach (Cell cell in orderedMiddleCells)
             {
@@ -93,11 +111,14 @@ namespace Engine.Construction.Drag
             // Register the end node of the drag -  must come last
             if (_spawned.TryGetValue(endCell, out TempNode endValue))
             {
-                if(startingCell.GridCoordinate != endCell.GridCoordinate) 
-                    InitialiseNode(endCell.GridCoordinate, endCell, endValue.Node, newNodes);
+                if (startingCell.GridCoordinate != endCell.GridCoordinate)
+                {
+                    endNode = endValue.Node;
+                    InitialiseNode(endCell.GridCoordinate, endCell, endNode, newNodes);
+                }
             }
             
-            RegisterNodes(newNodes);
+            RegisterNodes(newNodes, startNode, endNode);
             CleanupDrag();
         }
         
@@ -118,12 +139,9 @@ namespace Engine.Construction.Drag
 
         // ALl the nodes in the path need to be added to the Node Map (via node.Initialise()). 
         // Before raising the event that flags that a new node has been placed. 
-        private void RegisterNodes(HashSet<Node> nodes)
+        private void RegisterNodes(HashSet<Node> nodes, Node startNode, Node endNode)
         {
-            foreach (Node node in nodes)
-            {
-                EventBus<NodePlaced>.Raise(new NodePlaced(node));
-            }
+            EventBus<NodeGroupPlaced>.Raise(new NodeGroupPlaced(nodes, startNode, endNode, _state.PathId));
         }
         
         private void CleanupDrag()

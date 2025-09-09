@@ -15,11 +15,13 @@ namespace Engine.Construction.Maps
         private Node[,] _nodeGrid;
         private HashSet<Node> _nodeHashSet = new();
         public IMap Map { get; private set; }
+        private Vector2Int mapDimensions; 
 
         public NodeMap(IMap map)
         {
             Map = map;
             _nodeGrid = new Node[map.MapWidth, map.MapHeight];
+            mapDimensions = new Vector2Int(map.MapWidth, map.MapHeight);
         }
         
         public HashSet<Node> GetNodes() => _nodeHashSet;
@@ -134,5 +136,7 @@ namespace Engine.Construction.Maps
             return x >= 0 && x < _nodeGrid.GetLength(0) &&
                    z >= 0 && z < _nodeGrid.GetLength(1); 
         }
+
+        public Vector2Int MapDimensions() => mapDimensions;
     }
 }

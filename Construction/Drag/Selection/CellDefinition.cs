@@ -5,6 +5,7 @@ using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using Engine.Construction.Utilities;
 using UnityEngine;
+using Grid = Engine.Construction.Utilities.Grid;
 
 namespace Engine.Construction.Drag.Selection
 {
@@ -15,40 +16,56 @@ namespace Engine.Construction.Drag.Selection
             int stepSize = selectionParams.StepSize;
             stepSize = Mathf.Abs(stepSize);
             INodeMap nodeMap = selectionParams.NodeMap;
+            Vector2Int mapDimensions = nodeMap.MapDimensions();
             
-            Vector2Int northPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, Direction.North, stepSize);
-            Vector2Int eastPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, Direction.East, stepSize);
-            Vector2Int southPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, Direction.South, stepSize);
-            Vector2Int westPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, Direction.West, stepSize);
+            IEnumerable<Vector3Int> neighbours = Grid.GetNeighbours(gridCoord, stepSize, mapDimensions.x, mapDimensions.y);
+            Dictionary<Direction, Node> neighbourNodes = new();
+            Dictionary<Direction, bool> neighbourFound = new Dictionary<Direction, bool>
+            {
+                [Direction.North] = false,
+                [Direction.East] = false,
+                [Direction.South] = false,
+                [Direction.West] = false,
+            };
+
+            foreach (Vector3Int neighbourPos in neighbours)
+            {
+                if (nodeMap.GetNeighbourAt(new Vector2Int(neighbourPos.x, neighbourPos.z), out Node node))
+                {
+                    Direction neighbourDirection = GetDirectionFromOffset(gridCoord, neighbourPos);
+                    neighbourFound[neighbourDirection] = true;
+                    neighbourNodes[neighbourDirection] = node;
+                }
+            }
             
-            bool northFound = nodeMap.GetNeighbourAt(northPos, out Node northNode);
-            bool eastFound = nodeMap.GetNeighbourAt(eastPos, out Node eastNode);
-            bool southFound = nodeMap.GetNeighbourAt(southPos, out Node southNode);
-            bool westFound = nodeMap.GetNeighbourAt(westPos, out Node westNode);
+            bool northFound = neighbourFound[Direction.North];
+            bool eastFound = neighbourFound[Direction.East];
+            bool southFound = neighbourFound[Direction.South];
+            bool westFound = neighbourFound[Direction.West];
             
-            // For corner cases, analyze flow direction
+            // For corner cases, analyze the flow direction
             if (northFound && westFound && !eastFound && !southFound)
             {
                 // North + West connection 
-                return DetermineCornerType(northNode, westNode, Direction.North, Direction.West, out finalDirection);
+                return DetermineCornerType(neighbourNodes[Direction.North], neighbourNodes[Direction.West], Direction.North, Direction.West, out finalDirection);
             }
     
             if (northFound && eastFound && !westFound && !southFound)
             {
                 // North + East connection
-                return DetermineCornerType(northNode, eastNode, Direction.North, Direction.East, out finalDirection);
+                return DetermineCornerType(neighbourNodes[Direction.North], neighbourNodes[Direction.East], Direction.North, Direction.East, out finalDirection);
             }
     
             if (southFound && eastFound && !northFound && !westFound)
             {
                 // South + East connection
-                return DetermineCornerType(southNode, eastNode, Direction.South, Direction.East, out finalDirection);
+                return DetermineCornerType(neighbourNodes[Direction.South], neighbourNodes[Direction.East], Direction.South, Direction.East, out finalDirection);
             }
     
             if (southFound && westFound && !northFound && !eastFound)
             {
                 // South + West connection
-                return DetermineCornerType(southNode, westNode, Direction.South, Direction.West, out finalDirection);
+                return DetermineCornerType(neighbourNodes[Direction.South], neighbourNodes[Direction.West], Direction.South, Direction.West, out finalDirection);
             }
 
             if (northFound && eastFound && southFound && westFound)
@@ -59,7 +76,19 @@ namespace Engine.Construction.Drag.Selection
     
             finalDirection = direction;
             return NodeType.Straight;
-
+        }
+        
+        private static Direction GetDirectionFromOffset(Vector3Int center, Vector3Int neighbor)
+        {
+            int dx = neighbor.x - center.x;
+            int dz = neighbor.z - center.z;
+    
+            if (dx > 0) return Direction.East;
+            if (dx < 0) return Direction.West;
+            if (dz > 0) return Direction.North;
+            if (dz < 0) return Direction.South;
+    
+            throw new System.ArgumentException("Invalid neighbor offset");
         }
         
         private static NodeType DetermineCornerType(Node node1, Node node2, Direction dir1, Direction dir2, out Direction finalDirection)

@@ -1,4 +1,5 @@
-﻿using Engine.Construction.Maps;
+﻿using System;
+using Engine.Construction.Maps;
 using Engine.Construction.Placement;
 using Engine.Construction.Utilities;
 using UnityEngine;
@@ -9,7 +10,7 @@ namespace Engine.Construction.Nodes
     {
         private readonly Node _node;
         private INodeMap _nodeMap;
-        private bool _nodeMapSet; 
+        private bool _nodeMapSet;
         
         public NodeConnections(Node node)  => _node = node;
         public void UpdateMap(INodeMap nodeMap)
@@ -26,15 +27,40 @@ namespace Engine.Construction.Nodes
         
         public bool TryGetForwardNode(out Node forwardNode)
         {
-            forwardNode = null; 
-            Vector2Int forwardPosition = PositionByDirection.GetForwardPosition(_node.GridCoord, _node.Direction, _node.GridWidth);
+            forwardNode = null;
+            int width = _node.GridWidth; 
+            int x = _node.GridCoord.x;
+            int z = _node.GridCoord.z;
+            
+            Vector2Int forwardPosition = _node.Direction switch
+            {
+                Direction.North => new Vector2Int(x, z + width),
+                Direction.East => new Vector2Int(x + width, z),
+                Direction.South => new Vector2Int(x, z - width),
+                Direction.West => new Vector2Int(x - width, z),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+            
             return _nodeMapSet && _nodeMap.GetNeighbourAt(forwardPosition, out forwardNode);
         }
         
         public bool TryGetBackwardNode(out Node backwardNode)
         {
             backwardNode = null;
-            Vector2Int backwardPosition = PositionByDirection.GetForwardPosition(_node.GridCoord, InputPosition(), _node.GridWidth);
+            int width = _node.GridWidth; 
+            int x = _node.GridCoord.x;
+            int z = _node.GridCoord.z;
+            Direction inputDirection = InputPosition();
+
+            Vector2Int backwardPosition = inputDirection switch
+            {
+                Direction.North => new Vector2Int(x, z + width),
+                Direction.East => new Vector2Int(x + width, z),
+                Direction.South => new Vector2Int(x, z - width),
+                Direction.West => new Vector2Int(x - width, z),
+                _ => throw new ArgumentOutOfRangeException()
+            };
+            
             return _nodeMapSet && _nodeMap.GetNeighbourAt(backwardPosition, out backwardNode);
         }
 
@@ -88,9 +114,10 @@ namespace Engine.Construction.Nodes
         public Direction InputPosition() => _node.NodeType switch
         {
             NodeType.Straight => DirectionUtils.Opposite(_node.Direction),
+            NodeType.GenericBelt => DirectionUtils.Opposite(_node.Direction),
             NodeType.LeftCorner => DirectionUtils.RotateCounterClockwise(_node.Direction),
             NodeType.RightCorner => DirectionUtils.RotateClockwise(_node.Direction),
-            _ => _node.Direction,
+            _ => DirectionUtils.Opposite(_node.Direction),
         };
     }
 }
