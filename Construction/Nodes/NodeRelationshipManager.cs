@@ -11,6 +11,7 @@ namespace Engine.Construction.Nodes
         private EventBinding<NodePlaced> _onNodePlaced;
         private EventBinding<NodeGroupPlaced> _onNodeGroupPlaced;
         private EventBinding<NodeRemoved> _onNodeRemoved;
+        private bool _eventsRegistered;
         
         // Which nodes (Value) does each node (Key) target?
         private Dictionary<Node, HashSet<Node>> _nodeTargets = new();
@@ -19,6 +20,12 @@ namespace Engine.Construction.Nodes
         
         public NodeRelationshipManager()
         {
+            RegisterEvents();
+        }
+
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
             _onNodePlaced = new EventBinding<NodePlaced>(OnNodePlaced);
             _onNodeGroupPlaced = new EventBinding<NodeGroupPlaced>(OnNodeGroupPlaced); 
             _onNodeRemoved = new EventBinding<NodeRemoved>(OnNodeRemoved);
@@ -26,13 +33,18 @@ namespace Engine.Construction.Nodes
             EventBus<NodePlaced>.Register(_onNodePlaced);
             EventBus<NodeGroupPlaced>.Register(_onNodeGroupPlaced);
             EventBus<NodeRemoved>.Register(_onNodeRemoved);
+            _eventsRegistered = true;
         }
 
         public void Disable()
         {
-            EventBus<NodePlaced>.Deregister(_onNodePlaced);
-            EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
-            EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
+            if (_eventsRegistered)
+            {
+                EventBus<NodePlaced>.Deregister(_onNodePlaced);
+                EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
+                EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
+                _eventsRegistered = false;
+            }
         }
 
         private void OnNodePlaced(NodePlaced placedEvent)
@@ -56,14 +68,14 @@ namespace Engine.Construction.Nodes
         private void AddForwardRelationship(Node node)
         {
             // Handle forward relationship (this node -> forward node)
-            if (node.TryGetForwardNode(out Node forwardNode))
+            if (node.TryGetOutputNode(out Node forwardNode))
                 AddRelationship(node, forwardNode);
         }
         
         private void AddBackwardRelationship(Node node)
         {
             // Handle backward relationship (backward node -> this node)
-            if (node.TryGetBackwardNode(out Node backwardNode))
+            if (node.TryGetInputNode(out Node backwardNode))
                 AddRelationship(backwardNode, node);
             
             // string log = backwardNode != null ? $"Found a backward node ({backwardNode.name}) to add {node.name} to" : $"{node.name} failed to find a backward node";

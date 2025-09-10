@@ -4,26 +4,36 @@ using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Events;
-using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
+using Engine.Construction.Placement;
 using Engine.Construction.Resources;
 using Engine.GameState;
+using Engine.Utilities;
 using Engine.Utilities.Events;
-using Sirenix.OdinInspector;
 using UnityEngine;
 using ZLinq;
 
 namespace Engine.Construction.Belts
 {
-    [RequireComponent(typeof(MapManager))]
-    public class BeltManager : MonoBehaviour
+    public class BeltManager
     {
+        private ConstructionEngine _engine; 
+        
         [Header("Setup")]
         [Tooltip("Time between attempts to push all belts forwards")]
-        public float tickForwardFrequency = 2f;
-        public bool runOnStart = true; 
-        [field:SerializeField] public bool Active { get; private set; }
-        [SerializeField] private int timeOfLastTick; 
+        private readonly float _tickForwardFrequency;
+        private readonly bool _runOnStart;
+
+        private bool _active; 
+        private bool Active
+        {
+            get => _active;
+            set
+            {
+                _engine.beltActive = value; 
+                _active = value;
+            } 
+        }
 
         private HashSet<Belt> _belts = new HashSet<Belt>(); 
         private Dictionary<Belt, List<Belt>> _graph = new();
@@ -32,12 +42,23 @@ namespace Engine.Construction.Belts
         private EventBinding<NodeGroupPlaced> _onNodeGroupPlaced;
         private EventBinding<NodeRemoved> _onNodeRemoved;
         private EventBinding<NodeTargetEvent> _onNodeTargetChange;
+        private bool _eventsRegistered; 
 
         private CancellationTokenSource _tickTokenSource;
-        private Coroutine _tickForwardRoutine; 
+        private Coroutine _tickForwardRoutine;
+
+        public BeltManager(ConstructionEngine engine, float tickForwardFrequency, bool runOnStart)
+        {
+            _engine = engine;
+            _tickForwardFrequency = tickForwardFrequency;
+            _runOnStart = runOnStart;
+            
+            RegisterEvents();
+        }
         
-        private void Awake()
+        private void RegisterEvents()
         { 
+            if (_eventsRegistered) return;
             _onNodePlaced = new EventBinding<NodePlaced>(OnNodePlaced);
             _onNodeGroupPlaced = new EventBinding<NodeGroupPlaced>(OnNodeGroupPlaced);
             _onNodeRemoved = new EventBinding<NodeRemoved>(OnNodeRemoved);
@@ -47,28 +68,28 @@ namespace Engine.Construction.Belts
             EventBus<NodeGroupPlaced>.Register(_onNodeGroupPlaced);
             EventBus<NodeRemoved>.Register(_onNodeRemoved);
             EventBus<NodeTargetEvent>.Register(_onNodeTargetChange);
+            
+            _eventsRegistered = true;
         }
 
-        private void OnDisable()
+        public void Disable()
         {
-            EventBus<NodePlaced>.Deregister(_onNodePlaced);
-            EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
-            EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
-            EventBus<NodeTargetEvent>.Deregister(_onNodeTargetChange);
-
+            if (_eventsRegistered)
+            {
+                EventBus<NodePlaced>.Deregister(_onNodePlaced);
+                EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
+                EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
+                EventBus<NodeTargetEvent>.Deregister(_onNodeTargetChange);
+                _eventsRegistered = false;
+            }
+            
             ClearToken();
             
             if(_tickForwardRoutine != null)
-                StopCoroutine(_tickForwardRoutine);
+                _engine.StopCoroutine(_tickForwardRoutine);
         }
 
-        private void ClearToken()
-        {
-            if (_tickTokenSource == null) return;
-            _tickTokenSource.Cancel();
-            _tickTokenSource.Dispose();
-            _tickTokenSource = null;
-        }
+        private void ClearToken() => CtsCtrl.Clear(ref _tickTokenSource);
 
         private void OnNodeGroupPlaced(NodeGroupPlaced e)
         {
@@ -170,13 +191,12 @@ namespace Engine.Construction.Belts
             }
         }
 
-        private void Start()
+        public void Start()
         {
-            if(runOnStart)
+            if(_runOnStart)
                 Run();
         }
-
-        [Button]
+        
         public void Run()
         {
             Active = true;
@@ -184,19 +204,17 @@ namespace Engine.Construction.Belts
             #if UNITASK
             _tickTokenSource = new CancellationTokenSource();
             TickForward().Forget();
-
-            
             #else
-            _tickForwardRoutine = StartCoroutine(TickForwardCoroutine()); 
-
+            if (_tickForwardRoutine != null) _engine.StopCoroutine(_tickForwardRoutine);
+            _tickForwardRoutine = _engine.StartCoroutine(TickForwardCoroutine()); 
             #endif
         }
-
-        [Button]
+        
         public void Stop()
         {
-            Active = false;
+            Active = false; 
             ClearToken();
+            if (_tickForwardRoutine != null) _engine.StopCoroutine(_tickForwardRoutine);
         }
 
         private async UniTaskVoid TickForward()
@@ -209,8 +227,8 @@ namespace Engine.Construction.Belts
                 }
                 
                 UpdateTick();
-                timeOfLastTick = Mathf.FloorToInt(Time.time);
-                await UniTask.WaitForSeconds(tickForwardFrequency, cancellationToken: _tickTokenSource.Token);
+                _engine.timeOfLastBeltTick = Mathf.FloorToInt(Time.time);
+                await UniTask.WaitForSeconds(_tickForwardFrequency, cancellationToken: _tickTokenSource.Token);
             }
         }
 
@@ -224,8 +242,8 @@ namespace Engine.Construction.Belts
                 }
                 
                 UpdateTick();
-                timeOfLastTick = Mathf.FloorToInt(Time.time);
-                yield return new WaitForSeconds(tickForwardFrequency);
+                _engine.timeOfLastBeltTick = Mathf.FloorToInt(Time.time);
+                yield return new WaitForSeconds(_tickForwardFrequency);
             }
         } 
         

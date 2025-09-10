@@ -1,7 +1,9 @@
 ﻿using System;
+using Engine.Construction.Belts;
 using Engine.Construction.Interaction;
 using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
+using Engine.Construction.Resources;
 using Engine.Construction.Visuals;
 using Engine.GameState;
 using Engine.Utilities;
@@ -10,76 +12,62 @@ using UnityEngine;
 
 namespace Engine.Construction.Placement
 {
-    [RequireComponent(typeof(MapManager))]
+    /// <summary>
+    /// Initializes the Automation Engine.
+    /// Ideally should be set early in the Script Execution Order (Edit > Project settings > Script Execution Order).  
+    /// </summary>
+    
     public class ConstructionEngine : MonoBehaviour
     {
-        private IMap Map;
-        private INodeMap NodeMap;
-        private IResourceMap ResourceMap;
+        public IWorld World { get; private set; }
+        public IResourceMap ResourceMap { get; private set; }
         
         [Header("Settings")]
         [SerializeField] private PlacementSettings placementSettings;
         [SerializeField] private InputSettings inputSettings;
-        private PlacementState placementState;
+        [SerializeField] private PlacementVisualSettings visualSettings;
         
-        [Header("Visuals - Placement")] 
-        public GameObject floorDecal;
-        
-        private PlacementVisuals _placementVisuals;
-        private RemovalVisuals _removalVisuals; 
-        
-        [Space]
-        public float placementTime = 0.6f;
-        public Vector3 startingScale = Vector3.zero;
-        public Vector3 endScale = Vector3.one; 
-        
-        private EasingFunctions.Function _scaleUpEasing; 
-        private EasingFunctions.Function _scaleDownEasing; 
-        public EasingFunctions.Ease scaleEasingFunction = EasingFunctions.Ease.EaseOutElastic;
-        public EasingFunctions.Ease scaleDownEasingFunction = EasingFunctions.Ease.Linear;
-        
-        [Header("Visuals - Floor Material")]
-        public Material floorMaterial;
-        public float lerpAlphaTime = 1f;
-        public float minGridAlpha = 0; 
-        public float maxGridAlpha = 1;
-        
-        [Header("Visuals - Removal")]
-        public Material destructionIndicatorMaterial;
-        public float yOffset = 0.01f;  
-        public Vector2 gridOffset = new (0.5f, 0.5f);
-        public float lerpSpeed = 35f;
+        [Header("Placement Highlight")] 
+        [Tooltip("A game object that acts as a visual indicator of the current placement position.")]
+        public GameObject placementHighlight;
         
         [Header("Camera")]
         public Camera mainCamera;
         
         [Header("Resources")]
         public Transform resourceParent; 
+        
+        [Header("Belt Settings")]
+        [Tooltip("Time between attempts to push all belts forwards.")]
+        [SerializeField] private float tickForwardFrequency = 1.2f;
+        [Tooltip("Should the belt network start automatically?")]
+        [SerializeField] private bool runOnStart = true;
 
+        [Header("Belt Status")] 
+        public bool beltActive;
+        public float timeOfLastBeltTick; 
+        
+        private PlacementState placementState;
+        private PlacementVisuals _placementVisuals;
+        private RemovalVisuals _removalVisuals; 
         private PlacementContext _context; 
         private PlacementManager _placementManager;
         private RemovalManager _removalManager;
         private NodeRelationshipManager _relationshipManager;
         private NodePathManager _pathManager;
+        private BeltManager _beManager;
 
         private void Awake()
         {
-            InitialiseProperties();
-            CreatePlacementVisuals();
-            CreatePlacementContext();   // requires Visuals
-            CreateManagers();           // requires Placement Context
-            CreateRemovalVisuals();     // requires Managers
+            InitialiseProperties();                                     // creates World and Resource Map.
+            CreatePlacementVisuals();                                   // creates Placement Visuals.
+            CreatePlacementContext();   // requires Visuals.            // creates Placement State and Context.
+            CreateManagers();           // requires Placement Context.  // creates Managers (Placement, Removal, Relationships, Paths).
+            CreateRemovalVisuals();     // requires Managers.
         }
 
         private void InitialiseProperties()
         {
-            MapManager mapManager = GetComponent<MapManager>();
-            if(!mapManager.Initialised) mapManager.Initialise();
-            
-            Map = mapManager.Map;
-            NodeMap = mapManager.NodeMap;
-            ResourceMap = mapManager.ResourceMap;
-            
             if (placementSettings == null)
             {
                 Debug.LogWarning("Missing placement settings");
@@ -91,31 +79,14 @@ namespace Engine.Construction.Placement
                 Debug.LogWarning("Missing input settings");
                 inputSettings = ScriptableObject.CreateInstance<InputSettings>();
             }
+            
+            World = new World(placementSettings);
+            ResourceMap = new ResourceMap(placementSettings);
         }
 
         private void CreatePlacementVisuals()
         {
-            _scaleUpEasing = EasingFunctions.GetEasingFunction(scaleEasingFunction);
-            _scaleDownEasing = EasingFunctions.GetEasingFunction(scaleDownEasingFunction);
-            
-            if (floorMaterial == null)
-            {
-                Debug.LogError("Missing floor material");
-            }
-
-            _placementVisuals = new PlacementVisuals(
-                this,
-                NodeMap,
-                floorDecal, 
-                placementTime, 
-                startingScale, 
-                endScale, 
-                _scaleUpEasing, 
-                _scaleDownEasing, 
-                floorMaterial, 
-                lerpAlphaTime,
-                minGridAlpha,
-                maxGridAlpha);
+            _placementVisuals = new PlacementVisuals(this, World, placementHighlight, visualSettings);
         }
         
         private void CreatePlacementContext()
@@ -123,8 +94,7 @@ namespace Engine.Construction.Placement
             placementState = new PlacementState(); 
             
             _context = new PlacementContext(
-                Map,
-                NodeMap,
+                World,
                 ResourceMap,
                 inputSettings,
                 placementSettings,
@@ -140,19 +110,17 @@ namespace Engine.Construction.Placement
             _removalManager = new RemovalManager(_context);
             _relationshipManager = new NodeRelationshipManager(); 
             _pathManager = new NodePathManager(_relationshipManager);
+            _beManager = new BeltManager(this, tickForwardFrequency, runOnStart); 
         }
 
         private void CreateRemovalVisuals()
         {
-            _removalVisuals = new RemovalVisuals(
-                inputSettings,
-                _removalManager,
-                destructionIndicatorMaterial,
-                yOffset,
-                lerpSpeed,
-                gridOffset,
-                transform
-            );
+            _removalVisuals = new RemovalVisuals(inputSettings, _removalManager, visualSettings, transform);
+        }
+
+        private void Start()
+        {
+            _beManager.Start();
         }
 
         private void Update()
@@ -162,18 +130,58 @@ namespace Engine.Construction.Placement
 
         private void OnDisable()
         {
+            World.Disable();
+            ResourceMap.Disable();
+            
             _placementManager.Disable();
             _removalManager.Disable();
             _placementVisuals.Disable();
             _removalVisuals.Disable();
             _relationshipManager.Disable();
             _pathManager.Disable();
+            _beManager.Disable();
+        }
+        
+        // Requires Odin Inspector 
+        
+        [Button]
+        public void CheckMapOccupancy(int x, int z, int width, int height)
+        {
+            string s = World.VacantSpace(x, z, width, height) ? "Space Empty" : "Space Occupied";
+            Debug.Log(s);
         }
         
         [Button]
-        private void ShowPlacementVisuals() => _placementVisuals.ShowPlacementVisuals();
+        public void CheckCellOccupancy(int x, int z)
+        {
+            string s = World.VacantCell(x, z) ? "Cell Empty" : "Cell Occupied";
+            Debug.Log(s);
+        }
+        
+        [Button]
+        public void CheckNode(int x, int z)
+        {
+            string s = World.TryGetNode(x, z, out Node node) ? $"{node.name} was found" : $"no node found at {x} _ {z}";
+            Debug.Log(s);
+        }
+
+        [Button]
+        public void CheckResource(int x, int z)
+        {
+            string s = ResourceMap.TryGetResourceSourceAt(new Vector3Int(x, 0, z), out IResourceSource src) ? $"{src.ResourceType.resourceName} was found" : $"no node found at {x} _ {z}";
+            Debug.Log(s);
+        }
+        
+        [Button]
+        private void ShowPlacementVisuals() => _placementVisuals.ShowPlacementVisuals(Vector3Int.zero);
         
         [Button]
         private void HidePlacementVisuals() => _placementVisuals.HidePlacementVisuals();
+        
+        [Button]
+        private void StartBelts() => _beManager.Run();
+        
+        [Button]
+        private void StopBelts() => _beManager.Stop();
     }
 }

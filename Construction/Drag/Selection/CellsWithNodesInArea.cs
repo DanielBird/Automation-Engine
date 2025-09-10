@@ -12,7 +12,7 @@ namespace Engine.Construction.Drag.Selection
         {
             CellSelection selection = new();
             
-            if (!CellSelector.TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, csp.Map, csp.Settings, out end))
+            if (!CellSelector.TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, csp.World, csp.Settings, out end))
                 return selection;
             
             List<Vector3Int> cells = CellSelector.GetCellArea(start, end, csp.StepSize).ToList();
@@ -20,7 +20,7 @@ namespace Engine.Construction.Drag.Selection
             
             foreach (Vector3Int cell in cells)
             {
-                if (csp.NodeMap.TryGetNode(cell.x, cell.z, out Node node))
+                if (csp.World.TryGetNode(cell.x, cell.z, out Node node))
                 {
                     insideNodes.Add(node); 
                     selection.AddCell(cell, node.Direction, node.NodeType, csp.Settings);

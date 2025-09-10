@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Drag;
@@ -16,14 +17,14 @@ namespace Engine.Construction.Placement
     public class PlacementManager : ConstructionManager
     {
         private readonly PlacementCoordinator _placementCoordinator;
-        private readonly Dictionary<NodeType, IPlaceableFactory> _factories;
+        private readonly Dictionary<NodeType, IPlaceableFactory> _factoryCache = new();
+        private readonly Dictionary<NodeType, Func<IPlaceableFactory>> _factoryOverrides = new();
 
         private readonly PlacementState state;
         private bool _viablePlacement; 
         
         private Coroutine _drag;
-        public Transform myTransform;
-        private Transform resourceParent; 
+        public readonly Transform MyTransform;
         
         private CancellationTokenSource _disableCancellation = new CancellationTokenSource();
         private CancellationTokenSource _waitTokenSource = new CancellationTokenSource();
@@ -34,26 +35,15 @@ namespace Engine.Construction.Placement
         // EVENTS
         private EventBinding<ConstructionUiButtonClick> _onButtonClick; 
         private EventBinding<BeltClickEvent> _onBeltClick;
+        private bool _eventsRegistered; 
         
         public PlacementManager(PlacementContext ctx, Transform transform, Transform resourceParent) : base(ctx)
         {
             state = ctx.State;
-            myTransform = transform;
+            MyTransform = transform;
 
             DragManager dragManager = new(ctx);
-            _placementCoordinator = new PlacementCoordinator(ctx, dragManager, resourceParent);
-            
-            _factories = new Dictionary<NodeType, IPlaceableFactory>
-            {
-                { NodeType.GenericBelt, new GenericFactory(this, Settings, NodeType.Straight)},
-                { NodeType.Straight, new GenericFactory(this, Settings, NodeType.Straight)},
-                { NodeType.LeftCorner, new GenericFactory(this, Settings, NodeType.LeftCorner)},
-                { NodeType.RightCorner, new GenericFactory(this, Settings, NodeType.RightCorner)},
-                { NodeType.Producer, new GenericFactory(this, Settings, NodeType.Producer)},
-                { NodeType.Consumer, new GenericFactory(this, Settings, NodeType.Consumer)},
-                { NodeType.Splitter, new GenericFactory(this, Settings, NodeType.Splitter)}, 
-                { NodeType.Combiner, new GenericFactory(this, Settings, NodeType.Combiner)},
-            };
+            _placementCoordinator = new PlacementCoordinator(ctx, this, dragManager, resourceParent);
             
             RegisterEvents();
         }
@@ -63,11 +53,12 @@ namespace Engine.Construction.Placement
             ClearTokenSource(ref _disableCancellation);
             ClearTokenSource(ref _waitTokenSource);
             UnRegisterEvents();
-            _placementCoordinator.RegisterOnDisable();
+            _placementCoordinator.Disable();
         }
 
         private void RegisterEvents()
-        {            
+        {
+            if (_eventsRegistered) return;
             InputSettings.place.action.performed += ConfirmPlacement;
             InputSettings.rotate.action.performed += Rotate;
             InputSettings.cancel.action.performed += CancelPlacement; 
@@ -77,27 +68,44 @@ namespace Engine.Construction.Placement
             
             EventBus<ConstructionUiButtonClick>.Register(_onButtonClick);
             EventBus<BeltClickEvent>.Register(_onBeltClick);
+            
+            _eventsRegistered = true;
         }
 
         private void UnRegisterEvents()
         {
+            if (!_eventsRegistered) return;
+            
             InputSettings.place.action.performed -= ConfirmPlacement;
             InputSettings.rotate.action.performed -= Rotate;
             InputSettings.cancel.action.performed -= CancelPlacement; 
             
             EventBus<ConstructionUiButtonClick>.Deregister(_onButtonClick);
             EventBus<BeltClickEvent>.Deregister(_onBeltClick);
+            
+            _eventsRegistered = false;
         }
+        
+        public void RegisterFactoryOverride(NodeType type, Func<IPlaceableFactory> factory) => _factoryOverrides[type] = factory;
 
+        private IPlaceableFactory ResolveFactory(NodeType type)
+        {
+            if (_factoryCache.TryGetValue(type, out IPlaceableFactory f)) 
+                return f;
+            
+            if (_factoryOverrides.TryGetValue(type, out Func<IPlaceableFactory> make))
+                return _factoryCache[type] = make();
+            
+            return _factoryCache[type] = new GenericFactory(this, Settings, type);
+        }
+        
         // The start of spawning game objects via Ui Button clicks 
         private void RequestPlacement(ConstructionUiButtonClick e)
         {
-            if (_factories.TryGetValue(e.RequestType, out IPlaceableFactory factory))
-            {
-                ClearTokenSource(ref _waitTokenSource);
-                _waitTokenSource = new CancellationTokenSource();
-                WaitToStartPlacement(factory, _waitTokenSource.Token).Forget();
-            }
+            IPlaceableFactory factory = ResolveFactory(e.RequestType);
+            ClearTokenSource(ref _waitTokenSource);
+            _waitTokenSource = new CancellationTokenSource();
+            WaitToStartPlacement(factory, _waitTokenSource.Token).Forget();
         }
         
         private async UniTaskVoid WaitToStartPlacement(IPlaceableFactory factory, CancellationToken token)
@@ -116,8 +124,6 @@ namespace Engine.Construction.Placement
         // The start of spawning a draggable node by clicking on a node already placed
         private void RequestDrag(BeltClickEvent e)
         {
-            if(!_factories.TryGetValue(e.BuildRequestType, out IPlaceableFactory factory)) return;
-            
             Vector3Int gridCoordinate = e.GridCoord;
             Vector3Int worldPosition = Grid.GridToWorldPosition(gridCoordinate, Settings.mapOrigin, Settings.cellSize);
             
@@ -126,15 +132,22 @@ namespace Engine.Construction.Placement
             state.WorldAlignedPosition = worldPosition; 
             state.SetPathId(e.RequestingNode.PathId);
             
-            GameObject build = factory.CreateAt(worldPosition); 
+            if (e.ReplaceRequestingNode)
+            {
+                Cleanup.RemoveNode(e.RequestingNode, gridCoordinate, World);
+            }
             
+            IPlaceableFactory factory = ResolveFactory(e.BuildRequestType);
+            GameObject build = factory.CreateAt(worldPosition);
+
             if(build.TryGetComponent(out Node node))
                 node.RotateInstant(e.RequestingNode.Direction);
-            
+
             SpawnOccupant(worldPosition, build);
+            
             _placementCoordinator.HandlePlacement(state.MainPlaceable, state.TargetGridCoordinate);
         }
-
+        
         public void Tick()
         {
             if (!state.IsRunning) return;
@@ -143,23 +156,23 @@ namespace Engine.Construction.Placement
             state.TargetGridCoordinate = gridCoord;
             state.WorldAlignedPosition = WorldAlignedPosition(gridCoord);
             
-            Visuals.SetFloorDecalPos(state.WorldAlignedPosition);
+            Visuals.SetHighlightPos(state.WorldAlignedPosition);
 
             int x = state.TargetGridCoordinate.x;
             int z = state.TargetGridCoordinate.z;
             
-            _viablePlacement = Map.VacantCell(x, z);
+            _viablePlacement = World.VacantCell(x, z);
             
             // If the game object is allowed to replace an existing node, continue
             if (!_viablePlacement)
             {
-                if(!NodeMap.HasNode(x, z)) return;
+                if(!World.HasNode(x, z)) return;
                 if(!state.PlaceableReplacesNodes) return;
                 _viablePlacement = true; // reset bool
             }
             
             // If the current object is roughly at the target grid coordinate, then return
-            if (Arrived(state.CurrentObject, state.WorldAlignedPosition))
+            if (IsArrived(state.CurrentObject, state.WorldAlignedPosition))
             {
                 if (_newGridCell) UpdateState();
                 _newGridCell = false;
@@ -170,29 +183,14 @@ namespace Engine.Construction.Placement
             LerpPosition(state.CurrentObject, state.WorldAlignedPosition);
             Visuals.Place(state.CurrentObject);
         }
-
-        private bool Arrived(GameObject obj, Vector3 targetPos, float threshold = 0.02f)
-        {
-            float distance = Vector3.Distance(obj.transform.position, targetPos);
-            if (distance < threshold) return true;
-            return false;
-        }
-
-        private void LerpPosition(GameObject obj, Vector3Int targetPos)
-        {
-            Transform t = obj.transform; 
-            t.position = Vector3.Lerp(t.position, targetPos, Settings.moveSpeed * Time.deltaTime);
-        }
-
+        
         private void UpdateState()
         {
-            if(!state.UpdateState(Map, NodeMap, Settings, out NodeType newNodeType, out Direction newDirection))
+            if(!state.UpdateState(World, Settings, out NodeType newNodeType, out Direction newDirection))
                 return;
             
-            if (!_factories.TryGetValue(newNodeType, out IPlaceableFactory factory))
-                return;
-            
-            Cleanup.RemovePlaceable(state, Map);
+            IPlaceableFactory factory = ResolveFactory(newNodeType);
+            Cleanup.RemovePlaceable(state, World);
             
             if(!factory.Create(out GameObject newGameObject, out Vector3Int alignedPosition)) return;
             
@@ -210,7 +208,7 @@ namespace Engine.Construction.Placement
         
         private void SpawnOccupant(Vector3Int alignedPosition, GameObject occupant)
         {
-            Vector2Int empty = Map.NearestVacantCell(new Vector2Int(alignedPosition.x, alignedPosition.z));
+            Vector2Int empty = World.NearestVacantCell(new Vector2Int(alignedPosition.x, alignedPosition.z));
             alignedPosition = new Vector3Int(empty.x, 0, empty.y);
 
             state.SetGameObject(occupant);
@@ -227,8 +225,7 @@ namespace Engine.Construction.Placement
             }
             
             Visuals.Place(state.CurrentObject);
-            Visuals.SetFloorDecalPos(alignedPosition);
-            Visuals.ShowPlacementVisuals();
+            Visuals.ShowPlacementVisuals(alignedPosition);
         }
         
         // Triggered by the left mouse down input action
@@ -256,10 +253,10 @@ namespace Engine.Construction.Placement
             int x = state.TargetGridCoordinate.x;
             int z = state.TargetGridCoordinate.z;
 
-            if(Map.VacantCell(x, z)) 
+            if(World.VacantCell(x, z)) 
                 return;
             
-            if(!NodeMap.TryGetNode(x, z, out Node node))
+            if(!World.TryGetNode(x, z, out Node node))
                 return;
 
             Direction d = node.Direction; 

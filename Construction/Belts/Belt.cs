@@ -10,16 +10,21 @@ namespace Engine.Construction.Belts
 {
     public class Belt : Node
     {
-        [Header("Transportation")]
+        [Header("Shipping Status")]
         [field: SerializeField] public Resource Occupant { get; protected set; }
         [field: SerializeField] public float TimeOfReceipt { get; protected set; }
         public bool IsOccupied => Occupant != null;
         public bool CanReceive => Occupant == null;
+
+        [SerializeField] protected bool outputNodeFound;
+        [SerializeField] protected bool deliveryFound; 
         
+        [Header("Shipping setup")]
         [Tooltip("Where should the resource be on arrival?")] public Vector3 arrivalPointVector; 
         [Tooltip("For corner nodes, where should the bezier handle be?")] public Vector3 bezierHandleVector;
         public Vector3 ResourceArrivalPoint { get; private set; }
         public Vector3 BezierHandle { get; private set; }
+        
         
         [Header("Debug")] 
         public bool logFailedResourceReceipt;
@@ -59,8 +64,8 @@ namespace Engine.Construction.Belts
             resource = null; 
             target = null;
             
-            if(!HasForwardNode(out Node targetNode))
-                return false;
+            outputNodeFound = HasOutputNode(out Node targetNode);
+            if(!outputNodeFound) return false;
             
             if(targetNode is not Belt belt)
                 return false;
@@ -72,9 +77,9 @@ namespace Engine.Construction.Belts
                 if (logInabilityToShip) Debug.Log($"{name} is unable to ship.");
                 return false;
             }
-            
-            if (!CanShip(out resource)) 
-                return false;
+
+            deliveryFound = CanShip(out resource);
+            if (!deliveryFound) return false;
             
             return true;
         }
@@ -111,13 +116,32 @@ namespace Engine.Construction.Belts
             
             if(NodeType == NodeType.LeftCorner || NodeType == NodeType.RightCorner)
                 return;
-            
+
+            if (NodeType == NodeType.Straight || NodeType == NodeType.GenericBelt)
+            {
+                // Use this node as the start of the drag placement
+                TriggerADragPlacement();
+            }
+            else
+            {
+                // Try to trigger spawning a node in front as the start of the drag placement
+                TriggerADragPlacementInFront();
+            }
+        }
+
+        private void TriggerADragPlacement()
+        {
+            EventBus<BeltClickEvent>.Raise(new BeltClickEvent(GridCoord, NodeType.GenericBelt, this, true));
+        }
+
+        private void TriggerADragPlacementInFront()
+        {
             // Allow the player to start a new drag session by clicking on this belt 
             Vector2Int forwardGridPos = PositionByDirection.GetForwardPosition(GridCoord, Direction, GridWidth);
-            if (!NodeMap.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
+            if (!World.InBounds(forwardGridPos.x, forwardGridPos.y)) return;
             
             // If there is a belt in front, do not continue
-            if (NodeMap.HasNode(forwardGridPos.x,forwardGridPos.y)) return;
+            if (World.HasNode(forwardGridPos.x,forwardGridPos.y)) return;
             
             EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(forwardGridPos.x, 0, forwardGridPos.y), NodeType.GenericBelt, this));
         }

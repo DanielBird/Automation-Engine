@@ -12,16 +12,19 @@ namespace Engine.Construction.Visuals
     public class PlacementVisuals
     {
         private readonly ConstructionEngine _engine;
-        private readonly INodeMap _nodeMap;
-        public readonly GameObject FloorDecal;
+        private readonly IWorld _world;
+
+        private readonly bool _updatePlacementHighlight; 
+        public readonly GameObject PlacementHighlight;
         
         private readonly float _placementTime;
         private readonly Vector3 _startingScale;
         private readonly Vector3 _endScale; 
         
         private readonly EasingFunctions.Function _scaleUpEasing; 
-        private EasingFunctions.Function _scaleDownEasing; 
+        private EasingFunctions.Function _scaleDownEasing;
 
+        private readonly bool _updateFloorMaterial; 
         private readonly Material _floorMaterial;
         private readonly float _lerpAlphaTime; 
         
@@ -36,29 +39,44 @@ namespace Engine.Construction.Visuals
         private CancellationTokenSource _scaleCts; 
         private CancellationTokenSource _alphaCts;
         
-        public PlacementVisuals(ConstructionEngine engine, INodeMap nodeMap, GameObject floorDecal, float placementTime, Vector3 startingScale, Vector3 endScale, 
-            EasingFunctions.Function scaleUp, EasingFunctions.Function scaleDown,
-            Material floorMaterial, float lerpAlphaTime, float minGridAlpha, float maxGridAlpha)
+        public PlacementVisuals(ConstructionEngine engine, IWorld world, GameObject placementHighlight, PlacementVisualSettings vs)
         {
             _engine = engine;
-            _nodeMap = nodeMap;
+            _world = world;
             
-            FloorDecal = floorDecal;
-            FloorDecal.SetActive(false);
+            if (placementHighlight == null)
+            {
+                Debug.LogError("The placement highlight was not found on the Construction Engine. Add a game object to have a highlight updated during placement.");
+                _updatePlacementHighlight = false;
+            }
+            else
+            {
+                _updatePlacementHighlight = true;
+                PlacementHighlight = placementHighlight;
+                PlacementHighlight.SetActive(false);
+                _placementTime = vs.placementTime;
+            }
             
-            _placementTime = placementTime;
-            _startingScale = startingScale;
-            _endScale = endScale;
+            _startingScale = vs.startingScale;
+            _endScale = vs.endScale;
             
-            _scaleUpEasing = scaleUp;
-            _scaleDownEasing = scaleDown;
+            _scaleUpEasing = EasingFunctions.GetEasingFunction(vs.scaleEasingFunction);
+            _scaleDownEasing = EasingFunctions.GetEasingFunction(vs.scaleDownEasingFunction);
             
-            _floorMaterial = floorMaterial;
-            _floorMaterial.SetFloat(GridAlpha, minGridAlpha);
-            minAlpha = minGridAlpha;
-            maxAlpha = maxGridAlpha;
-            
-            _lerpAlphaTime = lerpAlphaTime;
+            if (vs.floorMaterial == null)
+            {
+                Debug.Log("The floor material was not found on the Construction Engine. Add a Floor Material to have it updated during placement.");
+                _updateFloorMaterial = false;
+            }
+            else
+            {
+                _updateFloorMaterial = true;
+                _floorMaterial = vs.floorMaterial;
+                _floorMaterial.SetFloat(GridAlpha, vs.minGridAlpha);
+                minAlpha = vs.minGridAlpha;
+                maxAlpha = vs.maxGridAlpha;
+                _lerpAlphaTime = vs.lerpAlphaTime;
+            }
         }
 
         public void Disable()
@@ -75,11 +93,9 @@ namespace Engine.Construction.Visuals
             #if UNITASK
             if (_scalingUp) return;
             LerpScaleUni(go, _startingScale, _endScale, _placementTime, _scaleUpEasing).Forget();
-            
             #else
             if(_scaleRoutine != null) return;
             _scaleRoutine = _engine.StartCoroutine(LerpScale(go, _startingScale, _endScale, _placementTime, _scaleUpEasing));
-            
             #endif
         }
         
@@ -121,47 +137,61 @@ namespace Engine.Construction.Visuals
             CtsCtrl.Clear(ref _scaleCts);
         }
 
-        public void ShowPlacementVisuals()
+        public void ShowPlacementVisuals(Vector3Int highlightPosition)
         {
-            ShowGridAndDecal();
-            ShowALlNodeArrows();
+            SetHighlightPos(highlightPosition);
+            ShowGrid();
+            ActivateHighlight();
+            ShowAllNodeArrows();
         }
 
         public void HidePlacementVisuals()
         {
-            HideGidAndDecal();
+            HideGrid();
+            DeactivateHighlight();
             HideAllNodeArrows();
         }
         
-        public void ShowGridAndDecal(bool showDecal = true)
+        public void SetHighlightPos(Vector3Int pos)
+        {
+            if (!_updatePlacementHighlight) return;
+            PlacementHighlight.transform.position = pos;
+        } 
+        public void ActivateHighlight()
+        {
+            if (!_updatePlacementHighlight) return;
+            PlacementHighlight.SetActive(true);
+        }
+
+        public void DeactivateHighlight()
+        {
+            if (!_updatePlacementHighlight) return;
+            PlacementHighlight.SetActive(false); 
+        } 
+        
+        public void ShowGrid()
         {
             #if UNITASK
             LerpGridAlphaUni(maxAlpha, _lerpAlphaTime).Forget();
-            
             #else
             if(_alphaRoutine != null) _engine.StopCoroutine(_alphaRoutine);
            _alphaRoutine = _engine.StartCoroutine(LerpGridAlpha(1, _lerpAlphaTime/3)); 
-            
             #endif
-            
-            if(showDecal) FloorDecal.SetActive(true);
         }
         
-        public void HideGidAndDecal(bool hideDecal = true)
+        public void HideGrid()
         {
             # if UNITASK
             LerpGridAlphaUni(minAlpha, _lerpAlphaTime).Forget();
-            
             #else
             if(_alphaRoutine != null) StopCoroutine(_alphaRoutine);
             _alphaRoutine = StartCoroutine(LerpGridAlpha(0, lerpAlphaTime));
-            
             #endif
-            if(hideDecal) FloorDecal.SetActive(false);
         }
 
         private IEnumerator LerpGridAlpha(float end, float lerpTime)
         {
+            if (!_updateFloorMaterial) yield break;
             float start = _floorMaterial.GetFloat(GridAlpha);
             
             float t = 0;
@@ -179,6 +209,7 @@ namespace Engine.Construction.Visuals
 
         private async UniTaskVoid LerpGridAlphaUni(float end, float lerpTime)
         {
+            if (!_updateFloorMaterial) return;
             CtsCtrl.Clear(ref _alphaCts);
             _alphaCts = new CancellationTokenSource();
             
@@ -197,14 +228,10 @@ namespace Engine.Construction.Visuals
             _floorMaterial.SetFloat(GridAlpha, end);
             CtsCtrl.Clear(ref _alphaCts);
         }
-        
-        public void SetFloorDecalPos(Vector3Int pos) => FloorDecal.transform.position = pos;
-        
-        public void DeactivateFloorDecal() => FloorDecal.SetActive(false);
 
-        public void ShowALlNodeArrows()
+        public void ShowAllNodeArrows()
         {
-            foreach (Node node in _nodeMap.GetNodes())
+            foreach (Node node in _world.GetNodes())
             {
                 if(node == null) continue;
                 node.Visuals.ShowArrows();
@@ -213,7 +240,7 @@ namespace Engine.Construction.Visuals
         
         public void HideAllNodeArrows()
         {
-            foreach (Node node in _nodeMap.GetNodes())
+            foreach (Node node in _world.GetNodes())
             {
                 if (node == null) continue;
                 node.Visuals.HideArrows();

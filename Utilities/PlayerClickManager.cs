@@ -33,11 +33,21 @@ namespace Engine.Utilities
         RaycastHit[] _results = new RaycastHit[5];
 
         private EventBinding<PlayerDragEvent> _onPlayerDrag; 
+        private bool _eventsRegistered;
         
         private void Awake()
         {
             if(mainCamera == null)
                 mainCamera = Camera.main;
+            
+            RegisterEvents();
+
+            canClick = true;
+        }
+
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
             
             if(mouseClick != null)
                 mouseClick.action.performed += OnMouseClick;
@@ -45,15 +55,20 @@ namespace Engine.Utilities
             _onPlayerDrag = new EventBinding<PlayerDragEvent>(OnPlayerDragEvent); 
             EventBus<PlayerDragEvent>.Register(_onPlayerDrag);
             
-            canClick = true;
+            _eventsRegistered = true;
         }
-        
+
         private void OnDisable()
         {
-            if(mouseClick != null)
-                mouseClick.action.performed -= OnMouseClick; 
+            if (_eventsRegistered)
+            {
+                if(mouseClick != null)
+                    mouseClick.action.performed -= OnMouseClick; 
             
-            EventBus<PlayerDragEvent>.Deregister(_onPlayerDrag);
+                EventBus<PlayerDragEvent>.Deregister(_onPlayerDrag);
+                
+                _eventsRegistered = false;
+            }
         }
         
         private void OnPlayerDragEvent(PlayerDragEvent e)

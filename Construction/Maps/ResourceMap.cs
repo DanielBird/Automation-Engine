@@ -20,19 +20,30 @@ namespace Engine.Construction.Maps
         }
 
         private GridParams gridParams; 
-        private readonly EventBinding<RegisterResourceEvent> _onRegisterResourceRequest; 
+        private EventBinding<RegisterResourceEvent> _onRegisterResourceRequest; 
+        private bool _eventsRegistered;
 
         public ResourceMap(PlacementSettings settings)
         {
             gridParams = new GridParams(settings.mapOrigin, settings.mapWidth, settings.mapHeight, settings.cellSize);
-            
+            RegisterEvents();
+        }
+
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
             _onRegisterResourceRequest = new EventBinding<RegisterResourceEvent>(OnRegisterResourceEvent); 
             EventBus<RegisterResourceEvent>.Register(_onRegisterResourceRequest);
+            _eventsRegistered = true;
         }
 
         public void Disable()
         {
-            EventBus<RegisterResourceEvent>.Deregister(_onRegisterResourceRequest);
+            if (_eventsRegistered)
+            {
+                EventBus<RegisterResourceEvent>.Deregister(_onRegisterResourceRequest);
+                _eventsRegistered = false;
+            }
         }
 
         private void OnRegisterResourceEvent(RegisterResourceEvent ev)

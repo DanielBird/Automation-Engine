@@ -13,9 +13,10 @@ namespace Engine.Construction.Belts
 {
     public class BeltIntersection : Belt
     {
-        [Header("Intersections")]
-        [SerializeField] private Direction currentShippingDirection;  
-
+        [Header("Shipping Status")]
+        [SerializeField] private bool targetNeighbourFound; 
+        [SerializeField] private Direction currentShippingDirection;
+        
         public override void Receive(Belt target, Resource resource)
         {
             if (!CanReceive)
@@ -36,9 +37,9 @@ namespace Engine.Construction.Belts
         {
             resource = null; 
             target = null;
-            
-            if(!TryGetNeighbour(currentShippingDirection, out Node targetNode))
-                return false;
+     
+            targetNeighbourFound = TryGetNeighbour(currentShippingDirection, out Node targetNode);
+            if (!targetNeighbourFound) return false; 
             
             if(targetNode is not Belt belt)
                 return false;
@@ -51,8 +52,8 @@ namespace Engine.Construction.Belts
                 return false;
             }
             
-            if (!CanShip(out resource)) 
-                return false;
+            deliveryFound = CanShip(out resource);
+            if (!deliveryFound) return false;
             
             return true;
         }
@@ -66,12 +67,12 @@ namespace Engine.Construction.Belts
                 return;
             
             HashSet<Vector3Int> openNeighbors = new(); 
-            Vector2Int mapDimensions = NodeMap.MapDimensions();
+            Vector2Int mapDimensions = World.MapDimensions();
             int step = nodeTypeSo.width;
 
             foreach (Vector3Int v in Grid.GetNeighbours(GridCoord, step, mapDimensions.x, mapDimensions.y))
             {
-                if(!NodeMap.HasNode(v.x, v.z))
+                if(!World.HasNode(v.x, v.z))
                     openNeighbors.Add(v);
             }
             

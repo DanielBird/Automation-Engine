@@ -12,29 +12,25 @@ namespace Engine.Construction.Maps
 {
     public class NodeMap : INodeMap
     {
-        private Node[,] _nodeGrid;
-        private HashSet<Node> _nodeHashSet = new();
-        public IMap Map { get; private set; }
-        private Vector2Int mapDimensions; 
-
-        public NodeMap(IMap map)
+        private readonly Node[,] _nodeGrid;
+        private readonly HashSet<Node> _nodeHashSet = new();
+        
+        public NodeMap(PlacementSettings ps)
         {
-            Map = map;
-            _nodeGrid = new Node[map.MapWidth, map.MapHeight];
-            mapDimensions = new Vector2Int(map.MapWidth, map.MapHeight);
+            _nodeGrid = new Node[ps.mapWidth, ps.mapHeight];
         }
         
         public HashSet<Node> GetNodes() => _nodeHashSet;
+        public bool NodeIsRegistered(Node node) => _nodeHashSet.Contains(node);
+        public bool NodeIsRegisteredAt(Node node, int x, int z) => _nodeGrid[x, z] == node;
         
-        public bool RegisterNode(Node node)
+        public bool TryRegisterNodeAt(Node node, int x, int z)
         {
             if (!_nodeHashSet.Add(node))
                 return false;
             
-            int x = node.GridCoord.x;
-            int z = node.GridCoord.z;
-            int width = node.GridWidth;
-            int height = node.GridHeight; 
+            int width = node.GetSize().x;
+            int height = node.GetSize().y; 
             
             for (int i = x; i < x + width; i++)
             {
@@ -43,26 +39,27 @@ namespace Engine.Construction.Maps
                     _nodeGrid[i, j] = node; 
                 }
             }
-            
+
+            // Debug.Log($"Register node on the node map: {node.name}.");
             return true;
         }
 
-        public void DeregisterNode(Node node)
+        public bool TryDeregisterNode(Node node)
         {
             if (!_nodeHashSet.Remove(node))
-                return;
+                return false;
             
             int x = node.GridCoord.x;
             int z = node.GridCoord.z;
 
             if (_nodeGrid[x, z] != node)
             {
-                Debug.Log("Attempted to deregister a node that doesn't belong at its recorded location on the grid!");
-                return;
+                Debug.Log($"Attempted to deregister {node.name} but it was not found at its recorded location on the grid ({x}, {z})!");
+                return false;
             }
             
-            int width = node.GridWidth;
-            int height = node.GridHeight; 
+            int width = node.GetSize().x;
+            int height = node.GetSize().y; 
             
             for (int i = x; i < x + width; i++)
             {
@@ -75,7 +72,9 @@ namespace Engine.Construction.Maps
                 }
             }
             
+            // Debug.Log($"Deregister node on the node map: {node.name}.");
             EventBus<NodeRemoved>.Raise(new NodeRemoved(node));
+            return true;
         }
         
         public bool TryGetNode(int x, int z, out Node node)
@@ -136,7 +135,5 @@ namespace Engine.Construction.Maps
             return x >= 0 && x < _nodeGrid.GetLength(0) &&
                    z >= 0 && z < _nodeGrid.GetLength(1); 
         }
-
-        public Vector2Int MapDimensions() => mapDimensions;
     }
 }

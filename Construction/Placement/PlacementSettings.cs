@@ -6,7 +6,7 @@ namespace Engine.Construction.Placement
 {
     public enum CellSelectionAlgorithm {FindShortestPath, StraightLinesOnly, LShapedPaths }
     
-    [CreateAssetMenu(fileName = "PlacementSettings", menuName = "Construction/PlacementSettings")]
+    [CreateAssetMenu(fileName = "PlacementSettings", menuName = "Automation Engine/PlacementSettings")]
     public class PlacementSettings : ScriptableObject
     {
         [Header("Grid Settings")] 
@@ -25,6 +25,8 @@ namespace Engine.Construction.Placement
         [Tooltip("How quickly do spawned game objects follow the player's cursor and snap to their grid position?")]
         public float moveSpeed = 30f;
         public float raycastDistance = 1000f;
+        [Tooltip("The threshold at which a game object is considered to be arrived at it's target position.")]
+        public float arrivedThreshold = 0.02f; 
         
         [Header("Layer Settings")]
         public LayerMask floorLayer;

@@ -21,8 +21,7 @@ namespace Engine.Construction.Drag
     {
         private readonly PlacementSettings _settings;
         private readonly InputSettings _inputSettings;
-        private readonly IMap _map;
-        private readonly INodeMap _nodeMap;
+        private readonly IWorld _world;
         private readonly PlacementVisuals _visuals;
         private readonly Camera _mainCamera;
         private readonly GameObject _floorDecal;
@@ -46,11 +45,10 @@ namespace Engine.Construction.Drag
         {
             _settings = ctx.PlacementSettings;
             _inputSettings = ctx.InputSettings;
-            _map = ctx.Map;
-            _nodeMap = ctx.NodeMap;
+            _world = ctx.World;
             _visuals = ctx.Visuals;
             _mainCamera = ctx.MainCamera;
-            _floorDecal = ctx.Visuals.FloorDecal;
+            _floorDecal = ctx.Visuals.PlacementHighlight;
             _state = ctx.State;
         }
         
@@ -116,7 +114,7 @@ namespace Engine.Construction.Drag
         /// </summary>
         private bool SameGridPos()
         {
-            if (!CellSelector.TryGetCurrentGridCoord(_mainCamera, _settings.floorLayer, _cellHits, _map, _settings, out Vector3Int gridCoord))
+            if (!CellSelector.TryGetCurrentGridCoord(_mainCamera, _settings.floorLayer, _cellHits, _world, _settings, out Vector3Int gridCoord))
                 return true; 
             
             if (gridCoord == _currentGridCoord)
@@ -149,7 +147,7 @@ namespace Engine.Construction.Drag
                 _ => throw new ArgumentOutOfRangeException()
             };
 
-            if (_nodeMap.GetNeighbourAt(backwardPosition, out Node backwardNode))
+            if (_world.GetNeighbourAt(backwardPosition, out Node backwardNode))
             {
                 _state.SetPathId(backwardNode.PathId);
                 return _state.PathId;
@@ -163,7 +161,7 @@ namespace Engine.Construction.Drag
         /// </summary>
         private CellSelection SelectCells(Vector3Int startGridCoord, int stepSize, int pathId)
         {
-            _cellSelectionParams = new CellSelectionParams(_map, _nodeMap, _settings, stepSize, pathId); 
+            _cellSelectionParams = new CellSelectionParams(_world, _settings, stepSize, pathId); 
             CellSelection selection = CellSelector.SelectCells(startGridCoord, _mainCamera, _settings.floorLayer, _cellHits, _cellSelectionParams);
             _state.SetAxis(selection.Axis);
             _state.SetDirection(selection.Direction);
@@ -197,7 +195,7 @@ namespace Engine.Construction.Drag
             
             foreach (Vector3Int v in newIntersections)
             {
-                if (!_nodeMap.TryGetNode(v.x, v.z, out Node node)) continue;
+                if (!_world.TryGetNode(v.x, v.z, out Node node)) continue;
                 _replacedByIntersections.Add(v, node);
                 node.Visuals.DisableRenderer();
             }
@@ -283,8 +281,9 @@ namespace Engine.Construction.Drag
             }
         }
 
+        // Node spawned during a drag session should not have been registered with Map or NodeMap
         private void RemoveNode(Node node, Vector3Int gridCoord) 
-            => Cleanup.RemoveNode(node, gridCoord, _map);
+            => Cleanup.RemoveNode(node, gridCoord, _world, false);
 
         // After removing an old hit that is an intersection... 
         // The Map for that cell will be set to vacant. 
@@ -293,9 +292,8 @@ namespace Engine.Construction.Drag
         {
             foreach (KeyValuePair<Vector3Int, Node> pair in _restoreAfterIntersection)
             {
-                NodeTypeSo nodeType = pair.Value.nodeTypeSo; 
                 Vector3Int pos = pair.Key;
-                _map.RegisterOccupant(pos.x,pos.z, nodeType.width, nodeType.height);
+                _world.TryPlaceNodeAt(pair.Value, pos.x, pos.z);
             }
             
             _restoreAfterIntersection.Clear();
@@ -311,12 +309,12 @@ namespace Engine.Construction.Drag
         
         private Vector3Int GridAlignedWorldPosition(Vector3 position)
         {
-            return Grid.GridAlignedWorldPosition(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.cellSize));
+            return Grid.GridAlignedWorldPosition(position, new GridParams(_settings.mapOrigin, _world.MapWidth(), _world.MapHeight(), _settings.cellSize));
         }
 
         private Vector3Int GetGridPosition(Vector3Int position)
         {
-            return Grid.WorldToGridCoordinate(position, new GridParams(_settings.mapOrigin, _map.MapWidth, _map.MapHeight, _settings.cellSize));
+            return Grid.WorldToGridCoordinate(position, new GridParams(_settings.mapOrigin,  _world.MapWidth(), _world.MapHeight(), _settings.cellSize));
         }
         
         private bool TryGetFloorPosition(out Vector3 position) 

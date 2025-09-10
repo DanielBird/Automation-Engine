@@ -11,9 +11,8 @@ namespace Engine.Construction.Maps
 {
     public class MapDebug : MonoBehaviour
     {
-        public MapManager mapManager;
-        private IMap map; 
-        private INodeMap nodeMap;
+        public ConstructionEngine constructionEngine;
+        private IWorld world;
         private IResourceMap resourceMap;
         
         public PlacementSettings placementSettings;
@@ -30,9 +29,9 @@ namespace Engine.Construction.Maps
         {
             _cubeSize = new Vector3(tileSize, tileSize, tileSize);
 
-            if (mapManager == null)
+            if (constructionEngine == null)
             {
-                Debug.LogError("MapDebug: the Map Manager is null");
+                Debug.LogError("MapDebug: the Construction Engine is null");
                 return;
             }
 
@@ -42,9 +41,8 @@ namespace Engine.Construction.Maps
                 return;
             }
 
-            map = mapManager.Map; 
-            nodeMap = mapManager.NodeMap;
-            resourceMap = mapManager.ResourceMap;
+            world = constructionEngine.World; 
+            resourceMap = constructionEngine.ResourceMap;
         }
         
         private void OnDrawGizmosSelected()
@@ -60,16 +58,17 @@ namespace Engine.Construction.Maps
         private void ShowOccupancy()
         {
             if(!showOccupancy) return;
-            if(map == null) return;
+            if(world == null) return;
 
-            int width = map.MapWidth;
-            int height = map.MapHeight;
+            Vector2Int dimensions = world.MapDimensions();
+            int width = dimensions.x;
+            int height = dimensions.y;
             
             for (int i = 0; i < width; i++)
             {
                 for (int j = 0; j < height; j++)
                 {
-                    Gizmos.color = map.Grid[i, j] == CellStatus.Empty ? Color.green : Color.red;
+                    Gizmos.color = world.Grid()[i, j] == CellStatus.Empty ? Color.green : Color.red;
                     
                     Vector3Int pos = Grid.GridToWorldPosition(new Vector3Int(i, 0, j), placementSettings.mapOrigin, placementSettings.cellSize);
                     Gizmos.DrawWireCube(pos, _cubeSize);
@@ -93,12 +92,12 @@ namespace Engine.Construction.Maps
         private void ShowPaths()
         {
             if (!showPaths) return;
-            if (nodeMap == null) return; 
+            if (world == null) return; 
             
             GUIStyle style = new() { normal = { textColor = Color.magenta } };
             Vector3Int offset = new Vector3Int(0, 1, 0);
             
-            foreach (Node node in nodeMap.GetNodes())
+            foreach (Node node in world.GetNodes())
             {
                 Handles.Label(node.transform.position + offset, node.PathId.ToString(), style);
             }
@@ -108,7 +107,7 @@ namespace Engine.Construction.Maps
         private void CheckForNullNodes()
         {
             int nullNodes = 0;
-            foreach (Node n in nodeMap.GetNodes())
+            foreach (Node n in world.GetNodes())
             {
                 if (n == null) nullNodes++;
             }

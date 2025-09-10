@@ -10,10 +10,10 @@ namespace Engine.Construction.Drag.Selection
         {
             CellSelection selection = new();
             
-            if (!CellSelector.TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, csp.Map, csp.Settings, out end))
+            if (!CellSelector.TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, csp.World, csp.Settings, out end))
                 return selection;
             
-            if (!csp.NodeMap.TryGetNode(end.x, end.z, out Node endNode))
+            if (!csp.World.TryGetNode(end.x, end.z, out Node endNode))
                 return selection;
             
             HashSet<Node> toAddNodes = new();

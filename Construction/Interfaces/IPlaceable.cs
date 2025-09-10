@@ -10,7 +10,7 @@ namespace Engine.Construction.Interfaces
         public Vector3Int GridCoord { get; set; }
         public bool Draggable { get; set; }
 
-        public void Place(Vector3Int gridCoord, INodeMap map);
+        public void Place(Vector3Int gridCoord, IWorld world);
 
         public void FailedPlacement(Vector3Int gridCoord);
 

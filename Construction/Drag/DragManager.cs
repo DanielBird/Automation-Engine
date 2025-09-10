@@ -17,9 +17,8 @@ namespace Engine.Construction.Drag
 {
     public class DragManager
     {
-        private readonly IMap _map;
+        private readonly IWorld _world;
         private readonly PlacementVisuals _visuals;
-        private readonly INodeMap _nodeMap;
         private readonly PlacementState _state;
         private readonly PlacementSettings _settings;
 
@@ -30,9 +29,8 @@ namespace Engine.Construction.Drag
         
         public DragManager(PlacementContext ctx)
         {
-            _map = ctx.Map;
+            _world = ctx.World;
             _visuals = ctx.Visuals;
-            _nodeMap = ctx.NodeMap;
             _state = ctx.State;
             _settings = ctx.PlacementSettings;
             _dragSession = new DragSession(ctx); 
@@ -124,14 +122,15 @@ namespace Engine.Construction.Drag
         
         private void InitialiseNode(Vector3Int gridCoord, Cell cell, Node node, HashSet<Node> newNodes)
         {
-            Vector2Int size = node.GetSize();
-            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y)) 
+            node.SetGameObjectName(gridCoord);
+            
+            if (!_world.TryPlaceNodeAt(node, gridCoord.x, gridCoord.z)) 
                 node.FailedPlacement(gridCoord);
             else
             {
-                node.Place(gridCoord, _nodeMap);
+                node.Place(gridCoord, _world);
                 node.Visuals.HideArrows();
-                NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, cell.NodeType); 
+                NodeConfiguration config = NodeConfiguration.Create(_world, cell.NodeType); 
                 node.Initialise(config);
                 newNodes.Add(node);
             }
@@ -158,12 +157,12 @@ namespace Engine.Construction.Drag
                 {
                     Node node = pair.Value.Node;
                     Vector3Int gridCoord = pair.Key.GridCoordinate; 
-                    Cleanup.RemoveNode(node, gridCoord, _map);
+                    Cleanup.RemoveNode(node, gridCoord, _world);
                 }
             }
             else if (_state.CurrentObject != null)
             {
-                Cleanup.RemovePlaceable(_state, _map);
+                Cleanup.RemovePlaceable(_state, _world);
             }
         }
     }

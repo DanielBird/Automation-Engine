@@ -15,8 +15,7 @@ namespace Engine.Construction.Placement
     /// </summary>
     public abstract class ConstructionManager
     {
-        protected readonly IMap Map;
-        protected readonly INodeMap NodeMap;
+        protected readonly IWorld World;
         protected readonly IResourceMap ResourceMap;
         
         protected readonly PlacementSettings Settings;
@@ -26,8 +25,7 @@ namespace Engine.Construction.Placement
         
         public ConstructionManager(PlacementContext ctx)
         {
-            Map = ctx.Map;
-            NodeMap = ctx.NodeMap;
+            World = ctx.World;
             ResourceMap = ctx.ResourceMap;
             Settings = ctx.PlacementSettings;
             InputSettings = ctx.InputSettings; 
@@ -42,7 +40,7 @@ namespace Engine.Construction.Placement
         {
             alignedPosition = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            alignedPosition = Grid.GridAlignedWorldPosition(position, new GridParams(Settings.mapOrigin, Map.MapWidth, Map.MapHeight, Settings.cellSize));
+            alignedPosition = Grid.GridAlignedWorldPosition(position, new GridParams(Settings.mapOrigin, World.MapWidth(), World.MapHeight(), Settings.cellSize));
             return true;
         }
 
@@ -55,7 +53,7 @@ namespace Engine.Construction.Placement
         {
             gridCoordinate = new Vector3Int(); 
             if (!TryGetWorldPosition(out Vector3 position)) return false;
-            gridCoordinate = Grid.WorldToGridCoordinate(position, new GridParams(Settings.mapOrigin, Map.MapWidth, Map.MapHeight, Settings.cellSize));
+            gridCoordinate = Grid.WorldToGridCoordinate(position, new GridParams(Settings.mapOrigin, World.MapWidth(), World.MapHeight(), Settings.cellSize));
             return true;
         }
         
@@ -68,10 +66,22 @@ namespace Engine.Construction.Placement
             position = foundPosition; 
             return positionFound;
         }
+        
+        public void LerpPosition(GameObject obj, Vector3Int targetPos)
+        {
+            Transform t = obj.transform; 
+            t.position = Vector3.Lerp(t.position, targetPos, Settings.moveSpeed * Time.deltaTime);
+        }
+        
+        public bool IsArrived(GameObject obj, Vector3 targetPos)
+        {
+            float distance = Vector3.Distance(obj.transform.position, targetPos);
+            return distance < Settings.arrivedThreshold;
+        }
 
         protected void ClearTokenSource(ref CancellationTokenSource tokenSource) => CtsCtrl.Clear(ref tokenSource);
 
         protected void RemoveNode(Node node, Vector3Int gridCoord) 
-            => Cleanup.RemoveNode(node, gridCoord, Map);
+            => Cleanup.RemoveNode(node, gridCoord, World);
     }
 }

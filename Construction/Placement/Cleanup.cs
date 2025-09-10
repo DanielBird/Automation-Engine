@@ -7,18 +7,18 @@ namespace Engine.Construction.Placement
 {
     public static class Cleanup
     {
-        public static void RemovePlaceable(PlacementState state, IMap map)
+        public static void RemovePlaceable(PlacementState state, IWorld world)
         {
             if (state.PlaceableIsNode)
             {
-                RemoveNode(state.Node, state.TargetGridCoordinate, map);
+                RemoveNode(state.Node, state.TargetGridCoordinate, world);
             }
             else
             {
-                // Double check that the Placeable is not a node
+                // Double-check that the Placeable is not a node
                 if (state.CurrentObject.TryGetComponent(out Node node))
                 {
-                    RemoveNode(node, node.GridCoord, map);
+                    RemoveNode(node, node.GridCoord, world);
                 }
                 else
                 {
@@ -27,16 +27,19 @@ namespace Engine.Construction.Placement
             }
         }
         
-        public static void RemoveNode(Node node, Vector3Int gridCoord, IMap map)
+        public static void RemoveNode(Node node, Vector3Int gridCoord, IWorld world, bool deregister = true)
         {
             if (node == null)
             {
                 Debug.Log("Attempted to remove a null node!");
                 return;
             }
-            
+
             if (!node.gameObject.activeInHierarchy)
+            {
+                Debug.Log("Attempted to remove a non-active node!");
                 return;
+            }
             
             if (!node.isRemovable)
             {
@@ -46,7 +49,7 @@ namespace Engine.Construction.Placement
             }
             
             node.OnRemoval();
-            map.DeregisterOccupant(gridCoord.x, gridCoord.z, node.GridWidth, node.GridHeight);
+            world.TryRemoveNode(node);
             SimplePool.Despawn(node.gameObject);
         }
     }

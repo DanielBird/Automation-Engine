@@ -22,6 +22,7 @@ namespace Engine.CameraCtrl
         [Space] private EasingFunctions.Function _ease; 
         public EasingFunctions.Ease easingFunction = EasingFunctions.Ease.EaseOutSine;
         
+        private bool _eventsRegistered;
         private Coroutine _zoom; 
         
         private void Awake()
@@ -32,18 +33,27 @@ namespace Engine.CameraCtrl
                 inputSettings = ScriptableObject.CreateInstance<InputSettings>();
             }
             
-            mouseWheel.action.performed += Zoom; 
-            toggleZoom.action.performed += ToggleZoom; 
+            RegisterEvents();
 
             zoomedIn = true; 
             _timeOfLastInput = Time.unscaledTime - 100; 
             _ease = EasingFunctions.GetEasingFunction(easingFunction);
         }
 
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
+            mouseWheel.action.performed += Zoom;
+            toggleZoom.action.performed += ToggleZoom;
+            _eventsRegistered = true;
+        }
+
         private void OnDisable()
         {
+            if (!_eventsRegistered) return;
             mouseWheel.action.performed -= Zoom; 
-            toggleZoom.action.performed -= ToggleZoom; 
+            toggleZoom.action.performed -= ToggleZoom;
+            _eventsRegistered = false;
         }
 
         private void Zoom(InputAction.CallbackContext context)

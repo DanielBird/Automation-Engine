@@ -19,9 +19,9 @@ namespace Engine.Construction.Placement.Strategies
     /// </summary>
     public class StandardPlacementStrategy : IPlacementStrategy
     {
-        private readonly IMap _map;
-        private readonly INodeMap _nodeMap;
+        private readonly IWorld _world; 
         private readonly IResourceMap _resourceMap;
+        private readonly PlacementManager _placementManager;
         private readonly PlacementSettings _placementSettings;
         private readonly PlacementState _state;
         private readonly PlacementVisuals _visuals;
@@ -29,14 +29,14 @@ namespace Engine.Construction.Placement.Strategies
 
         private CancellationTokenSource _cts; 
 
-        public StandardPlacementStrategy(PlacementContext ctx, Transform resourceParent)
+        public StandardPlacementStrategy(PlacementContext ctx, PlacementManager placementManager, Transform resourceParent)
         {
-            _map = ctx.Map;
-            _nodeMap = ctx.NodeMap;
+            _world = ctx.World;
             _resourceMap = ctx.ResourceMap;
             _placementSettings = ctx.PlacementSettings;
             _state = ctx.State;
             _visuals = ctx.Visuals;
+            _placementManager = placementManager;
             _resourceParent = resourceParent;
         }
 
@@ -50,55 +50,54 @@ namespace Engine.Construction.Placement.Strategies
                 return;
             }
             
-            FinalisePosition(_state.CurrentObject, placeable, gridCoordinate, _state.WorldAlignedPosition, _placementSettings.moveSpeed).Forget();
+            FinalisePosition(_state.CurrentObject, placeable, gridCoordinate, _state.WorldAlignedPosition).Forget();
         }
-
-        private void SetupNode(Node node, Vector3Int gridCoordinate)
-        {
-            CellSelectionParams selectionParams = new CellSelectionParams(_map, _nodeMap, _placementSettings, node.GridWidth); 
-            NodeType nodeType = CellDefinition.DefineCell(gridCoordinate, node.Direction, selectionParams, out Direction finalDirection);
-            node.RotateInstant(finalDirection);
-            
-            NodeConfiguration config = NodeConfiguration.Create(_map, _nodeMap, nodeType); 
-            node.Initialise(config);
-            node.Visuals.HideArrows();
-            
-            EventBus<NodePlaced>.Raise(new NodePlaced(node));
-                
-            if(node is Producer p) p.Activate(_resourceMap, _resourceParent);
-        }
-
+        
         public void CancelPlacement(IPlaceable placeable)
         {
-            Cleanup.RemovePlaceable(_state, _map);
+            Cleanup.RemovePlaceable(_state, _world);
             
             _state.StopRunning();
             _visuals.HideAllNodeArrows();
-            _visuals.DeactivateFloorDecal();
+            _visuals.DeactivateHighlight();
         }
 
         private bool Place(Vector3Int gridCoord, IPlaceable placeable)
         {
-            Vector2Int size = placeable.GetSize();
-            if (!_map.RegisterOccupant(gridCoord.x, gridCoord.z, size.x, size.y))
+            if (placeable is Node node)
             {
-                placeable.FailedPlacement(gridCoord);
-                return false;
+                // update the node name for easier debugging
+                node.SetGameObjectName(gridCoord);
+                
+                if (!_world.TryPlaceNodeAt(node, gridCoord.x, gridCoord.z))
+                {
+                    node.FailedPlacement(gridCoord);
+                    return false;
+                }
             }
-            placeable.Place(gridCoord, _nodeMap);
+            else
+            {
+                if (!_world.TryPlaceOccupant(gridCoord, placeable))
+                {
+                    placeable.FailedPlacement(gridCoord);
+                    return false;
+                }
+            }
+            
+            placeable.Place(gridCoord, _world);
             return true;
         }
         
-        private async UniTaskVoid FinalisePosition(GameObject go, IPlaceable placeable, Vector3Int gridPosition, Vector3Int worldPosition, float moveSpeed)
+        private async UniTaskVoid FinalisePosition(GameObject go, IPlaceable placeable, Vector3Int gridPosition, Vector3Int worldPosition)
         {
             CtsCtrl.Clear(ref _cts);
             _cts = new CancellationTokenSource();
             
             try
             {
-                while(DistanceAboveThreshold(go, worldPosition))
+                while(!_placementManager.IsArrived(go, worldPosition))
                 {
-                    LerpPosition(go, worldPosition, moveSpeed);
+                    _placementManager.LerpPosition(go, worldPosition);
                     await UniTask.Yield(_cts.Token); 
                 }
                 
@@ -116,19 +115,6 @@ namespace Engine.Construction.Placement.Strategies
             }
         }
         
-        private bool DistanceAboveThreshold(GameObject obj, Vector3 targetPos, float threshold = 0.001f)
-        {
-            float distance = Vector3.Distance(obj.transform.position, targetPos);
-            if(distance < threshold) return true;
-            return false;
-        }
-        
-        private void LerpPosition(GameObject obj, Vector3Int targetPos, float moveSpeed)
-        {
-            Transform t = obj.transform; 
-            t.position = Vector3.Lerp(t.position, targetPos, moveSpeed * Time.deltaTime);
-        }
-
         private void FinaliseSetup(IPlaceable placeable, Vector3Int gridCoordinate)
         {
             if (placeable is Node node)
@@ -138,7 +124,22 @@ namespace Engine.Construction.Placement.Strategies
             
             _state.StopRunning();
             _visuals.HideAllNodeArrows();
-            _visuals.DeactivateFloorDecal();
+            _visuals.DeactivateHighlight();
+        }
+        
+        private void SetupNode(Node node, Vector3Int gridCoordinate)
+        {
+            CellSelectionParams selectionParams = new CellSelectionParams(_world, _placementSettings, node.GridWidth); 
+            NodeType nodeType = CellDefinition.DefineCell(gridCoordinate, node.Direction, selectionParams, out Direction finalDirection);
+            node.RotateInstant(finalDirection);
+            
+            NodeConfiguration config = NodeConfiguration.Create(_world, nodeType); 
+            node.Initialise(config);
+            node.Visuals.HideArrows();
+            
+            EventBus<NodePlaced>.Raise(new NodePlaced(node));
+                
+            if(node is Producer p) p.Activate(_resourceMap, _resourceParent);
         }
 
         public void CleanUpOnDisable() => CtsCtrl.Clear(ref _cts);

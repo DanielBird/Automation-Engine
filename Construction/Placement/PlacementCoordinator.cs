@@ -14,9 +14,9 @@ namespace Engine.Construction.Placement
         private PlacementState _state;
         private PlacementVisuals _visuals; 
 
-        public PlacementCoordinator(PlacementContext placementContext, DragManager dragManager, Transform widgetParent)
+        public PlacementCoordinator(PlacementContext placementContext, PlacementManager placementManager, DragManager dragManager, Transform resourceParent)
         {
-            StandardPlacementStrategy standard = new StandardPlacementStrategy(placementContext, widgetParent);
+            StandardPlacementStrategy standard = new StandardPlacementStrategy(placementContext, placementManager, resourceParent);
             DraggablePlacementStrategy draggable = new DraggablePlacementStrategy(placementContext, dragManager, standard); 
             
             _strategies = new List<IPlacementStrategy>
@@ -52,7 +52,7 @@ namespace Engine.Construction.Placement
             }
         }
 
-        public void RegisterOnDisable()
+        public void Disable()
         {
             foreach (IPlacementStrategy strategy in _strategies)
             {

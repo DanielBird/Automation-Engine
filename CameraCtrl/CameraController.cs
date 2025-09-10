@@ -21,17 +21,20 @@ namespace Engine.CameraCtrl
         [field: SerializeField] private float inputMoveSpeed;
         [field: SerializeField] private float speed; 
         private Vector3 _velocity = Vector3.zero;
-        private Vector3 _lastPosition = Vector3.zero; 
-        
+        private Vector3 _lastPosition = Vector3.zero;
+
+        private const float NormalizeThreshold = 1f;
+        private const float MinThresholdForMovement = 0.1f; 
         
         [Header("Rotation")]
         private EasingFunctions.Function _ease; 
         public EasingFunctions.Ease rotationEasing = EasingFunctions.Ease.EaseOutSine;
 
+        private bool _eventsRegistered;
         private Coroutine _rotateRoutine;
         [field: SerializeField] private int rotationIndex;
 
-        private Vector3[] _rotations = new[]
+        private readonly Vector3[] _rotations = new[]
         {
             new Vector3(0, 0, 0),
             new Vector3(0, 90, 0),
@@ -42,8 +45,8 @@ namespace Engine.CameraCtrl
         private void Awake()
         {
             _lastPosition = transform.position;
-            rotateClockwise.action.performed += RotateClockwise;
-            rotateAntiClockwise.action.performed += RotateAntiClockwise; 
+            RegisterEvents();
+            
             _ease = EasingFunctions.GetEasingFunction(rotationEasing);
 
             if (inputSettings == null)
@@ -53,10 +56,23 @@ namespace Engine.CameraCtrl
             }
         }
 
+        private void RegisterEvents()
+        {
+            if(_eventsRegistered) return;
+            rotateClockwise.action.performed += RotateClockwise;
+            rotateAntiClockwise.action.performed += RotateAntiClockwise;
+            _eventsRegistered = true;
+        }
+
         private void OnDisable()
         {
-            rotateClockwise.action.performed -= RotateClockwise;
-            rotateAntiClockwise.action.performed -= RotateAntiClockwise;
+            if (_eventsRegistered)
+            {
+                rotateClockwise.action.performed -= RotateClockwise;
+                rotateAntiClockwise.action.performed -= RotateAntiClockwise;
+                _eventsRegistered = false;
+            }
+            
             if(_rotateRoutine != null) StopCoroutine(_rotateRoutine);
         }
 
@@ -70,11 +86,12 @@ namespace Engine.CameraCtrl
             UpdatePosition();
         }
 
+        // Convert input to world space XZ movement relative to the camera
         private void SetTargetPosition(Vector2 input)
         {
             Vector3 inputVector = input.x * CameraRight() + input.y * CameraForward(); 
-            if(inputVector.sqrMagnitude > 1f) inputVector.Normalize();
-            if (inputVector.sqrMagnitude > 0.1f) targetPosition += inputVector; 
+            if (inputVector.sqrMagnitude > NormalizeThreshold) inputVector.Normalize();
+            if (inputVector.sqrMagnitude > MinThresholdForMovement) targetPosition += inputVector; 
         }
         
         private void UpdateVelocity()
@@ -94,12 +111,12 @@ namespace Engine.CameraCtrl
 
         private void UpdatePosition()
         {
-            if (targetPosition.sqrMagnitude > 0.1f)
+            if (targetPosition.sqrMagnitude > MinThresholdForMovement)
             {
                 inputMoveSpeed = RemapValues.ClampedMap(mainCamera.orthographicSize, inputSettings.minZoomIn, inputSettings.maxZoomOut, inputSettings.moveSpeedZoomedIn, inputSettings.moveSpeedZoomedOut);
                 
                 speed = Mathf.Lerp(speed, inputMoveSpeed, Time.deltaTime * inputSettings.acceleration);
-                transform.position += targetPosition * speed * Time.deltaTime; 
+                transform.position += targetPosition * (speed * Time.deltaTime); 
             }
             else
             {

@@ -25,6 +25,7 @@ namespace Engine.Construction.Nodes
         private Vector3 _westGizmo = new Vector3(-0.2f, 1,0);
 
         private EventBinding<NodeTargetEvent> _nodeTargetEventBinding;
+        private bool _eventsRegistered;
         
         protected virtual void Awake()
         {
@@ -33,13 +34,24 @@ namespace Engine.Construction.Nodes
                 node = GetComponent<Node>(); 
             }
 
+            RegisterEvents();
+        }
+
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
             _nodeTargetEventBinding = new EventBinding<NodeTargetEvent>(LogTargetNodeUpdate);
             EventBus<NodeTargetEvent>.Register(_nodeTargetEventBinding);
+            _eventsRegistered = true;
         }
 
         private void OnDisable()
         {
-            EventBus<NodeTargetEvent>.Deregister(_nodeTargetEventBinding);
+            if (_eventsRegistered)
+            {
+                EventBus<NodeTargetEvent>.Deregister(_nodeTargetEventBinding);
+                _eventsRegistered = false;
+            }
         }
 
         private void LogTargetNodeUpdate(NodeTargetEvent e)
@@ -66,7 +78,7 @@ namespace Engine.Construction.Nodes
         [Button]
         public void DebugPotentialLoops(Vector2Int pos)
         {
-            if (!node.NodeMap.GetNeighbourAt(pos, out Node target)) return;
+            if (!node.World.GetNeighbourAt(pos, out Node target)) return;
             bool loops = LoopDetection.WillBecomeLoopDebug(node, target); 
             Debug.Log(loops ? $"{node.name} and {target.name} will loop" : $"{node.name} and {target.name} will NOT loop");
         }

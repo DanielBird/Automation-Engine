@@ -40,7 +40,7 @@ namespace Engine.Construction.Nodes
             
             DisposeToken();
             _cts = new CancellationTokenSource(); 
-            NewRunRotation(start, end, _cts).Forget();
+            RunRotation(start, end, _cts).Forget();
         }
 
         private Quaternion GetStartingRotation(Vector3 start, Vector3 end)
@@ -59,36 +59,9 @@ namespace Engine.Construction.Nodes
             _node.transform.localRotation = Quaternion.Euler(DirectionUtils.RotationFromDirection(direction));
         }
 
-        private void DisposeToken()
-        {
-            if (_cts != null)
-            {
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
-            }
-        }
+        private void DisposeToken() => CtsCtrl.Clear(ref _cts);
         
-        private async UniTaskVoid RunRotation(Vector3 start,  Vector3 end, CancellationTokenSource ctx)
-        {
-            if (VectorUtils.ApproximatelyEqual(start, end)) return; 
-            
-            float t = 0;
-
-            while (t < _rotationTime)
-            {
-                float ease = _ease(0, 1, t / _rotationTime); 
-                float angle = Mathf.LerpAngle(start.y, end.y, ease);
-                _node.transform.localRotation = Quaternion.Euler(new Vector3(0, angle, 0)); 
-                
-                t += Time.deltaTime;
-                await UniTask.Yield(ctx.Token);
-            }
-            
-            _node.transform.localRotation = Quaternion.Euler(end);
-        }
-        
-        private async UniTaskVoid NewRunRotation(Quaternion start,  Quaternion end, CancellationTokenSource ctx)
+        private async UniTaskVoid RunRotation(Quaternion start,  Quaternion end, CancellationTokenSource ctx)
         {
             if (Quaternion.Dot(start, end) < 0f)
                 end = new Quaternion(-end.x, -end.y, -end.z, -end.w);
@@ -105,6 +78,7 @@ namespace Engine.Construction.Nodes
             }
             
             _node.transform.localRotation = end;
+            DisposeToken();
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Engine.Construction.Belts
         protected override NodeConfiguration GetChildNodeConfiguration(NodeConfiguration config)
         {
             Direction childDirection = DirectionUtils.RotateClockwise(Direction);
-            return NodeConfiguration.Create(Map, config.NodeMap, NodeType.RightCorner, childDirection, true); 
+            return NodeConfiguration.Create(config.World, NodeType.RightCorner, childDirection, true); 
         }
     }
 }

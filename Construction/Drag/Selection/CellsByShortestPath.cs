@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Engine.Construction.Maps;
 using Engine.Construction.Nodes;
 using Engine.Construction.Placement;
 using Engine.Construction.Utilities;
@@ -54,8 +55,9 @@ namespace Engine.Construction.Drag.Selection
         
         private static List<Vector3Int> FindShortestPath(Vector3Int start, Vector3Int goal, CellSelectionParams p)
         {
-            int w = p.Map.MapWidth;
-            int h = p.Map.MapHeight;
+            Vector2Int dimensions = p.World.MapDimensions(); 
+            int w = dimensions.x;
+            int h = dimensions.y;
             int step = Mathf.Max(1, p.StepSize);
             
             Queue<Record> q = new();
@@ -82,7 +84,7 @@ namespace Engine.Construction.Drag.Selection
                     CellClass klass = ClassifyCell(nb.x, nb.z, p,  out Node nbNode);
 
                     if (isGoal && klass == CellClass.Blocked)
-                        return GetPath(p, parent, start, goal);
+                        return GetPath(p, parent, start, current.Pos);
                     
                     if (klass == CellClass.Blocked) continue;
                     
@@ -114,10 +116,12 @@ namespace Engine.Construction.Drag.Selection
         private static List<Vector3Int> GetPath(CellSelectionParams p, Dictionary<Vector3Int, Record> parent, Vector3Int start, Vector3Int goal)
         {
             // Reconstruct the path
+            IWorld world = p.World;
             List<Vector3Int> path = new();
             Vector3Int current = goal;
             
-            int maxSteps = (p.Map.MapWidth * p.Map.MapHeight) + 8;
+            Vector2Int d = world.MapDimensions();
+            int maxSteps = (d.x * d.y) + 8;
             HashSet<Vector3Int> visited = new();
 
             for (int i = 0; i < maxSteps; i++)
@@ -145,7 +149,7 @@ namespace Engine.Construction.Drag.Selection
             path.Reverse();
 
             // Block a single step back along an existing path and forming an intersection
-            if (path.Count == 2 && !p.Map.VacantCell(path[^1].x, path[^1].z))
+            if (path.Count == 2 && !world.VacantCell(path[^1].x, path[^1].z))
             {
                 path.Clear();
                 return path;
@@ -155,7 +159,7 @@ namespace Engine.Construction.Drag.Selection
             p.ClearIntersections();
             foreach (Vector3Int pos in path)
             {
-                if (!p.Map.VacantCell(pos.x, pos.z) && IsIntersection(pos.x, pos.z, p))
+                if (!world.VacantCell(pos.x, pos.z) && IsIntersection(pos.x, pos.z, world))
                 {
                     p.AddIntersection(pos);
                 }
@@ -168,11 +172,12 @@ namespace Engine.Construction.Drag.Selection
         private static CellClass ClassifyCell(int x, int z, CellSelectionParams p, out Node node)
         {
             node = null;
+            IWorld world = p.World;
             
-            if (p.Map.VacantCell(x, z)) 
+            if (world.VacantCell(x, z)) 
                 return CellClass.Vacant;
 
-            if (!p.NodeMap.TryGetNode(x, z, out node))
+            if (!world.TryGetNode(x, z, out node))
                 return CellClass.Blocked; // occupied by something that is not a node
 
             switch (node.NodeType)
@@ -189,9 +194,9 @@ namespace Engine.Construction.Drag.Selection
             return CellClass.PassableOccupied;
         }
 
-        private static bool IsIntersection(int x, int z, CellSelectionParams p)
+        private static bool IsIntersection(int x, int z, IWorld world)
         {
-            if (!p.NodeMap.TryGetNode(x, z, out Node node))
+            if (!world.TryGetNode(x, z, out Node node))
                 return false;
             
             switch (node.NodeType)

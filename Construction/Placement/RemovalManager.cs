@@ -28,31 +28,33 @@ namespace Engine.Construction.Placement
         
         private HashSet<Vector3> _pendingDestructions = new();
         private HashSet<Vector3> _pendingEmptyDestructions = new();
-        
+
+        private bool _eventsRegistered; 
         private CancellationTokenSource _rightClickDragTokenSource;
         
         public RemovalManager(PlacementContext ctx) : base(ctx)
         {
+            RegisterEvents();
+        }
+        
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
             InputSettings.cancel.action.performed += RemoveNodes;
+            _eventsRegistered = true; 
         }
 
         public void Disable()
         {
-            InputSettings.cancel.action.performed -= RemoveNodes; 
-            ClearToken();
+            if (!_eventsRegistered) return;
+            InputSettings.cancel.action.performed -= RemoveNodes;
+            _eventsRegistered = false;
+            ClearTokenSource(ref _rightClickDragTokenSource);
         }
-
-        private void ClearToken()
-        {
-            if(_rightClickDragTokenSource == null) return; 
-            _rightClickDragTokenSource.Cancel();
-            _rightClickDragTokenSource.Dispose();
-            _rightClickDragTokenSource = null;
-        }
-
+        
         private void RemoveNodes(InputAction.CallbackContext ctx)
         {
-            ClearToken();
+            ClearTokenSource(ref _rightClickDragTokenSource);
             _rightClickDragTokenSource = new CancellationTokenSource();
             DetectRightClickDown(_rightClickDragTokenSource.Token).Forget();
         }
@@ -71,12 +73,12 @@ namespace Engine.Construction.Placement
             
             if (!InputSettings.cancel.action.IsPressed())
             {
-                if (!NodeMap.TryGetNode(start.x, start.z, out Node node)) return;
+                if (!World.TryGetNode(start.x, start.z, out Node node)) return;
                 RemoveSingleNode(startingPair, node);
                 return;
             }
 
-            Visuals.ShowGridAndDecal(false);
+            Visuals.ShowGrid();
             
             while (InputSettings.cancel.action.IsPressed())
             {
@@ -103,14 +105,14 @@ namespace Engine.Construction.Placement
             }
             
             ProcessFinalHits();
-            Visuals.HideGidAndDecal(false);
+            Visuals.HideGrid();
         }
         
         private void RemoveSingleNode(GridWorldCoordPair delete, Node node) => RemoveNode(node, delete.GridCoordinate);
 
         private CellSelection SelectCells(Vector3Int start, out Vector3Int end)
             // => CellSelector.SelectCellArea(start, mainCamera, settings.floorLayer, _cellHits, Map, settings, out end);
-             => CellSelector.SelectCellAreaWithNodes(start, MainCamera, Settings.floorLayer, _cellHits, new CellSelectionParams(Map, NodeMap, Settings, 1), true, out end);
+             => CellSelector.SelectCellAreaWithNodes(start, MainCamera, Settings.floorLayer, _cellHits, new CellSelectionParams(World, Settings, 1), true, out end);
         
         private void UpdateHits()
         {
@@ -132,7 +134,7 @@ namespace Engine.Construction.Placement
             
             foreach (GridWorldCoordPair pair in _newHits)
             {
-                if (!NodeMap.TryGetNode(pair.GridCoordinate.x, pair.GridCoordinate.z, out Node node))
+                if (!World.TryGetNode(pair.GridCoordinate.x, pair.GridCoordinate.z, out Node node))
                 {
                     _pendingEmptyDestructions.Add(pair.WorldPosition);
                 }

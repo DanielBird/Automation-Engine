@@ -129,7 +129,7 @@ namespace Engine.Construction.Belts
         {
             rightBelt = null;
             
-            if (NodeMap.GetNeighbourAt(_forwardGridPosition, out Node rightNode) && rightNode is Belt rb)
+            if (World.GetNeighbourAt(_forwardGridPosition, out Node rightNode) && rightNode is Belt rb)
                 rightBelt = rb;
 
             return (childBelt != null, rightBelt != null) switch

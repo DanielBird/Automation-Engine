@@ -48,12 +48,13 @@ namespace Engine.Construction.Nodes
         [field: SerializeField] public List<Node> TargetNodes { get; private set; } 
         [field: SerializeField] public NodeVisuals Visuals { get; private set; }
         [field: SerializeField] public bool Initialised { get; private set; }    
-        public INodeMap NodeMap { get; protected set; }
+        public IWorld World { get; protected set; }
         protected NodeRotation NodeRotation;
         public NodeConnections NodeConnections;
         private StringBuilder _nameBuilder = new(64);
         
         // Status
+        public bool IsPlaced { get; private set; }
         public bool IsEnabled { get; set; }
         public bool IsSelected { get; set; }
         public bool isRemovable = true; 
@@ -88,10 +89,11 @@ namespace Engine.Construction.Nodes
             NodeConnections = new NodeConnections(this);
         }
         
-        public virtual void Place(Vector3Int gridCoord, INodeMap map)
+        public virtual void Place(Vector3Int gridCoord, IWorld world)
         {
-            NodeMap = map; 
+            World = world; 
             GridCoord = gridCoord;
+            IsPlaced = true;
         }
         
         // Initialise is called when the player releases lmb during a drag
@@ -107,23 +109,17 @@ namespace Engine.Construction.Nodes
             if (config.UpdateDirection) Direction = config.Direction;
             if (config.UpdateRotation) RotateInstant(config.Direction);
             
-            NodeMap = config.NodeMap; 
-            NodeMap.RegisterNode(this);
-            NodeConnections.UpdateMap(NodeMap);
+            World = config.World; 
+            NodeConnections.UpdateMap(World);
 
             Initialised = true;
             IsEnabled = true;
             
-            SetGameObjectName(GridCoord);
+            // SetGameObjectName(GridCoord);
         }
         
-        private void SetGameObjectName(Vector3Int coord)
+        public void SetGameObjectName(Vector3Int coord)
         {
-            /*string baseName = gameObject.name;
-            int index = baseName.IndexOf('(');
-            if (index >= 0) 
-                baseName = baseName.Substring(0, index);*/
-
             string baseName = TailSuffix.Replace(gameObject.name, "");
             baseName = baseName.TrimEnd('_', ' ');
             
@@ -167,23 +163,10 @@ namespace Engine.Construction.Nodes
 
         public virtual void OnRemoval()
         {
+            IsPlaced = false;
             IsEnabled = false;
             Visuals.EnableRenderer();
             TargetNodes.Clear();
-
-            if (Initialised == false)
-            {
-                // Trigger the event as we won't reach DeregisterNode() on the Node Map
-                EventBus<NodeRemoved>.Raise(new NodeRemoved(this));
-                return;
-            }
-            if (NodeMap == null)
-            {
-                // Trigger the event as we won't reach DeregisterNode() on the Node Map
-                EventBus<NodeRemoved>.Raise(new NodeRemoved(this));
-                return;
-            }
-            NodeMap.DeregisterNode(this);
         }
         
         public Vector2Int GetSize() => Direction switch
@@ -195,7 +178,8 @@ namespace Engine.Construction.Nodes
             _ => new Vector2Int(GridWidth, GridHeight),
         };
         
-        public bool HasForwardNode(out Node forwardNode)
+        // A valid node in front in the path
+        public bool HasOutputNode(out Node forwardNode)
         {
             if (TargetNodes.Count > 0)
             {
@@ -203,7 +187,7 @@ namespace Engine.Construction.Nodes
                 return true;
             }
             
-            if (TryGetForwardNode(out forwardNode))
+            if (TryGetOutputNode(out forwardNode))
             {
                 AddTargetNode(forwardNode);
                 return true; 
@@ -239,19 +223,20 @@ namespace Engine.Construction.Nodes
         
         public bool IsConnected() => NodeConnections.IsConnected();
 
-        public bool TryGetForwardNode(out Node forwardNode) => NodeConnections.TryGetForwardNode(out forwardNode);
+        public bool TryGetOutputNode(out Node forwardNode) => NodeConnections.TryGetOutputNode(out forwardNode);
         
-        public bool TryGetBackwardNode(out Node backwardNode) => NodeConnections.TryGetBackwardNode(out backwardNode);
+        public bool TryGetInputNode(out Node backwardNode) => NodeConnections.TryGetInputNode(out backwardNode);
 
         public bool HasNeighbour(Direction direction) => NodeConnections.HasNeighbour(direction);
 
         public bool TryGetNeighbour(Direction direction, out Node neighbour) => NodeConnections.TryGetNeighbour(direction, out neighbour); 
 
-        // The orientation that a neighbouring input node must have to correctly input to this node
+        // The orientation that a neighboring input node must have to correctly input to this node
         public Direction InputDirection() => NodeConnections.InputDirection(); 
 
         // The direction of the cell that should be checked for a connecting input node
-        public Direction InputPosition() => NodeConnections.InputPosition();
+        public Direction DirectionOfInputPosition() => NodeConnections.DirectionOfInputPosition();
+        public Vector3Int OutputGridCoord() => NodeConnections.OutputGridCoord();
 
         public virtual void OnPlayerSelect()
         {

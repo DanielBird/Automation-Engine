@@ -7,8 +7,7 @@ namespace Engine.Construction.Placement
 {
     public class PlacementContext
     {
-        public readonly IMap Map;
-        public readonly INodeMap NodeMap;
+        public readonly IWorld World;
         public readonly IResourceMap ResourceMap;
         public readonly InputSettings InputSettings;
         public readonly PlacementSettings PlacementSettings;
@@ -16,10 +15,9 @@ namespace Engine.Construction.Placement
         public readonly PlacementVisuals Visuals;
         public readonly Camera MainCamera;
 
-        public PlacementContext(IMap map, INodeMap nodeMap, IResourceMap resourceMap, InputSettings inputSettings, PlacementSettings placementSettings, PlacementState state, PlacementVisuals visuals, Camera mainCamera)
+        public PlacementContext(IWorld world, IResourceMap resourceMap, InputSettings inputSettings, PlacementSettings placementSettings, PlacementState state, PlacementVisuals visuals, Camera mainCamera)
         {
-            Map = map;
-            NodeMap = nodeMap;
+            World = world;
             ResourceMap = resourceMap;
             InputSettings = inputSettings;
             PlacementSettings = placementSettings;

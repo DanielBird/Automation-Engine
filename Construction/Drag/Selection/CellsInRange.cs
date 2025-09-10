@@ -39,7 +39,7 @@ namespace Engine.Construction.Drag.Selection
             
             for (int i = start; ascending ? i <= end : i >= end; i += (ascending ? stepSize : -stepSize))
             {
-                if (!CellSelector.IsValidCell(fixedCoord, i, selection.Axis, selectionParams.Map)) return;
+                if (!CellSelector.IsValidCell(fixedCoord, i, selection.Axis, selectionParams.World)) return;
                 Vector3Int position = CellSelector.CreateCellPosition(fixedCoord, i, selection.Axis);
                 selection.AddCell(position, selectionParams.Settings);
             }

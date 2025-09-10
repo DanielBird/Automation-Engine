@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace Engine.GameState
 {
-    [CreateAssetMenu(fileName = "InputSettings", menuName = "Scriptable Objects/InputSettings")]
+    [CreateAssetMenu(fileName = "InputSettings", menuName = "Automation Engine/InputSettings")]
     public class InputSettings : ScriptableObject
     {
         [Header("Key Input References")]

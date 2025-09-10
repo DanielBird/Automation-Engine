@@ -1,6 +1,8 @@
 ﻿using System.Threading;
 using Cysharp.Threading.Tasks;
 using Engine.Construction.Placement;
+using Engine.Construction.Visuals;
+using Engine.Utilities;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using InputSettings = Engine.GameState.InputSettings;
@@ -23,16 +25,18 @@ namespace Engine.Construction.Interaction
         private readonly Vector2 _gridOffset;
         private readonly float _lerpSpeed;
         private readonly Transform _transform;
+
+        private const float MinScale = 0.001f; 
         
-        public RemovalVisuals(InputSettings inputSettings, RemovalManager removalManager, Material destructionIndicatorMaterial, float yOffset, float lerpSpeed, Vector2 gridOffset, Transform myTransform)
+        public RemovalVisuals(InputSettings inputSettings, RemovalManager removalManager, PlacementVisualSettings vs, Transform myTransform)
         {
             _inputSettings = inputSettings;
             _removalManager = removalManager;
             
-            _destructionIndicatorMaterial = destructionIndicatorMaterial;
-            _yOffset = yOffset;
-            _gridOffset = gridOffset;
-            _lerpSpeed = lerpSpeed;
+            _destructionIndicatorMaterial = vs.destructionIndicatorMaterial;
+            _yOffset = vs.yOffset;
+            _gridOffset = vs.gridOffset;
+            _lerpSpeed = vs.lerpSpeed;
             _transform = myTransform;
             
             quad = SpawnQuad(); 
@@ -42,20 +46,12 @@ namespace Engine.Construction.Interaction
         public void Disable()
         {
             _inputSettings.cancel.action.performed -= ShowVisuals;
-            ClearToken();
+            CtsCtrl.Clear(ref _rightClickDragTokenSource);
         }
         
-        private void ClearToken()
-        {
-            if(_rightClickDragTokenSource == null) return; 
-            _rightClickDragTokenSource.Cancel();
-            _rightClickDragTokenSource.Dispose();
-            _rightClickDragTokenSource = null;
-        }
-
         private void ShowVisuals(InputAction.CallbackContext ctx)
         {
-            ClearToken();
+            CtsCtrl.Clear(ref _rightClickDragTokenSource);
             _rightClickDragTokenSource = new CancellationTokenSource();
             DetectRightClickDown(_rightClickDragTokenSource.Token).Forget();
         }
@@ -84,7 +80,7 @@ namespace Engine.Construction.Interaction
             }
             
             CleanUpQuad();
-            ClearToken();
+            CtsCtrl.Clear(ref _rightClickDragTokenSource);
         }
 
         private void SetupQuad(Vector3 start)
@@ -110,7 +106,7 @@ namespace Engine.Construction.Interaction
             Vector2 center2 = (min + max) * 0.5f;
 
             Vector3 newPos = new Vector3(center2.x, a.y + _yOffset, center2.y);
-            Vector3 newScale = new Vector3(Mathf.Max(size.x, 0.001f), 1f, Mathf.Max(size.y, 0.001f));
+            Vector3 newScale = new Vector3(Mathf.Max(size.x, MinScale), 1f, Mathf.Max(size.y, MinScale));
             
             t.position = Vector3.Lerp(pos, newPos, _lerpSpeed * Time.deltaTime);
             t.localScale = Vector3.Lerp(scale, newScale, _lerpSpeed * Time.deltaTime);

@@ -24,6 +24,7 @@ namespace Engine.Construction.Belts
         
         private Transform _resourceParent;
         private GameObject _resourcePrefab;
+        private const float WaitTime = 0.1f; 
         
         [Header("Spawning")]
         public Vector3 spawnLocation;
@@ -99,7 +100,7 @@ namespace Engine.Construction.Belts
                 {
                     try
                     {
-                        await UniTask.WaitForSeconds(0.1f, cancellationToken: _ctx.Token);
+                        await UniTask.WaitForSeconds(WaitTime, cancellationToken: _ctx.Token);
                     }
                     catch (ObjectDisposedException )
                     {

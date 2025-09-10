@@ -41,6 +41,7 @@ namespace Engine.Construction.Visuals
 
         private HashSet<IconReference> _destructionIcons = new HashSet<IconReference>();
         private EventBinding<DestructionEvent> _onDestructionEvent;
+        private bool _eventsRegistered;
         
         private void Start()
         {
@@ -53,13 +54,24 @@ namespace Engine.Construction.Visuals
             SimplePool.Preload(placementSettings.destructionIconPrefab, transform, preloadCount);
             SimplePool.Preload(placementSettings.emptyDestructionIconPrefab, transform, preloadCount);
 
+            RegisterEvents();
+        }
+
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
             _onDestructionEvent = new EventBinding<DestructionEvent>(OnDestruct);
             EventBus<DestructionEvent>.Register(_onDestructionEvent);
+            _eventsRegistered = true;
         }
 
         private void OnDisable()
         {
-            EventBus<DestructionEvent>.Deregister(_onDestructionEvent);
+            if (_eventsRegistered)
+            {
+                EventBus<DestructionEvent>.Deregister(_onDestructionEvent);
+                _eventsRegistered = false;
+            }
         }
 
         private void OnDestruct(DestructionEvent e)

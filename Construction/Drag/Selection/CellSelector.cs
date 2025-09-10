@@ -17,7 +17,7 @@ namespace Engine.Construction.Drag.Selection
         {
             CellSelection selection = new CellSelection();
 
-            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, selectionParams.Map, selectionParams.Settings, out Vector3Int endGridCoord))
+            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, selectionParams.World, selectionParams.Settings, out Vector3Int endGridCoord))
             {
                 return selection;
             }
@@ -45,7 +45,7 @@ namespace Engine.Construction.Drag.Selection
         /// <summary>
         /// Attempts to get the current grid position where a raycast intersects with the floor.
         /// </summary>
-        public static bool TryGetCurrentGridCoord(Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, out Vector3Int gridCoordinate)
+        public static bool TryGetCurrentGridCoord(Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IWorld world, PlacementSettings settings, out Vector3Int gridCoordinate)
         {
             gridCoordinate = Vector3Int.zero;
             
@@ -53,7 +53,7 @@ namespace Engine.Construction.Drag.Selection
             int hits = Physics.RaycastNonAlloc(ray, cellHits, 300f, floorLayer); 
             if (hits <= 0) return false;
             
-            gridCoordinate = Grid.WorldToGridCoordinate(cellHits[0].point, new GridParams(settings.mapOrigin, map.MapWidth, map.MapHeight, settings.cellSize));
+            gridCoordinate = Grid.WorldToGridCoordinate(cellHits[0].point, new GridParams(settings.mapOrigin, world.MapWidth(), world.MapHeight(), settings.cellSize));
             return true;
         }
         
@@ -81,11 +81,11 @@ namespace Engine.Construction.Drag.Selection
         }
         
         // SELECT BY AREA
-        public static CellSelection SelectCellArea(Vector3Int start, Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, IMap map, PlacementSettings settings, out Vector3Int end, int stepSize = 1)
+        public static CellSelection SelectCellArea(Vector3Int start, Camera mainCamera, LayerMask floorLayer, RaycastHit[] cellHits, World world, PlacementSettings settings, out Vector3Int end, int stepSize = 1)
         {
             CellSelection selection = new();
             
-            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, map, settings, out end))
+            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, world, settings, out end))
                 return selection;
             
             IEnumerable<Vector3Int> cells = GetCellArea(start, end, stepSize);
@@ -110,7 +110,7 @@ namespace Engine.Construction.Drag.Selection
         {
             CellSelection selection = new();
             
-            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, csp.Map, csp.Settings, out end))
+            if (!TryGetCurrentGridCoord(mainCamera, floorLayer, cellHits, csp.World, csp.Settings, out end))
                 return selection;
             
             IEnumerable<Vector3Int> cells = GetCellArea(start, end, csp.StepSize);
@@ -119,7 +119,7 @@ namespace Engine.Construction.Drag.Selection
             {
                 foreach (Vector3Int cell in cells)
                 {
-                    if(csp.NodeMap.TryGetNode(cell.x, cell.z, out Node node))
+                    if(csp.World.TryGetNode(cell.x, cell.z, out Node node))
                         selection.AddCell(cell, node.Direction, node.NodeType, csp.Settings);
                 }
             }
@@ -127,7 +127,7 @@ namespace Engine.Construction.Drag.Selection
             {
                 foreach (Vector3Int cell in cells)
                 {
-                    if(csp.NodeMap.HasNode(cell.x, cell.z))
+                    if(csp.World.HasNode(cell.x, cell.z))
                         selection.AddCell(cell, Direction.North, NodeType.GenericBelt, csp.Settings);
                 }
             }
@@ -149,9 +149,9 @@ namespace Engine.Construction.Drag.Selection
             int x = cell.x;
             int z = cell.z;
             
-            if (!selectionParams.Map.VacantCell(x, z))
+            if (!selectionParams.World.VacantCell(x, z))
             {
-                if (selectionParams.NodeMap.HasNode(x, z)) type = NodeType.Intersection; 
+                if (selectionParams.World.HasNode(x, z)) type = NodeType.Intersection; 
                 else return;
             }
             selection.AddCell(cell, direction, type, selectionParams.Settings);
@@ -217,11 +217,11 @@ namespace Engine.Construction.Drag.Selection
             return Direction.North;
         }
         
-        public static bool IsValidCell(int fixedCoord, int variableCoord, Axis axis, IMap map)
+        public static bool IsValidCell(int fixedCoord, int variableCoord, Axis axis, IWorld world)
         {
             return axis == Axis.XAxis 
-                ? map.VacantCell(fixedCoord, variableCoord)
-                : map.VacantCell(variableCoord, fixedCoord);
+                ? world.VacantCell(fixedCoord, variableCoord)
+                : world.VacantCell(variableCoord, fixedCoord);
         }
 
         public static Vector3Int CreateCellPosition(int fixedCoord, int variableCoord, Axis axis)

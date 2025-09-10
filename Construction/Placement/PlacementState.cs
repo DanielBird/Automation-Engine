@@ -64,15 +64,18 @@ namespace Engine.Construction.Placement
         
         public void SetDirection(Direction direction) => CurrentDirection = direction;
 
-        public bool UpdateState(IMap map, INodeMap nodeMap, PlacementSettings settings,out NodeType newNodeType, out Direction newDirection)
+        public bool UpdateState(IWorld world, PlacementSettings settings,out NodeType newNodeType, out Direction newDirection)
         {
+            newDirection = Direction.North;
+            newNodeType = NodeType.Straight;
+            
+            if(!PlaceableIsNode || Node == null) return false;
             newDirection = Node.Direction;
             newNodeType = Node.NodeType;
             
-            if(!PlaceableIsNode) return false;
             if(!Node.nodeTypeSo.draggable) return false;
             
-            CellSelectionParams selectionParams = new CellSelectionParams(map, nodeMap, settings, Node.GridWidth);
+            CellSelectionParams selectionParams = new CellSelectionParams(world, settings, Node.GridWidth);
             newNodeType = CellDefinition.DefineCell(TargetGridCoordinate, Node.Direction, selectionParams, out newDirection);
             
             return newNodeType != Node.NodeType;

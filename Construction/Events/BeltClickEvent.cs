@@ -9,11 +9,14 @@ namespace Engine.Construction.Events
         public Vector3Int GridCoord;
         public readonly NodeType BuildRequestType;
         public Node RequestingNode;
-        public BeltClickEvent(Vector3Int gridCoord, NodeType buildRequestType, Node requestingNode)
+        public bool ReplaceRequestingNode;
+        
+        public BeltClickEvent(Vector3Int gridCoord, NodeType buildRequestType, Node requestingNode, bool replaceRequestingNode = false)
         {
             GridCoord = gridCoord;
             BuildRequestType = buildRequestType;
             RequestingNode = requestingNode;
+            ReplaceRequestingNode = replaceRequestingNode;
         }
     }
 }

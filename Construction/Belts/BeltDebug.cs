@@ -14,6 +14,8 @@ namespace Engine.Construction.Belts
         public bool drawBezierPathLeft;
         public bool drawBezierPathRight;
         
+        private const float SphereRadius = 0.1f;
+        
         protected override void Awake()
         {
             base.Awake();
@@ -29,21 +31,21 @@ namespace Engine.Construction.Belts
             if (belt is Producer p)
             {
                 Gizmos.color = Color.green;
-                Gizmos.DrawSphere(p.spawnLocation, 0.1f);
+                Gizmos.DrawSphere(p.spawnLocation, SphereRadius);
             }
             
             if (drawResourceArrivalPoint)
             {
                 Vector3 point = transform.TransformPoint(belt.arrivalPointVector);
                 Gizmos.color = Color.blue;
-                Gizmos.DrawWireSphere(point, 0.1f);
+                Gizmos.DrawWireSphere(point, SphereRadius);
             }
 
             if (drawResourceBezierHandle)
             {
                 Vector3 bezier = transform.TransformPoint(belt.bezierHandleVector);
                 Gizmos.color = Color.aquamarine;
-                Gizmos.DrawWireSphere(bezier, 0.1f);
+                Gizmos.DrawWireSphere(bezier, SphereRadius);
             }
 
             if (drawBezierPathLeft || drawBezierPathRight)

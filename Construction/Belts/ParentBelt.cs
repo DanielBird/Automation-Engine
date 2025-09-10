@@ -16,7 +16,7 @@ namespace Engine.Construction.Belts
     {
         [Header("Parent Belt")]
         public Belt childBelt;
-        protected IMap Map; 
+        protected IWorld World; 
         private Vector2Int _leftGridPosition; 
         [Tooltip("How many steps along the grid should the splitter look for its target Nodes?")]
         public int stepSize = 1;
@@ -26,7 +26,7 @@ namespace Engine.Construction.Belts
             base.Initialise(config);
             SetupResourceMovement();
             
-            Map = config.Map;
+            World = config.World;
             if (!RegisterChildBelt(config)) return;
             FinaliseChildBelt(config);
         }
@@ -44,14 +44,13 @@ namespace Engine.Construction.Belts
             _leftGridPosition = PositionByDirection.GetLeftPosition(GridCoord, Direction, stepSize);
             Vector3Int childGridCoord = new (_leftGridPosition.x, 0, _leftGridPosition.y);
 
-            Vector2Int size = childBelt.GetSize();
-            if (!config.Map.RegisterOccupant(_leftGridPosition.x, _leftGridPosition.y, size.x, size.y))
+            if (!config.World.TryPlaceNodeAt(childBelt, _leftGridPosition.x, _leftGridPosition.y))
             {
                 childBelt.FailedPlacement(childGridCoord);
                 return false;
             }
             
-            childBelt.Place(childGridCoord, config.NodeMap);
+            childBelt.Place(childGridCoord, World);
             return true;
         }
 
@@ -66,7 +65,7 @@ namespace Engine.Construction.Belts
 
         protected virtual NodeConfiguration GetChildNodeConfiguration(NodeConfiguration config)
         {
-            return NodeConfiguration.Create(Map, config.NodeMap, NodeType.Straight, Direction, true); 
+            return NodeConfiguration.Create(World, NodeType.Straight, Direction, true); 
         }
         
         public override void OnRemoval()
@@ -75,9 +74,7 @@ namespace Engine.Construction.Belts
             
             // Clean up child belt
             childBelt.OnRemoval();
-            Vector3Int gridCoord = childBelt.GridCoord; 
-            Map.DeregisterOccupant(gridCoord.x, gridCoord.z, childBelt.GridWidth, childBelt.GridHeight);
-            NodeMap.DeregisterNode(childBelt);
+            World.TryRemoveNode(childBelt);
         }
     }
 }

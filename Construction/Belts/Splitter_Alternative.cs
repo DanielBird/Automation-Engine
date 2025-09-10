@@ -105,10 +105,10 @@ namespace Engine.Construction.Belts
             leftBelt = null;
             rightBelt = null;
 
-            if (NodeMap.GetNeighbourAt(_forwardLeftGridPosition, out Node leftNode) && leftNode is Belt lb)
+            if (World.GetNeighbourAt(_forwardLeftGridPosition, out Node leftNode) && leftNode is Belt lb)
                 leftBelt = lb;
 
-            if (NodeMap.GetNeighbourAt(_forwardGridPosition, out Node rightNode) && rightNode is Belt rb)
+            if (World.GetNeighbourAt(_forwardGridPosition, out Node rightNode) && rightNode is Belt rb)
                 rightBelt = rb;
 
             return (leftBelt != null, rightBelt != null) switch
@@ -145,8 +145,8 @@ namespace Engine.Construction.Belts
                     break;
             }
             
-            if (!NodeMap.InBounds(gridPos.x, gridPos.y)) return;
-            if (NodeMap.GetNeighbourAt(gridPos, out Node neighbour)) return;
+            if (!World.InBounds(gridPos.x, gridPos.y)) return;
+            if (World.GetNeighbourAt(gridPos, out Node neighbour)) return;
             EventBus<BeltClickEvent>.Raise(new BeltClickEvent(new Vector3Int(gridPos.x, 0, gridPos.y), NodeType.GenericBelt, this));
         }
     }

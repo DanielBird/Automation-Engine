@@ -15,8 +15,8 @@ namespace Engine.Construction.Drag.Selection
         {
             int stepSize = selectionParams.StepSize;
             stepSize = Mathf.Abs(stepSize);
-            INodeMap nodeMap = selectionParams.NodeMap;
-            Vector2Int mapDimensions = nodeMap.MapDimensions();
+            IWorld world = selectionParams.World;
+            Vector2Int mapDimensions = world.MapDimensions();
             
             IEnumerable<Vector3Int> neighbours = Grid.GetNeighbours(gridCoord, stepSize, mapDimensions.x, mapDimensions.y);
             Dictionary<Direction, Node> neighbourNodes = new();
@@ -30,7 +30,7 @@ namespace Engine.Construction.Drag.Selection
 
             foreach (Vector3Int neighbourPos in neighbours)
             {
-                if (nodeMap.GetNeighbourAt(new Vector2Int(neighbourPos.x, neighbourPos.z), out Node node))
+                if (world.GetNeighbourAt(new Vector2Int(neighbourPos.x, neighbourPos.z), out Node node))
                 {
                     Direction neighbourDirection = GetDirectionFromOffset(gridCoord, neighbourPos);
                     neighbourFound[neighbourDirection] = true;
@@ -145,7 +145,7 @@ namespace Engine.Construction.Drag.Selection
         {
             int stepSize = selectionParams.StepSize;
             stepSize = Mathf.Abs(stepSize);
-            INodeMap nodeMap = selectionParams.NodeMap;
+            IWorld world = selectionParams.World;
             
             Direction rightDirection = DirectionUtils.Increment(direction);
             Direction leftDirection = DirectionUtils.Decrement(direction);
@@ -154,8 +154,8 @@ namespace Engine.Construction.Drag.Selection
             Vector2Int leftPos = PositionByDirection.Get(gridCoord.x, gridCoord.z, leftDirection, stepSize);
 
             // Found a node
-            bool rightFound = nodeMap.GetNeighbourAt(rightPos, out Node rightN);
-            bool leftFound  = nodeMap.GetNeighbourAt(leftPos, out Node leftN);
+            bool rightFound = world.GetNeighbourAt(rightPos, out Node rightN);
+            bool leftFound  = world.GetNeighbourAt(leftPos, out Node leftN);
             
             // Found a node, and it is facing the right direction for this node to connect to it
             bool right = rightFound && DirectionIsGood(end, rightN, rightDirection, leftDirection, direction, isRightSide: true);

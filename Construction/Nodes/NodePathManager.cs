@@ -40,11 +40,18 @@ namespace Engine.Construction.Nodes
 
         private readonly NodeRelationshipManager _relationshipManager;
         private CancellationTokenSource _cts;
+        private bool _eventsRegistered;
         
         public NodePathManager(NodeRelationshipManager relationshipManager)
         {
             _relationshipManager = relationshipManager;
-            
+
+            RegisterEvents();
+        }
+
+        private void RegisterEvents()
+        {
+            if (_eventsRegistered) return;
             _onNodePlaced = new EventBinding<NodePlaced>(OnNodePlaced);
             _onNodeGroupPlaced = new EventBinding<NodeGroupPlaced>(OnNodeGroupPlaced);
             _onNodeRemoved = new EventBinding<NodeRemoved>(OnNodeRemoved);
@@ -52,13 +59,19 @@ namespace Engine.Construction.Nodes
             EventBus<NodePlaced>.Register(_onNodePlaced);
             EventBus<NodeGroupPlaced>.Register(_onNodeGroupPlaced);
             EventBus<NodeRemoved>.Register(_onNodeRemoved);
+            _eventsRegistered = true;
         }
 
         public void Disable()
         {
-            EventBus<NodePlaced>.Deregister(_onNodePlaced);
-            EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
-            EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
+            if (_eventsRegistered)
+            {
+                EventBus<NodePlaced>.Deregister(_onNodePlaced);
+                EventBus<NodeGroupPlaced>.Deregister(_onNodeGroupPlaced);
+                EventBus<NodeRemoved>.Deregister(_onNodeRemoved);
+                _eventsRegistered = false;
+            }
+            
             CtsCtrl.Clear(ref _cts);
         }
         
@@ -181,7 +194,7 @@ namespace Engine.Construction.Nodes
             _nodeToPathId[node] = pathId;
             node.SetPathId(pathId);
     
-            Debug.Log($"Created new path {pathId} for node {node.name}");
+            // Debug.Log($"Created new path {pathId} for node {node.name}");
         }
 
         private void AddNodeToPath(Node node, int pathId)
@@ -348,7 +361,7 @@ namespace Engine.Construction.Nodes
             
                     // Remove the merged path
                     _paths.Remove(mergePathId);
-                    Debug.Log($"Merged path {mergePathId} into path {pathId} during group placement");
+                    // Debug.Log($"Merged path {mergePathId} into path {pathId} during group placement");
                 }
             }
             
@@ -356,7 +369,7 @@ namespace Engine.Construction.Nodes
             pathInfo.LastModified = DateTime.Now;
             _paths[pathId] = pathInfo;
             
-            Debug.Log($"Group merge completed. {newNodes.Count} new nodes added to path {pathId}, merged {pathsToMerge.Count} existing paths");
+            // Debug.Log($"Group merge completed. {newNodes.Count} new nodes added to path {pathId}, merged {pathsToMerge.Count} existing paths");
         }
         
         // REMOVAL
@@ -424,7 +437,7 @@ namespace Engine.Construction.Nodes
                         _nodeToPathId[node] = newPathId;
                     }
             
-                    Debug.Log($"Split path {pathId} - created new path {newPathId}");
+                    // Debug.Log($"Split path {pathId} - created new path {newPathId}");
                 }
             }
         }
@@ -461,7 +474,7 @@ namespace Engine.Construction.Nodes
             }
             
             // NEW: Check backward connections to ensure bidirectional traversal
-            if (start.TryGetBackwardNode(out Node backwardNode) && validNodes.Contains(backwardNode))
+            if (start.TryGetInputNode(out Node backwardNode) && validNodes.Contains(backwardNode))
             {
                 FloodFill(backwardNode, group, visited, validNodes);
             }

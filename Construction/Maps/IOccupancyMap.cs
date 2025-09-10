@@ -2,23 +2,16 @@
 
 namespace Engine.Construction.Maps
 {
-    public interface IMap
+    internal interface IOccupancyMap
     {
         public int MapWidth { get; set; }
         public int MapHeight { get; set; }
-        
         public CellStatus[,] Grid { get; set; }
-        
-        public bool RegisterOccupant(int x, int z, int width, int height);
-
-        public void DeregisterOccupant(int x, int z, int width, int height);
-
+        public bool TryPlaceOccupant(int x, int z, int width, int height);
+        public void RemoveOccupant(int x, int z, int width, int height);
         public bool VacantSpace(int x, int z, int width, int height);
-
         public bool VacantCell(int x, int z);
-
         public Vector2Int NearestVacantCell(Vector2Int start);
-
-        public void Disable();
+        public bool InBounds(int x, int y);
     }
 }
